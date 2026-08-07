@@ -1,0 +1,17 @@
+{
+  "manual_hours_per_case": 5.75,
+  "saved_hours_per_case": 3.45,
+  "saved_hours_per_month": 345.0,
+  "saved_cost_per_month": 276000,
+  "saved_cost_per_year": 3312000,
+  "fte_equivalent": 2.3,
+  "params": {
+    "min_per_invoice": 3.0,
+    "min_cross_document": 45.0,
+    "min_report_writing": 30.0,
+    "invoices_per_case": 90,
+    "hourly_cost": 800.0,
+    "cases_per_month": 100,
+    "automation_ratio": 0.6
+  }
+}
