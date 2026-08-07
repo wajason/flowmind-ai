@@ -33,9 +33,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from flowmind import (config, db, evidence, llm, metrics,            # noqa: E402
-                      retrieval, textnorm)
+from flowmind import (config, db, evidence, guardrail, llm,          # noqa: E402
+                      metrics, retrieval, textnorm)
 from flowmind.evidence import Claim, EvidencePack                    # noqa: E402
+
+# 全域速率視窗。異常偵測看的是「行為模式」而不是單句內容，
+# 所以必須跨查詢累積，不能每次呼叫都重建。
+_RATE = guardrail.RateLimiter()
 
 # ══════════════════════════════════════════════════════════════════════════
 # System prompt
@@ -146,7 +150,26 @@ def answer_deterministic(tenant_id: str, question: str,
 def answer_question(tenant_id: str, question: str, top_k: int = 8,
                     model: str | None = None, quiet: bool = False,
                     force_rag: bool = False) -> EvidencePack:
-    # ── 先問：這題該不該給 RAG？ ──────────────────────────────────────
+    # ── 零信任閘門：在檢索與生成「之前」 ──────────────────────────────
+    # 順序很重要：被判定為越權或注入的請求，連檢索都不該執行。
+    # 若先檢索再擋，攻擊者仍可從回應時間差推測資料是否存在。
+    gv = guardrail.inspect_input(question, tenant_id)
+    rv = _RATE.record(config.ACTOR, tenant_id)
+    if gv.blocked or rv.severity is guardrail.Severity.FLAG:
+        with db.tenant_session(tenant_id) as conn:
+            db.write_audit(conn, tenant_id=tenant_id,
+                           action="guardrail_" + gv.severity.value,
+                           query_text=guardrail.redact(question),
+                           doc_sources=gv.rules + rv.rules,
+                           confidence=0.0, abstained=gv.blocked)
+    if gv.blocked:
+        pack = EvidencePack(question=question, tenant_id=tenant_id,
+                            model="安全閘門（未進入檢索與生成）")
+        pack.abstained = True
+        pack.abstain_reason = guardrail.refusal_message(gv)
+        return pack
+
+    # ── 再問：這題該不該給 RAG？ ──────────────────────────────────────
     if not force_rag:
         keys = metrics.route(question)
         if keys:
@@ -211,6 +234,19 @@ def answer_question(tenant_id: str, question: str, top_k: int = 8,
             pack.claims, chunks, question=question)
         evidence.strip_ungrounded(pack)
         evidence.apply_gates(pack)
+
+        # 輸出端最後一道防線：確認沒有洩漏系統提示或連線資訊。
+        # 前面的輸入防護會擋掉大部分探測，但注入手法一直在變，
+        # 輸出端再確認一次成本很低。
+        ov = guardrail.inspect_output(pack.answer)
+        if ov.blocked:
+            pack.abstained = True
+            pack.abstain_reason = guardrail.refusal_message(ov)
+            pack.answer = ""
+            pack.claims = []
+            db.write_audit(conn, tenant_id=tenant_id, action="guardrail_output_block",
+                           query_text=guardrail.redact(question),
+                           doc_sources=ov.rules, confidence=0.0, abstained=True)
 
         db.write_audit(conn, tenant_id=tenant_id, action="answer",
                        query_text=question,
