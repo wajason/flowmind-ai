@@ -1,7 +1,0 @@
-# cash_flow_projection
-
-- 目前銀行餘額：NT$14,994,288
-- 預測期間：未來 90 天
-- 是否偵測到現金缺口：否
-- 逾期應收總額（不計入未來現金流）：NT$0
-- 計算方式：deterministic_netting（決定性運算，非 LLM 生成）
