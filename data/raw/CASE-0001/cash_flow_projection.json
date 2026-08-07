@@ -1,0 +1,115 @@
+{
+  "current_balance": 15159189,
+  "horizon_days": 90,
+  "timeline": [
+    {
+      "date": "2026-08-07",
+      "amount": -146965,
+      "type": "outflow",
+      "counterparty": "群模具股份有限公司",
+      "reference": "AP69934576",
+      "projected_balance": 15012224
+    },
+    {
+      "date": "2026-08-08",
+      "amount": 354198,
+      "type": "inflow",
+      "counterparty": "偉宇工業有限公司",
+      "reference": "AB70152969",
+      "projected_balance": 15366422
+    },
+    {
+      "date": "2026-08-10",
+      "amount": 290606,
+      "type": "inflow",
+      "counterparty": "銘毅機械股份有限公司",
+      "reference": "AB63238057",
+      "projected_balance": 15657028
+    },
+    {
+      "date": "2026-08-12",
+      "amount": -105563,
+      "type": "outflow",
+      "counterparty": "群五金有限公司",
+      "reference": "AP16172803",
+      "projected_balance": 15551465
+    },
+    {
+      "date": "2026-08-20",
+      "amount": 453182,
+      "type": "inflow",
+      "counterparty": "銓麒自動化科技有限公司",
+      "reference": "AB36445607",
+      "projected_balance": 16004647
+    },
+    {
+      "date": "2026-08-21",
+      "amount": 321294,
+      "type": "inflow",
+      "counterparty": "隆陞機械有限公司",
+      "reference": "AB57553014",
+      "projected_balance": 16325941
+    },
+    {
+      "date": "2026-08-27",
+      "amount": 292720,
+      "type": "inflow",
+      "counterparty": "隆陞機械有限公司",
+      "reference": "AB33357554",
+      "projected_balance": 16618661
+    },
+    {
+      "date": "2026-08-31",
+      "amount": -72286,
+      "type": "outflow",
+      "counterparty": "群模具股份有限公司",
+      "reference": "AP88270025",
+      "projected_balance": 16546375
+    },
+    {
+      "date": "2026-09-01",
+      "amount": 351221,
+      "type": "inflow",
+      "counterparty": "隆陞機械有限公司",
+      "reference": "AB38754377",
+      "projected_balance": 16897596
+    },
+    {
+      "date": "2026-09-05",
+      "amount": -238500,
+      "type": "outflow",
+      "counterparty": "固定營運支出(人事/房租/水電)",
+      "reference": "",
+      "projected_balance": 16659096
+    },
+    {
+      "date": "2026-10-05",
+      "amount": -238500,
+      "type": "outflow",
+      "counterparty": "固定營運支出(人事/房租/水電)",
+      "reference": "",
+      "projected_balance": 16420596
+    },
+    {
+      "date": "2026-10-06",
+      "amount": 250536,
+      "type": "inflow",
+      "counterparty": "德宇機械有限公司",
+      "reference": "AB92097999",
+      "projected_balance": 16671132
+    },
+    {
+      "date": "2026-11-05",
+      "amount": -238500,
+      "type": "outflow",
+      "counterparty": "固定營運支出(人事/房租/水電)",
+      "reference": "",
+      "projected_balance": 16432632
+    }
+  ],
+  "gap_detected": false,
+  "gap_date": null,
+  "gap_amount": null,
+  "overdue_receivables_total": 552577,
+  "computation_method": "deterministic_netting"
+}

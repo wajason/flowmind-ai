@@ -1,0 +1,8 @@
+{
+  "bank_ledger.csv": "76978a6f6ca5ad4b5615f4c211998533016b512bdec983fdccfcafd260c3a1c3",
+  "cash_flow_projection.json": "303c7c38f5b9c14dcc357d3a260aec3fceb527ae660d5112718bb641b3aa7d56",
+  "contracts.json": "eb33cfe0f8f411b49f07c5dcc2337166e4382ff1dd405eb44f9b150e7995ab11",
+  "customer_master.json": "b551a0951ffaa053e00bec13ebd14ff93f782b400fad9afa3bf720fd716968e8",
+  "payables.json": "e0cc5d8255aef9b2fbc55563917529de121d0369e791fe23876be6fbf1afa1de",
+  "receivables.json": "904ed8d6d2cd5eb3137c946d6e19654b491e52072c34610da57b18672c429125"
+}

@@ -1,0 +1,763 @@
+# FlowMind AI
+
+**中小企業供應鏈融資的可驗證證據層（Verifiable Credit Evidence Layer）**
+
+> 用**確定性的外殼**，包住**機率性的核心**——
+> 讓中小企業的營運文件，變成銀行授信人員可以逐項驗證的證據包。
+
+2026 台北金融科技獎｜金融創新獎—校園組
+
+[![tests](https://img.shields.io/badge/tests-39%2F39-brightgreen)]()
+[![python](https://img.shields.io/badge/python-3.11-blue)]()
+[![db](https://img.shields.io/badge/PostgreSQL-17%20%2B%20pgvector%200.8-336791)]()
+[![llm](https://img.shields.io/badge/LLM-本地%20Ollama%20·%20資料不出本機-7c3aed)]()
+
+---
+
+## 目錄
+
+1. [一句話定位](#1-一句話定位)
+2. [這個產品在解決什麼問題](#2-這個產品在解決什麼問題)
+3. [核心主張：確定性外殼包住機率性核心](#3-核心主張確定性外殼包住機率性核心)
+4. [系統架構](#4-系統架構)
+5. [環境設定與執行方式](#5-環境設定與執行方式)
+6. [核心技術決策與理由](#6-核心技術決策與理由)
+7. [VeriFin：不可 gameable 的驗證指標](#7-verifin不可-gameable-的驗證指標)
+8. [多委任案隔離](#8-多委任案隔離)
+9. [資料來源：真實與合成的分工](#9-資料來源真實與合成的分工)
+10. [目前表現與已知限制](#10-目前表現與已知限制)
+11. [多人協作流程（Git / Branch）](#11-多人協作流程git--branch)
+12. [專案結構](#12-專案結構)
+13. [延伸文件](#13-延伸文件)
+
+---
+
+## 1. 一句話定位
+
+> **AI 把企業的非結構化營運資料，自動轉換成銀行可以授信的金融資產。**
+
+這不是我們想出來的說法。中小企業信用保證基金《供應商融資信用保證要點》寫著：
+
+> 供應商憑中心廠商之**訂單、發票（含電子發票）、支票、預約付款通知
+> 及其他經本基金同意得以佐證交易真實性之文件**撥貸。
+> 信用保證成數最高**九成**；保證手續費年費率最低**百分之零點三七五**，
+> 本基金得視……**實際送保逾期情形**，酌增。
+
+制度已經寫明三件事：
+
+1. **可以憑發票、訂單融資** — 不需修法、不需監理沙盒
+2. **關鍵條件是「佐證交易真實性」** — 舉證責任在申請方
+3. **費率會因送保品質浮動** — **證明能力越強，資金成本越低**
+
+缺的從來不是制度，是**「怎麼有效率地證明交易是真的」**。FlowMind 做的就是這一段。
+
+---
+
+## 2. 這個產品在解決什麼問題
+
+### 2.1 使用者與付費者不是同一個人
+
+| | 中小企業財務／老闆 | **銀行企金 · 信保機構的授信人員** |
+|---|---|---|
+| 角色 | 使用者 | **付費者** |
+| 痛點 | 送件被退、不知還缺什麼、來回數週 | 一疊 PDF 要人工核對，一案數十上百張憑證 |
+| 願付意願 | 低（現金流本來就緊） | **高（人力成本可精算）** |
+
+很多學生團隊死在這一格：做了對中小企業很友善的工具，然後發現中小企業不願付月費。
+我們把商業重心放在右邊，中小企業端定位為**獲客管道**（免費的送件前自檢）。
+
+### 2.2 產業痛點的具體形式
+
+```mermaid
+flowchart TB
+    P1["痛點 A：財報不可靠<br/>銀行只好打折看待<br/>→ 體質好的公司也借不到合理額度"]
+    P2["痛點 B：解法已知但驗證靠人工<br/>看交易不看財報（transaction-based lending）<br/>→ 但憑證核對是人工、無工具、無留痕"]
+    P3["痛點 C：這也是造假風險最高的環節<br/>自我交易 · 重複請款 · 人頭買方 · 帳期美化"]
+    P1 --> P2 --> P3
+    P3 --> S["★ FlowMind<br/>把「憑證彼此對得起來」<br/>變成可程式驗證、可稽核、可重算"]
+    style S fill:#0f766e,color:#fff
+    style P3 fill:#b91c1c,color:#fff
+```
+
+### 2.3 金融價值鏈定位
+
+```mermaid
+flowchart LR
+    SME[中小企業] --> D1[憑證整理] --> D2["真實性驗證<br/>★ FlowMind"] --> D3[撮合] --> D4[風險定價] --> BANK[銀行/信保]
+    D1 -.已有玩家.-> N1["ERP · 會計軟體"]
+    D2 -.空白.-> N2["人工核對<br/>無工具、無留痕"]
+    D3 -.已有玩家.-> N3["Taulia · C2FO<br/>中租 · 裕融"]
+    D4 -.不可外包.-> N4["銀行核心<br/>監理責任"]
+    style D2 fill:#0f766e,color:#fff
+    style N2 fill:#b91c1c,color:#fff
+```
+
+**不做撮合**（已有成熟玩家），**不做評分卡**（銀行核心、監理責任不外包）。
+做中間那格被跳過的：**銀行不是不想借給中小企業，是驗證成本太高。**
+
+---
+
+## 3. 核心主張：確定性外殼包住機率性核心
+
+### 3.1 為什麼「可驗證」比「更聰明」重要
+
+大部分 RAG 產品的可解釋性，是請 LLM 在句尾寫上 `[來源: xxx.pdf]`。
+問題是：**那串引用標籤本身也是模型生成的 token。**
+模型可以在完全沒讀過那份文件的情況下，寫出格式完美的引用。
+從畫面上，使用者分辨不出「有引用」和「有根據」的差別。
+
+```mermaid
+flowchart TB
+    M[模型輸出] --> Q["每個主張必須附一段逐字摘錄"]
+    Q --> V{"程式回到實際檢索到的文本<br/>做字串比對<br/>（此路徑無任何 LLM 參與）"}
+    V -->|逐字命中| K["✅ 保留"]
+    V -->|"內容存在但出處錯"| W["🟠 標示 wrong_source"]
+    V -->|原文找不到| H["🔴 判定為幻覺<br/>從答案中移除"]
+    K --> C["信心分數<br/>由可量測訊號算出"]
+    W --> C
+    H --> C
+    C --> G{"低於門檻？"}
+    G -->|是| A["⛔ 拒答<br/>並說明缺哪份文件"]
+    G -->|否| O["證據包輸出"]
+    style V fill:#0f766e,color:#fff
+    style H fill:#b91c1c,color:#fff
+    style A fill:#b45309,color:#fff
+```
+
+模型唯一能提高分數的方法，就是**真的去讀檢索到的文件**。
+
+**引用可以用刪節號省略，但不能改寫。**
+`「訂單、發票…得以佐證交易真實性之文件撥貸」` 這種學術慣例是允許的：
+驗證器把刪節號前後拆成片段，要求**每段逐字命中且順序與原文一致**。
+順序約束是必要的——少了它，模型可以從文件各處挑零碎詞句拼成原文從未表達過的話。
+
+### 3.2 為什麼刻意用弱模型開發
+
+> 強模型會**遮蔽**系統問題；弱模型會**暴露**它們。
+
+| 弱模型暴露的問題 | 直接用強模型會怎樣 |
+|---|---|
+| `qwen3.5:9b` 吐 `<think>` 破壞 JSON | 強模型自動遵守格式，我們永遠不會加上 grammar-constrained decoding |
+| 模型用刪節號縮短引用導致驗證失敗 | 強模型逐字引用，驗證器就帶著 bug 上線 |
+| 模型把檔名多打一個空格 | 強模型不犯，但**真實生產環境的量化/降級模型會** |
+| 24 chunk 灌爆 context 被靜默截斷 | 強模型 context 大，永遠不觸發，直到客戶文件變多 |
+
+**harness engineering 的價值不是讓弱模型變強，
+而是讓工程師看清楚自己的設計有多少地方是靠運氣。**
+
+這也對應金融場域的現實：銀行不會讓客戶發票流出去給雲端 API。
+能離線跑的模型就是比較弱——**我們的架構必須在弱模型上就成立。**
+
+---
+
+## 4. 系統架構
+
+```mermaid
+flowchart TB
+    subgraph IN["輸入"]
+        I1["發票 PDF/XML · 合約 DOCX<br/>銀行流水 CSV · 統計表 XLSX<br/>法規 · 商品說明"]
+    end
+
+    subgraph PARSE["① 文件解析層"]
+        P1["父子切塊 Parent 2500 / Child 400"]
+        P2["中文 bigram 稀疏索引"]
+        P3["統計表摘要化（不逐列入庫）"]
+    end
+
+    Q[使用者提問] --> ROUTE{"決定性路由<br/>關鍵詞規則，非 LLM 分類器"}
+
+    subgraph DET["② 決定性層（零 LLM）"]
+        C1["crosscheck.py<br/>統編檢核碼 · 加總 · 5%稅率<br/>自我交易 · 重複請款<br/>帳期勾稽 · 流水對帳"]
+        C2["metrics.py<br/>集中度 · 帳齡 · 呆帳 · 現金缺口"]
+    end
+
+    subgraph RET["③ 檢索層"]
+        R1["Dense: pgvector HNSW"]
+        R2["Sparse: CJK bigram BM25"]
+        R3["RRF 融合 + 來源多樣性過濾"]
+    end
+
+    subgraph CORE["④ 機率性核心（可替換）"]
+        L1["grammar-constrained JSON"]
+        L2["Ollama / LiteLLM → 可換 Claude"]
+    end
+
+    subgraph EV["⑤ 證據層"]
+        E1["引用逐字驗證"]
+        E2["決定性信心分數"]
+        E3["拒答閘門 · 人工複核旗標"]
+    end
+
+    DB[("PostgreSQL 17 + pgvector<br/>Row-Level Security<br/>audit_log 雜湊鏈")]
+
+    IN --> PARSE --> DB
+    ROUTE -->|可以用算的| DET
+    ROUTE -->|需要理解文義| RET
+    RET --> DB
+    RET --> CORE --> EV
+    DET --> OUT["Evidence / Confidence<br/>Source / Reason 證據包"]
+    EV --> OUT
+    OUT --> DB
+
+    style DET fill:#0f766e,color:#fff
+    style EV fill:#0f766e,color:#fff
+    style CORE fill:#7c3aed,color:#fff
+    style ROUTE fill:#b45309,color:#fff
+```
+
+**設計原則：凡是有明確規則可以算的，就不要讓語言模型去猜。**
+11 個核心模組中**只有 1 個呼叫 LLM**。這個比例本身就是架構主張。
+
+詳細設計見 [`docs/SDD.md`](docs/SDD.md)。
+
+---
+
+## 5. 環境設定與執行方式
+
+開發與測試環境：**Windows 11 · RTX 4060 Laptop（8GB VRAM）· 32GB RAM**
+所有元件都能在 Windows 原生執行，唯一用 Docker 的是 PostgreSQL。
+
+### 5.1 前置需求
+
+| 元件 | 版本 | 安裝方式 |
+|---|---|---|
+| Python | 3.11 | 用 `uv` 管理，不動系統既有 Python/conda |
+| Docker Desktop | 任意近期版本 | 只跑 PostgreSQL + pgvector |
+| Ollama | Windows 原生版 | https://ollama.com/download |
+| Git + GitHub CLI | 任意 | 協作用，見 §11 |
+
+```powershell
+# 安裝 uv（若尚未安裝）
+winget install --id=astral-sh.uv -e
+```
+
+### 5.2 一次性建置
+
+```powershell
+# ① 取得程式碼
+git clone https://github.com/<your-org>/flowmind_AI.git D:\flowmind_AI
+cd D:\flowmind_AI
+
+# ② 建立虛擬環境（放在 D 槽，與系統 Python 完全隔離）
+uv venv D:\flowmind_AI\.venv --python 3.11
+D:\flowmind_AI\.venv\Scripts\activate
+uv pip install -r requirements.txt
+
+# ③ 下載模型（約 8GB，一次即可）
+ollama pull qwen3.5:9b      # 抽取 + 顧問（6.6GB，完整放進 8GB 顯存）
+ollama pull bge-m3          # Embedding（1024 維）
+
+# ④ 啟動向量資料庫（host port 5433，刻意避開系統既有的 5432）
+docker compose up -d
+docker compose ps           # 應顯示 healthy
+
+# ⑤ 設定環境變數
+copy .env.example .env
+
+# ⑥ 環境自檢 —— 缺什麼它會直接告訴你
+python -m flowmind.cli doctor
+```
+
+`doctor` 全綠的樣子：
+
+```
+✅ Ollama 連線正常（14 個模型）
+   ✅ 抽取模型 qwen3.5:9b   ✅ 向量模型 bge-m3
+✅ PostgreSQL 連線正常（pgvector 0.8.6），SHARED 知識庫 6889 個 chunk
+✅ 連線角色 flowmind_app 非 superuser，Row-Level Security 生效
+✅ 稽核軌跡 10 筆，雜湊鏈完整
+```
+
+> **為什麼是 port 5433**：刻意避開 5432。你的電腦上很可能已有其他專案的
+> PostgreSQL。`docker compose up` 撞 port 而失敗，是最沒必要的第一印象。
+>
+> **為什麼用 `flowmind_app` 而不是 `flowmind` 連線**：後者是 superuser，
+> **會繞過 Row-Level Security**，隔離形同虛設。`doctor` 會檢查這一項。
+
+### 5.3 建立資料
+
+```powershell
+# 公開知識庫（法規 · 信保基金要點 · 銀行商品說明）
+python scripts\fetch_public_corpus.py
+python data_update_finance.py --tenant SHARED --rebuild     # 約 40 分鐘（含大型白皮書）
+
+# 真實企業交易資料（政府採購決標公告：真實統編/金額/日期）
+python scripts\fetch_real_corpus.py --source pcc --industry-preset manufacturing --pages 2
+
+# 示範委任案
+python generate_synthetic_data.py --seed 42 --outdir data\raw\CASE-0001
+python data_update_finance.py --tenant CASE-0001 --rebuild
+
+# 負向對照組（刻意注入五項已知缺陷）
+python generate_synthetic_data.py --seed 7 --inject-defects --outdir data\raw\CASE-9999
+python data_update_finance.py --tenant CASE-9999 --rebuild
+```
+
+### 5.4 日常使用
+
+```powershell
+# 顧問問答（含證據包輸出）
+python rag_query.py --tenant CASE-0001 -q "信保基金供應商融資的保證成數最高幾成？"
+python rag_query.py --tenant CASE-0001                    # 互動模式
+python rag_query.py --tenant CASE-0001 -q "…" --json      # 給下游系統串接
+python rag_query.py --tenant CASE-0001 -q "…" --force-rag # 略過決定性路由做對照
+
+# 決定性交叉驗證（零 LLM）
+python -m flowmind.cli crosscheck --tenant CASE-0001
+python -m flowmind.cli crosscheck --tenant CASE-9999 --against-answer-key
+
+# 資料隔離與稽核證明
+python rag_query.py --verify-isolation CASE-0001 CASE-9999
+python rag_query.py --verify-audit
+python -m flowmind.cli engagements
+```
+
+### 5.5 評測與測試
+
+```powershell
+# 回歸測試（39 項，數秒，不需資料庫與 LLM）
+python tests\test_core.py
+
+# 外部 benchmark
+python scripts\fetch_benchmarks.py                        # SROIE / FUNSD / CORD
+python scripts\run_verifin.py --suite sroie --limit 50
+python scripts\run_verifin.py --suite all --limit 0 --counterfactual   # 正式數據
+
+# 模型選型實測
+python scripts\eval_models.py --models qwen3.5:9b gemma4:e4b
+```
+
+### 5.6 產生領域技能檔
+
+```powershell
+python skill_builder.py --tenant SHARED
+# → out/skills/taiwan-supply-chain-finance/SKILL.md
+```
+
+產出符合 **Agent Skills 開放標準**（YAML frontmatter + Markdown），
+可放進 `.claude/skills/`、也可餵給 Hermes / llama.cpp / Ollama 等任何執行環境
+（見該目錄下的 `PORTING.md`）。
+
+> ⚠️ 目前 skill_builder 的引用驗證率僅 **31.8%**，
+> **人工覆核前不得對外交付**。原因與改善方向見 §10.3。
+
+---
+
+## 6. 核心技術決策與理由
+
+### 6.1 中文稀疏檢索：不用 `to_tsvector('english', 中文)`
+
+PostgreSQL 沒有內建中文分詞。對中文餵 english parser，會把整段中文吐成極少數超長 token：
+
+- BM25 那一路幾乎永遠 0 命中
+- Hybrid Retrieval 名義上雙路召回，實際退化成純向量單路
+- **而 RRF 分數仍然算得出來、面板仍然亮綠燈**——所以「看起來正常」
+
+代價很具體：「統一編號 84726193」「無追索權」這類必須逐字命中的關鍵詞，
+正是稠密向量最不擅長、必須靠稀疏檢索補的部分。
+
+解法是**字元 bigram**（Lucene 的 CJKAnalyzer 就是這樣做的），
+不引入需要編譯的 `pg_jieba`/`zhparser`，維持「`docker compose up` 就能跑」的可重現性。
+
+檢索面板的 **Sparse 貢獻**欄位是這個問題的長期偵測器——長期掛 0 就是分詞又壞了。
+
+### 6.2 Embedding 走 Ollama 而不是 sentence-transformers
+
+8GB VRAM 下，sentence-transformers 載入 bge-m3 固定佔約 2.4GB，
+再載入 6.6GB 的 LLM 就超過顯存。Ollama 遇到顯存不足**不報錯**，
+只會靜默退回部分 CPU 推論——表現是「突然慢 5~8 倍而且不知道為什麼」。
+
+改成兩者都由 Ollama 管理後，顯存排程變成它的問題。
+副作用：這個專案**完全不需要安裝 PyTorch**（省下約 2.5GB 與大量相依衝突）。
+
+### 6.3 保留 LiteLLM 而不直接綁 Ollama SDK
+
+換成 Claude API 或 Azure OpenAI 只需改 `.env` 三行，程式碼零修改。
+對要進企業 POC 的產品，被單一模型供應商綁死是實質風險。
+
+**例外**：需要設定 `num_ctx` 的長 context 合成走原生 API（`llm.chat_local()`）——
+LiteLLM 的 OpenAI 相容端點無法傳遞這個參數，超長 prompt 會被**靜默截斷**。
+
+### 6.4 結構化抽取用受約束解碼
+
+`llm.extract_json()` 走 Ollama 原生 `format=<JSON Schema>`，
+這是 **grammar-constrained decoding**：解碼時直接把不合法 JSON 的 token 機率壓成 0。
+不是「請你只輸出 JSON，謝謝」然後寫正則去救——那在 demo 現場是定時炸彈。
+
+### 6.5 模型選型
+
+| 角色 | 模型 | 理由 |
+|---|---|---|
+| 抽取 + 顧問 | `qwen3.5:9b` | HPES 主指標勝出三倍；6.6GB 完整放進 8GB 顯存 |
+| 離線合成 | `gpt-oss:20b` | 一次性跑，慢無妨，要的是深度 |
+| Embedding | `bge-m3` | 多語言、中英混雜金融文件穩定、1024 維 |
+
+完整實測數據見 [`docs/MODEL_SELECTION.md`](docs/MODEL_SELECTION.md)。
+
+---
+
+## 7. VeriFin：不可 gameable 的驗證指標
+
+### 7.1 為什麼現有評測不值得相信
+
+| 方式 | 致命弱點 |
+|---|---|
+| LLM-as-judge | 獎勵「寫得像對的」。語氣篤定但錯誤的輸出，分數常高於誠實說「文件沒寫」 |
+| 欄位準確率 / F1 | **猜永遠不虧**。理性最佳策略是全部都猜 |
+
+### 7.2 四項指標
+
+**① HPES（主指標）** — 答對 `+1`、留白 `0`、答錯 `−λ`（λ=2）
+
+```
+猜的期望分數   = p·1 + (1−p)·(−λ)
+留白的期望分數 = 0
+相等時 p = λ/(1+λ) = 0.667
+```
+
+除非真實把握超過 2/3，否則猜的期望分數低於留白。
+這不是規則禁止亂猜，是讓亂猜**在數學上不划算**（proper scoring rule）。
+
+**② CVR** — 引用可驗證率。純字串比對，模型無法用文采通過。
+
+**③ CRC** — 反事實穩健度。把原文標準答案換成隨機新值，要求答案跟著改。
+擾動值**評測當下才生成**，沒有模型能記住一個還不存在的數字。
+
+**④ Risk-Coverage / AURC** — 自報信心可以灌水，但灌水會立刻毀掉曲線。
+測的是信心有沒有**排序能力**。
+
+**四項不合成單一總分**：合成分數是 benchmark 被玩壞的主因。
+
+### 7.3 三層 Benchmark（簡／中／難）
+
+```mermaid
+flowchart LR
+    L1["Level 1 · 簡單<br/>抽得出來嗎<br/>SROIE 欄位 · 算術 · 統編"] --> L2["Level 2 · 中等<br/>抽對了嗎、敢不敢說不知道<br/>HPES · CORD 反向拒答 · CVR"] --> L3["Level 3 · 困難<br/>業界公認難解<br/>CRC · 跨文件矛盾 · 對抗性拒答<br/>髒資料韌性 · 實體解析"]
+    style L1 fill:#166534,color:#fff
+    style L2 fill:#b45309,color:#fff
+    style L3 fill:#b91c1c,color:#fff
+```
+
+完整測項、通過標準、目前狀態見 [`docs/SDD.md` §7](docs/SDD.md#7-benchmark-分層設計簡中難)。
+
+### 7.4 三個外部 benchmark 的適用性（不是照單全收）
+
+| 資料集 | 適用性 | 用法與理由 |
+|---|---|---|
+| **SROIE** | ★ 主要 | 提供 OCR 後的 `words`，可**單獨**評測「文字→欄位」，不被 OCR 好壞混淆 |
+| **FUNSD** | ★ 次要 | 199 份高雜訊表單的鍵值配對，對應真實合約與對帳單 |
+| **CORD** | ★ 反向 | 印尼零售收據，**反過來用**：問它 B2B 專屬欄位（統編、帳期），正確答案全是 null |
+
+抽取分數可以靠多猜刷高，**拒答分數不行**。兩份考卷合起來才擋得住刷分。
+
+---
+
+## 8. 多委任案隔離
+
+```mermaid
+flowchart TB
+    APP["應用程式<br/>flowmind_app 角色"] -->|"SET app.tenant_id"| CONN[資料庫連線]
+    CONN --> RLS{"PostgreSQL RLS<br/>FORCE ROW LEVEL SECURITY"}
+    RLS -->|SELECT| V1["自己的 engagement + SHARED"]
+    RLS -->|寫入| V2["只有自己的 engagement<br/>連 SHARED 都不能寫"]
+    RLS -->|未設定 tenant_id| V3["什麼都看不到<br/>fail-closed"]
+    style RLS fill:#0f766e,color:#fff
+    style V3 fill:#b45309,color:#fff
+```
+
+**為什麼不是在 SQL 加 `WHERE tenant_id`**：那是開發者自律。
+一次 code review 疏漏就是跨客戶資料外洩。內控稽核不接受「我們程式碼有加過濾」。
+
+用語採會計師事務所的 **engagement（委任案）** 而非 project：
+一個客戶可能同時有多個 engagement，文件可見範圍綁在 engagement 上——
+這是實務上隔離的最小單位。
+
+**可執行的證明**（可以在評審面前跑）：
+
+```powershell
+python rag_query.py --verify-isolation CASE-0001 CASE-9999
+```
+
+它會：① 用 admin 確認對照組資料**確實存在**（避免「根本沒資料」的假通過）
+② 以 CASE-0001 身分下**完全沒有 WHERE 條件**的 SQL，確認看不到
+③ 嘗試寫入他人資料，確認被資料庫拒絕
+
+結果分三態：`passed` / `failed` / `inconclusive`——
+把「測試無效」誤報成「隔離失效」，在評審台上是會出事的。
+
+---
+
+## 9. 資料來源：真實與合成的分工
+
+### 9.1 真實資料（可查證、合法、可程式取得）
+
+| 來源 | 內容 | 用途 |
+|---|---|---|
+| **政府電子採購網決標公告** | 真實 B2B 交易：真實統編、金額、日期、履約期間 | 憑證結構與交叉比對的真實地基 |
+| **SBA 7(a) FOIA（美國）** | 逐筆中小企業保證貸款，**含真實違約標籤** | 唯一可得的真實違約 ground truth |
+| **全國法規資料庫** | 六部法規全文（發展條例、民法債編、營業稅法…） | RAG 引用的正式法源 |
+| **信保基金保證要點** | 供應商融資、企業相對保證等要點全文 | 產品條件與制度依據 |
+| **中小企業白皮書 · 29 份統計 CSV** | 市場規模、行業別、資金缺口 | 市場論證 |
+
+實測抓取（`python scripts\fetch_real_corpus.py`）：
+
+```
+36 筆真實決標 · 29 家真實得標廠商 · 10 個招標機關
+統編檢核碼通過率 86.1%   金額欄位覆蓋率 100%
+真實決標金額：中位數 NT$5,305,844   區間 NT$190,000 ~ NT$59,900,000
+```
+
+> **那 13.9% 統編不通過的紀錄，是這份資料最有價值的部分。**
+> 合成資料永遠 100% 乾淨。真實世界有機關代碼、外國廠商、聯合承攬體。
+> **一個沒見過髒資料的系統，上線第一天就會壞。**
+
+### 9.2 合成資料補的維度
+
+私人買方信用風險、付款帳期與逾期行為、銀行流水勾稽、造假憑證負向對照組——
+這四項真實公開資料補不上。合成資料的價值是**答案由建構方式決定**，
+適合驗證邏輯正確性，**不能用來宣稱真實世界的準確率**。
+
+### 9.3 誠實揭露的落差
+
+1. 政府採購買方是政府機關，缺「買方信用風險」維度
+2. SBA 是美國制度，違約率不可直接套用台灣
+3. 兩者都不含發票影像，OCR 仍須靠 SROIE/FUNSD/CORD
+4. 履約期間 ≠ 付款帳期
+
+> 把限制寫清楚，比宣稱「我們有真實資料」更有說服力。
+
+---
+
+## 10. 目前表現與已知限制
+
+### 10.1 實測快照
+
+| 項目 | 結果 |
+|---|---|
+| 決定性交叉驗證 | **五項注入缺陷全中，零漏抓、零額外回報** |
+| RAG 法規問答 | 信心 **0.86**，兩條引用全部 `exact` 100 分 |
+| 引用可驗證率 CVR | **97.5%**（SROIE, qwen3.5:9b） |
+| 憑空生成率 | **2.38%** |
+| AURC | **0.241**（越低越好） |
+| 嚴格 JSON 失敗率 | **0.0%** |
+| 跨委任案隔離 | **通過**（查詢語句無 `WHERE tenant_id`） |
+| 稽核雜湊鏈 | 完整未斷鏈 |
+| 回歸測試 | **39 / 39** |
+| 知識庫規模 | 47 份文件 / **6,889** chunks |
+
+### 10.2 模型選型：傳統準確率會選錯模型
+
+| 模型 | 傳統準確率 | **HPES** | 留白 | 顯存 |
+|---|---|---|---|---|
+| `gemma4:e4b` | **66.7%** ← 較高 | +0.042 | 1／48 | 9.6GB ⚠️ |
+| `qwen3.5:9b` ← 選用 | 62.5% | **+0.125** ← 較高 | 6／48 | 6.6GB ✅ |
+
+> ⚠️ 樣本僅 12 份文件，只足以支撐「相對排序」，**不足以宣稱絕對準確率**。
+> 提案書引用前須 `--limit 0` 全量重跑。
+
+### 10.3 已知限制（誠實揭露）
+
+| 問題 | 現況 | 影響 |
+|---|---|---|
+| **skill_builder 引用品質不合格** | **31.8%**（22 條中 7 條通過） | 人工覆核前不得對外交付 |
+| 沒有 OCR | 只吃 text-based PDF 與結構化檔案 | 掃描件無法處理 |
+| Benchmark 域外 | SROIE/FUNSD/CORD 是英文/印尼文零售收據 | 中文 B2B 只有合成資料證據 |
+| 8GB VRAM 瓶頸 | 約 38–44 秒／份文件 | 正式部署須改雲端或更大顯存 |
+| 知識圖譜是簡化版 | 共享欄位比對取代圖遍歷 | 做不到多跳關聯（關係企業網絡） |
+| Level 3 未完整 | 對抗性拒答、髒資料韌性、實體解析未實作 | 見 SDD §7 |
+
+**skill_builder 為什麼比 rag_query 差**：任務性質不同。
+`rag_query` 問窄問題、答案短，逐字引用最自然；
+`skill_builder` 要跨文件整合與抽象化，模型會改寫、會歸納——這正是合成任務該做的事，
+但它接著把改寫過的句子打上引號當引文用。**這是產品設計問題，不是模型能力問題。**
+
+一份不列限制的技術文件，通常代表作者沒有真的用過自己的系統。
+
+---
+
+## 11. 多人協作流程（Git / Branch）
+
+### 11.1 分支模型
+
+我們用**簡化版 GitHub Flow**——不用 git-flow 的多層分支，
+一個 3–6 人的競賽團隊用不上，只會增加合併衝突。
+
+```mermaid
+gitGraph
+    commit id: "初始"
+    branch feat/ocr
+    checkout feat/ocr
+    commit id: "接 OCR"
+    commit id: "加測試"
+    checkout main
+    merge feat/ocr tag: "PR #1"
+    branch feat/graph-rag
+    checkout feat/graph-rag
+    commit id: "知識圖譜"
+    checkout main
+    branch fix/citation
+    checkout fix/citation
+    commit id: "修引用驗證"
+    checkout main
+    merge fix/citation tag: "PR #2"
+    checkout feat/graph-rag
+    commit id: "多跳查詢"
+    checkout main
+    merge feat/graph-rag tag: "PR #3"
+```
+
+| 分支 | 用途 | 命名 |
+|---|---|---|
+| `main` | 永遠可執行、`tests/test_core.py` 永遠全過 | — |
+| 功能 | 新功能 | `feat/<簡短英文>`　例：`feat/ocr-layer` |
+| 修錯 | Bug | `fix/<簡短英文>`　例：`fix/citation-ellipsis` |
+| 文件 | 只改文件 | `docs/<簡短英文>` |
+| 實驗 | 不確定會不會留 | `exp/<簡短英文>` |
+
+### 11.2 第一次加入專案
+
+```powershell
+git clone https://github.com/<your-org>/flowmind_AI.git D:\flowmind_AI
+cd D:\flowmind_AI
+uv venv .venv --python 3.11
+.venv\Scripts\activate
+uv pip install -r requirements.txt
+copy .env.example .env
+docker compose up -d
+python -m flowmind.cli doctor        # 確認環境就緒
+python tests\test_core.py            # 確認 39/39 通過再開始改
+```
+
+### 11.3 日常開發循環
+
+```powershell
+# ① 從最新的 main 開分支
+git switch main
+git pull origin main
+git switch -c feat/ocr-layer
+
+# ② 改東西…然後隨時確認沒把既有功能弄壞
+python tests\test_core.py
+
+# ③ 提交（訊息用中文沒關係，但要說清楚「為什麼」而不只是「改了什麼」）
+git add .
+git commit -m "接入 OCR：掃描件現在也能進 pipeline
+
+原本只吃 text-based PDF，掃描件直接被 extract_pdf 回傳空字串。
+改用 PaddleOCR 作為 fallback，並在 metadata 標記 ocr_applied，
+讓後續的引用驗證知道這段文字有 OCR 誤差、不該用嚴格比對。"
+
+# ④ 推上去
+git push -u origin feat/ocr-layer
+
+# ⑤ 開 PR
+gh pr create --title "接入 OCR 層" --body "解決 #12。已補 3 項測試。"
+```
+
+### 11.4 Code Review 檢查清單
+
+在按下 Approve 前，這四項一定要看：
+
+| # | 檢查 | 為什麼 |
+|---|---|---|
+| 1 | `python tests\test_core.py` 是否 39/39 全過 | 核心邏輯不能退步 |
+| 2 | 有沒有新的 SQL 直接寫 `WHERE tenant_id` | 隔離應由 RLS 負責，手寫過濾是反模式 |
+| 3 | 有沒有在 `crosscheck.py` / `metrics.py` 裡呼叫 LLM | 這兩個模組必須維持零 LLM |
+| 4 | 新增的宣稱有沒有對應的測試或實測數字 | 文件裡的數字必須可重跑驗證 |
+
+### 11.5 常用指令速查
+
+```powershell
+git status                          # 現在改了什麼
+git switch main                     # 切回主線
+git switch -c feat/xxx              # 開新分支
+git pull origin main                # 同步主線
+git log --oneline --graph -15       # 看分支歷史
+
+# 主線有更新，把我的分支接到最新的 main 上
+git switch feat/xxx
+git rebase main                     # 衝突時：改完後 git add . && git rebase --continue
+
+git stash                           # 暫存未完成的修改
+git stash pop                       # 取回
+
+git restore <檔案>                  # 放棄某檔案的修改
+git restore --staged <檔案>         # 從暫存區移除但保留修改
+
+gh pr list                          # 看有哪些 PR
+gh pr checkout 12                   # 把別人的 PR 抓下來測
+gh pr create                        # 開 PR
+```
+
+### 11.6 絕對不要提交的東西
+
+`.gitignore` 已設定，但仍請確認：
+
+| 不可提交 | 原因 |
+|---|---|
+| `.env` | 含資料庫密碼與 API 金鑰 |
+| `data/raw/CASE-*/` | **客戶的發票、合約、銀行流水屬於營業秘密**，誤推上 GitHub 就收不回來 |
+| `data/processed/` · `out/` | 衍生產物，可重新產生 |
+| `.venv/` | 環境，各人自建 |
+
+只有 `data/raw/SHARED/`（政府與行庫公開資料）例外放行。
+
+```powershell
+# 推之前養成習慣先看一眼
+git status
+git diff --cached --stat
+```
+
+---
+
+## 12. 專案結構
+
+```
+flowmind_AI/
+├── flowmind/                    核心套件（11 模組，只有 llm.py 呼叫 LLM）
+│   ├── config.py                單一設定來源
+│   ├── textnorm.py              中文 bigram · 統編檢核碼 · 簡轉繁
+│   ├── db.py                    RLS 感知連線 · 稽核鏈 · 隔離證明
+│   ├── embeddings.py            可抽換向量化後端
+│   ├── llm.py                   角色分工 · 受約束 JSON · 長 context 路徑
+│   ├── retrieval.py             Hybrid Search + RRF + 多樣性過濾
+│   ├── evidence.py              引用驗證 · 信心分數 · 拒答閘門
+│   ├── crosscheck.py            決定性交叉驗證（零 LLM）
+│   ├── metrics.py               決定性指標 + 問題路由
+│   ├── verifin.py               不可 gameable 的評測指標
+│   └── cli.py                   crosscheck / engagements / doctor
+├── scripts/
+│   ├── fetch_public_corpus.py   法規 · 信保基金 · 銀行商品
+│   ├── fetch_real_corpus.py     真實企業交易（政府採購 · SBA）
+│   ├── fetch_benchmarks.py      SROIE / FUNSD / CORD
+│   ├── run_verifin.py           評測執行器
+│   └── eval_models.py           模型選型實測
+├── tests/test_core.py           39 項回歸測試（無外部依賴）
+├── sql/init/                    RLS policy 與 schema
+├── docs/
+│   ├── SDD.md                   軟體設計規格書
+│   ├── MODEL_SELECTION.md       模型選型實測數據
+│   └── BUSINESS_CASE.md         商業論證與 demo 劇本
+├── data/raw/<engagement>/       各委任案原始文件（互相隔離）
+├── generate_synthetic_data.py   合成營運資料（含負向對照組）
+├── data_update_finance.py       入庫 pipeline
+├── rag_query.py                 顧問查詢介面
+├── skill_builder.py             領域技能檔合成
+└── docker-compose.yml           pgvector
+```
+
+---
+
+## 13. 延伸文件
+
+| 文件 | 內容 |
+|---|---|
+| [`docs/SDD.md`](docs/SDD.md) | 軟體設計規格書：架構、資料模型、三層 benchmark、業界未解難題、Roadmap |
+| [`docs/MODEL_SELECTION.md`](docs/MODEL_SELECTION.md) | 模型選型的實測數據與判讀 |
+| [`docs/BUSINESS_CASE.md`](docs/BUSINESS_CASE.md) | 目標用戶、商業模式、競爭定位、（略） |
+| [`交接檔案_v4.md`](交接檔案_v4.md) | 接手指南：現況、四個關鍵發現、下一步 |
+
+---
+
+*本專案為競賽與研究用途。所引用之公開資料著作權歸各原始機關所有。*
+*系統產出不構成授信、投資或財務建議，任何對外提出的融資建議須由授信權責人員覆核。*

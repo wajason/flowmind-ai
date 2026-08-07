@@ -1,0 +1,42 @@
+# FlowMind AI — 本地向量資料庫
+#
+#   docker compose up -d          啟動
+#   docker compose logs -f db     看日誌
+#   docker compose down           停止（資料保留在 named volume）
+#   docker compose down -v        停止並刪除資料（謹慎）
+#
+# 設計說明：
+#  * host port 用 5433，刻意避開系統上可能已存在的 5432 PostgreSQL，
+#    確保與其他專案零衝突（container 內仍是標準 5432）。
+#  * 資料放 docker named volume 而非 Windows bind mount：
+#    PostgreSQL 對 data dir 的權限要求在 NTFS bind mount 上會失敗。
+#  * pgvector 0.8（pg17 版）才有效能較佳的 HNSW iterative scan，
+#    這是我們在 tenant 過濾後仍能保住召回率的關鍵（見 README §RLS 與檢索）。
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: flowmind-pgvector
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: flowmind
+      POSTGRES_USER: flowmind
+      POSTGRES_PASSWORD: flowmind_dev_pw
+      # zh-TW 內容主要靠 pgvector 稠密向量 + 我們自建的 CJK bigram 稀疏索引，
+      # 不依賴 PostgreSQL 內建中文分詞（它沒有）。見 README §為何不用 to_tsvector('chinese')
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - flowmind_pgdata:/var/lib/postgresql/data
+      - ./sql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowmind -d flowmind"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    shm_size: 512mb
+
+volumes:
+  flowmind_pgdata:
+    name: flowmind_pgdata

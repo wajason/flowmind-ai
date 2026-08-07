@@ -1,0 +1,79 @@
+[
+  {
+    "cat": "融資商品說明",
+    "kind": "html",
+    "name": "信保基金-供應商融資信用保證要點",
+    "url": "https://www.rootlaw.com.tw/LawArticle.aspx?LawID=A040390041056700-1090102",
+    "why": "★本專案的直接法源：明定供應商得憑「訂單、發票（含電子發票）、支票、預約付款通知及其他得以佐證交易真實性之文件」申請撥貸，保證成數最高九成。FlowMind 做的就是自動化產出這些佐證文件的驗證結果",
+    "status": "ok",
+    "file": "信保基金-供應商融資信用保證要點.md",
+    "bytes": 5037,
+    "error": null
+  },
+  {
+    "cat": "融資商品說明",
+    "kind": "pdf",
+    "name": "信保基金-企業相對保證專案信用保證要點",
+    "url": "https://www.nasme.org.tw/uploads/ck_file/manage/files/xc04125988111628831600-1.pdf",
+    "why": "另一種保證方案的條件，供 RAG 做方案比較（由全國中小企業總會轉載）",
+    "status": "ok",
+    "file": "信保基金-企業相對保證專案信用保證要點.pdf",
+    "bytes": 542634,
+    "error": null
+  },
+  {
+    "cat": "融資商品說明",
+    "kind": "pdf",
+    "name": "信保基金-認識信保基金與保證對象資格及業務規章",
+    "url": "https://www.smeg.org.tw/archive/file/1-1%E8%AA%8D%E8%AD%98%E4%B8%AD%E5%B0%8F%E4%BF%A1%E4%BF%9D%E5%9F%BA%E9%87%91%E3%80%81%E4%BF%9D%E8%AD%89%E5%B0%8D%E8%B1%A1%E8%B3%87%E6%A0%BC%E5%8F%8A%E6%A5%AD%E5%8B%99%E8%A6%8F%E7%AB%A0(%E4%BF%A1%E5%90%88%E7%A4%BE).pdf",
+    "why": "保證對象資格判定的第一手依據",
+    "status": "ok",
+    "file": "信保基金-認識信保基金與保證對象資格及業務規章.pdf",
+    "bytes": 1889192,
+    "error": null
+  },
+  {
+    "cat": "融資商品說明",
+    "kind": "html",
+    "name": "信保基金-直接信用保證要點",
+    "url": "https://www.rootlaw.com.tw/LawContent.aspx?LawID=A040390041055500-1090102",
+    "why": "直接保證（企業直接向信保基金申請）的條件，與間接保證的差異",
+    "status": "failed",
+    "file": null,
+    "bytes": 0,
+    "error": "抽出的正文只有 374 字元，可能是 JavaScript 動態載入的頁面，需要人工下載"
+  },
+  {
+    "cat": "融資商品說明",
+    "kind": "html",
+    "name": "玉山銀行-應收帳款承購",
+    "url": "https://www.esunbank.com/zh-tw/business/corporate/trade/factoring",
+    "why": "商業銀行實際商品條件（有無追索權、通知/不通知）",
+    "status": "ok",
+    "file": "玉山銀行-應收帳款承購.md",
+    "bytes": 1374,
+    "error": null
+  },
+  {
+    "cat": "融資商品說明",
+    "kind": "html",
+    "name": "中國信託-應收帳款暨融資業務",
+    "url": "https://www.ctbcbank.com/content/twcbo/zh_tw/finance/accountsreceivable/factoring.html",
+    "why": "另一家行庫的商品說明，供跨行比較",
+    "status": "failed",
+    "file": null,
+    "bytes": 0,
+    "error": "抽出的正文只有 0 字元，可能是 JavaScript 動態載入的頁面，需要人工下載"
+  },
+  {
+    "cat": "融資商品說明",
+    "kind": "html",
+    "name": "永豐銀行-應收帳款承購說明",
+    "url": "https://bank.sinopac.com/sinopacBT/personal/article/intelligence/Factoring.html",
+    "why": "承購流程與所需文件清單，直接對應本系統的『送件前檢核』",
+    "status": "ok",
+    "file": "永豐銀行-應收帳款承購說明.md",
+    "bytes": 10960,
+    "error": null
+  }
+]

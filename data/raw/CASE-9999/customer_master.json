@@ -1,0 +1,65 @@
+[
+  {
+    "ban": "69083011",
+    "name": "銘陽自動化科技股份有限公司",
+    "payment_terms_days": 60,
+    "behaviour": "準時",
+    "share_weight": 1.0
+  },
+  {
+    "ban": "23909964",
+    "name": "隆昇精密工業有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "準時",
+    "share_weight": 0.5743491774985175
+  },
+  {
+    "ban": "91948211",
+    "name": "群毅精機股份有限公司",
+    "payment_terms_days": 60,
+    "behaviour": "偏慢",
+    "share_weight": 0.4152436465385057
+  },
+  {
+    "ban": "47865791",
+    "name": "偉翔自動化科技股份有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "偏慢",
+    "share_weight": 0.32987697769322355
+  },
+  {
+    "ban": "29487570",
+    "name": "永陽工業股份有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "準時",
+    "share_weight": 0.27594593229224296
+  },
+  {
+    "ban": "86018953",
+    "name": "偉驊工業股份有限公司",
+    "payment_terms_days": 60,
+    "behaviour": "準時",
+    "share_weight": 0.23849484685087588
+  },
+  {
+    "ban": "24710494",
+    "name": "皓澤自動化科技股份有限公司",
+    "payment_terms_days": 60,
+    "behaviour": "準時",
+    "share_weight": 0.2108247373706503
+  },
+  {
+    "ban": "85291704",
+    "name": "皓達機械有限公司",
+    "payment_terms_days": 60,
+    "behaviour": "不穩定",
+    "share_weight": 0.18946457081379975
+  },
+  {
+    "ban": "81276843",
+    "name": "銘陞機械股份有限公司",
+    "payment_terms_days": 60,
+    "behaviour": "準時",
+    "share_weight": 0.1724272859905955
+  }
+]

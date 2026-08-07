@@ -1,0 +1,27 @@
+{
+  "source": "政府電子採購網決標公告（openfun PCC API）",
+  "fetched_at": "2026-08-07T22:25:30",
+  "keywords": [
+    "精密機械",
+    "金屬加工"
+  ],
+  "records": 36,
+  "distinct_sellers": 29,
+  "distinct_buyers": 10,
+  "ban_checksum_valid": 31,
+  "ban_checksum_valid_rate": 0.8611,
+  "records_with_amount": 36,
+  "amount_coverage": 1.0,
+  "known_limitations": [
+    "買方為政府機關，無統一編號，且不具私人企業的信用風險維度",
+    "決標金額欄位在部分公告格式中缺漏，本抓取器不做推估，一律留 None",
+    "無發票影像，OCR 能力仍須以 SROIE/FUNSD/CORD 驗證",
+    "履約期間不等於付款帳期；政府付款依契約與請款流程，本資料無法直接推得帳期"
+  ],
+  "amount_stats": {
+    "min": 190000.0,
+    "median": 5305844.0,
+    "max": 59900000.0,
+    "sum": 296938072.0
+  }
+}

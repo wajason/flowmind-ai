@@ -1,0 +1,20 @@
+[
+  {
+    "dataset": "sroie",
+    "n": 361,
+    "file": "sroie.jsonl",
+    "avg_chars": 621
+  },
+  {
+    "dataset": "funsd",
+    "n": 46,
+    "file": "funsd.jsonl",
+    "avg_chars": 1100
+  },
+  {
+    "dataset": "cord",
+    "n": 100,
+    "file": "cord.jsonl",
+    "avg_chars": 423
+  }
+]

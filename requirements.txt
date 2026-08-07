@@ -1,0 +1,47 @@
+# FlowMind AI — Supply Chain Financing Intelligence Platform
+# Python 3.11 (tested: 3.11.15 via uv). Windows 11 原生開發。
+#
+#   uv venv D:\flowmind_AI\.venv --python 3.11
+#   D:\flowmind_AI\.venv\Scripts\activate
+#   uv pip install -r requirements.txt
+#
+# 預設「零 PyTorch」路線：Embedding 走本地 Ollama bge-m3（HTTP），
+# 避免 8GB VRAM 被 sentence-transformers 與 LLM 同時佔用而 OOM。
+# 若要改用 sentence-transformers 本地推論，另裝 requirements-torch.txt。
+
+# ── 文件解析 (Document Parsing) ────────────────────────────────────────────────
+pymupdf4llm>=0.0.17          # PDF → Markdown（保留標題階層，供 parent-child chunking）
+PyMuPDF>=1.24.0
+python-docx>=1.1.0           # .docx 合約 / 商品說明書
+python-pptx>=0.6.23          # .pptx 銀行簡報
+openpyxl>=3.1.2              # .xlsx 統計表
+pandas>=2.2.0                # CSV/XLSX 結構化摘要（不逐列入庫）
+
+# ── Chunking ──────────────────────────────────────────────────────────────────
+langchain-text-splitters>=0.2.0
+
+# ── Vector DB ─────────────────────────────────────────────────────────────────
+psycopg2-binary>=2.9.9       # PostgreSQL 17 + pgvector 0.8
+
+# ── LLM / Embedding 介面 ──────────────────────────────────────────────────────
+litellm>=1.63.0              # 統一介面：本地 Ollama ↔ 雲端 API 只需改 .env
+httpx>=0.27.0                # Ollama /api/embed 直呼（比 litellm 少一層開銷）
+python-dotenv>=1.0.0
+# 本地中文模型偶爾漏出簡體字（實測 20,776 字裡 8 個）。這份輸出要交給銀行看，
+# 出現簡體字會讓人懷疑資料來源，所以在引用驗證前統一轉成繁體。
+opencc-python-reimplemented>=0.1.7
+
+# ── 評測 / Benchmark (VeriFin) ────────────────────────────────────────────────
+datasets>=2.19.0             # HuggingFace：SROIE / CORD / FUNSD
+huggingface-hub>=0.23.0
+Pillow>=10.3.0               # benchmark 影像
+rapidfuzz>=3.9.0             # 欄位比對用的決定性字串距離（非 LLM 評分）
+numpy>=1.26.0
+
+# ── CLI / Demo 呈現 ───────────────────────────────────────────────────────────
+rich>=13.7.0                 # 決賽 demo 的終端機儀表板
+tabulate>=0.9.0
+
+# ── 資料抓取 ──────────────────────────────────────────────────────────────────
+requests>=2.31.0
+beautifulsoup4>=4.12.0

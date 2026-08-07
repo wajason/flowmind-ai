@@ -1,0 +1,13 @@
+# 選配：改用 sentence-transformers 在本機跑 BAAI/bge-m3
+#
+#   uv pip install -r requirements-torch.txt
+#   然後在 .env 設 EMBED_BACKEND=sentence_transformers
+#
+# ⚠️ 8GB VRAM 警告：bge-m3 (FP16) 約佔 2.4GB VRAM。若同時讓 Ollama 載入
+#    qwen3.5:9b (6.6GB)，兩者相加會超過 8GB 導致 Ollama 退回 CPU 推論，
+#    整體反而變慢 5~8 倍。建議：
+#      (a) 走預設的 EMBED_BACKEND=ollama，或
+#      (b) 設 EMBED_DEVICE=cpu 讓 embedding 跑 CPU、把 VRAM 全留給 LLM。
+
+torch>=2.3.0
+sentence-transformers>=3.0.0

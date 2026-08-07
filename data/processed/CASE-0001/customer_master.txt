@@ -1,0 +1,11 @@
+# customer_master
+
+- ban=91960013；name=隆陞機械有限公司；payment_terms_days=60；behaviour=偏慢；share_weight=1.0
+- ban=96379403；name=銘毅機械股份有限公司；payment_terms_days=30；behaviour=偏慢；share_weight=0.5743491774985175
+- ban=21615593；name=鴻澤工業股份有限公司；payment_terms_days=30；behaviour=不穩定；share_weight=0.4152436465385057
+- ban=28495931；name=鴻麒精密工業股份有限公司；payment_terms_days=30；behaviour=準時；share_weight=0.32987697769322355
+- ban=41647524；name=偉宇工業有限公司；payment_terms_days=60；behaviour=偏慢；share_weight=0.27594593229224296
+- ban=29283272；name=銓麒自動化科技有限公司；payment_terms_days=30；behaviour=準時；share_weight=0.23849484685087588
+- ban=13056414；name=德宇機械有限公司；payment_terms_days=60；behaviour=不穩定；share_weight=0.2108247373706503
+- ban=82423880；name=銘驊工業股份有限公司；payment_terms_days=30；behaviour=不穩定；share_weight=0.18946457081379975
+- ban=97101222；name=永鋒自動化科技股份有限公司；payment_terms_days=90；behaviour=偏慢；share_weight=0.1724272859905955

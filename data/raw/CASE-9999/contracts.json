@@ -1,0 +1,62 @@
+[
+  {
+    "doc_type": "SALES_CONTRACT",
+    "contract_number": "CT-2024-001",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "69083011",
+    "buyer_name": "銘陽自動化科技股份有限公司",
+    "effective_date": "2024-09-16",
+    "expiry_date": "2026-09-16",
+    "payment_terms_days": 60,
+    "annual_commitment_amount": 21000000,
+    "currency": "TWD",
+    "recourse_note": "本合約未約定禁止債權讓與，得作為應收帳款承購標的",
+    "source_note": "synthetic - 年度基本買賣合約，供發票帳期勾稽使用"
+  },
+  {
+    "doc_type": "SALES_CONTRACT",
+    "contract_number": "CT-2024-002",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "23909964",
+    "buyer_name": "隆昇精密工業有限公司",
+    "effective_date": "2024-09-05",
+    "expiry_date": "2026-09-05",
+    "payment_terms_days": 30,
+    "annual_commitment_amount": 8000000,
+    "currency": "TWD",
+    "recourse_note": "本合約未約定禁止債權讓與，得作為應收帳款承購標的",
+    "source_note": "synthetic - 年度基本買賣合約，供發票帳期勾稽使用"
+  },
+  {
+    "doc_type": "SALES_CONTRACT",
+    "contract_number": "CT-2024-003",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "91948211",
+    "buyer_name": "群毅精機股份有限公司",
+    "effective_date": "2024-08-26",
+    "expiry_date": "2026-08-26",
+    "payment_terms_days": 60,
+    "annual_commitment_amount": 9000000,
+    "currency": "TWD",
+    "recourse_note": "本合約未約定禁止債權讓與，得作為應收帳款承購標的",
+    "source_note": "synthetic - 年度基本買賣合約，供發票帳期勾稽使用"
+  },
+  {
+    "doc_type": "SALES_CONTRACT",
+    "contract_number": "CT-2024-004",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "47865791",
+    "buyer_name": "偉翔自動化科技股份有限公司",
+    "effective_date": "2024-10-03",
+    "expiry_date": "2026-10-03",
+    "payment_terms_days": 30,
+    "annual_commitment_amount": 16000000,
+    "currency": "TWD",
+    "recourse_note": "本合約未約定禁止債權讓與，得作為應收帳款承購標的",
+    "source_note": "synthetic - 年度基本買賣合約，供發票帳期勾稽使用"
+  }
+]

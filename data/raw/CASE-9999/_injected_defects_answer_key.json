@@ -1,0 +1,27 @@
+[
+  {
+    "check_id": "FRAUD-01",
+    "invoice_number": "AB53703122",
+    "defect": "買方統編與賣方相同（自我交易）"
+  },
+  {
+    "check_id": "DUP-02",
+    "invoice_number": "AB14223373",
+    "defect": "與 AB98849207 同買方/同金額/同日期"
+  },
+  {
+    "check_id": "TAXID-01",
+    "invoice_number": "AB93443625",
+    "defect": "買方統編 81276844 未通過檢核碼"
+  },
+  {
+    "check_id": "ARITH-01",
+    "invoice_number": "AB21378775",
+    "defect": "銷售額＋稅額 ≠ 總額（差 1,000 元）"
+  },
+  {
+    "check_id": "TERM-02",
+    "invoice_number": "AB13629581",
+    "defect": "發票帳期與年度合約約定不符（內部欄位自洽，僅跨文件比對可發現）"
+  }
+]
