@@ -47,6 +47,7 @@ from pathlib import Path
 # 產業設定
 # ═══════════════════════════════════════════════════════════════════════════
 INDUSTRY_PROFILES = {
+    # ── 製造業 ────────────────────────────────────────────────────────
     "精密機械": {"terms": [30, 60, 90], "term_w": [0.3, 0.5, 0.2],
                  "order_range": (80_000, 450_000), "gross_margin": 0.22,
                  "peak_months": [3, 4, 9, 10], "peak_multiplier": 1.4},
@@ -59,6 +60,23 @@ INDUSTRY_PROFILES = {
     "紡織成衣": {"terms": [30, 60, 90], "term_w": [0.35, 0.4, 0.25],
                  "order_range": (40_000, 250_000), "gross_margin": 0.20,
                  "peak_months": [2, 3, 7, 8], "peak_multiplier": 1.35},
+
+    # ── 批發業 ────────────────────────────────────────────────────────
+    # 補這三類是因為真實承保統計顯示批發業才是最大宗
+    # （機械器具批發 14.36%、食品飲料批發 9.92%、建材批發 7.66%），
+    # 而原本的合成器只做製造業，等於漏掉了市場的一半。
+    # 批發業的特徵與製造業明顯不同：毛利率低很多（不做加工，賺價差）、
+    # 帳期短、單筆金額小但筆數多、交易對手數量多，
+    # 這些差異直接影響買方集中度與現金流曲線的形狀。
+    "機械器具批發": {"terms": [30, 45, 60], "term_w": [0.45, 0.35, 0.20],
+                     "order_range": (50_000, 800_000), "gross_margin": 0.12,
+                     "peak_months": [3, 4, 10, 11], "peak_multiplier": 1.3},
+    "食品批發": {"terms": [7, 15, 30], "term_w": [0.3, 0.45, 0.25],
+                 "order_range": (20_000, 200_000), "gross_margin": 0.09,
+                 "peak_months": [1, 2, 9, 12], "peak_multiplier": 1.6},
+    "建材批發": {"terms": [30, 60, 90], "term_w": [0.3, 0.45, 0.25],
+                 "order_range": (60_000, 900_000), "gross_margin": 0.14,
+                 "peak_months": [3, 4, 5, 10], "peak_multiplier": 1.35},
 }
 
 # 台灣中小企業常見的命名結構：吉祥字/方位字 + 產業字 + 組織型態
@@ -70,8 +88,24 @@ _BIZ_WORD = {
     "電子零組件": ["電子", "科技", "電子科技", "半導體", "光電"],
     "食品加工": ["食品", "食品工業", "生技食品", "食品科技"],
     "紡織成衣": ["紡織", "織品", "實業", "紡織實業"],
+    "機械器具批發": ["機械", "工業社", "機電", "貿易", "企業"],
+    "食品批發": ["food".replace("food", "食品"), "食品貿易", "商行", "企業"],
+    "建材批發": ["建材", "建材企業", "材料", "工程材料"],
 }
-_SUFFIX_W = [("股份有限公司", 0.55), ("有限公司", 0.35), ("企業社", 0.10)]
+
+# 公司名稱後綴的分布 —— 改由 flowmind.calibration 從
+# 信保基金真實承保統計取得（見該模組說明）。
+# 校準前用的猜測值是 股份 55% / 有限 35% / 企業社 10%，
+# 與真實的 股份 48.71% / 有限 47.20% / 獨資合夥 3.74% 明顯不符。
+def _suffix_weights() -> dict[str, float]:
+    try:
+        from flowmind import calibration
+        w = calibration.org_suffix_weights()
+        if w:
+            return w
+    except Exception:                                  # noqa: BLE001
+        pass
+    return {"股份有限公司": 0.55, "有限公司": 0.35, "企業社": 0.10}
 
 # 買方的付款習性。這三種在中小企業供應鏈裡都真實存在，
 # 而且銀行的授信人員正是靠這個分布在判斷「這批應收到底值多少錢」。
@@ -118,7 +152,8 @@ def make_valid_ban(rng: random.Random) -> str:
 def make_company_name(rng: random.Random, industry: str) -> str:
     biz = rng.choice(_BIZ_WORD.get(industry, ["實業"]))
     stem = rng.choice(_NAME_HEAD) + rng.choice(_NAME_TAIL)
-    suffix = rng.choices([s for s, _ in _SUFFIX_W], weights=[w for _, w in _SUFFIX_W])[0]
+    w = _suffix_weights()
+    suffix = rng.choices(list(w), weights=list(w.values()))[0]
     return f"{stem}{biz}{suffix}"
 
 
@@ -548,6 +583,19 @@ def main():
         by_buyer[r["buyer_name"]] = by_buyer.get(r["buyer_name"], 0) + r["total_amount"]
     top_name, top_amt = max(by_buyer.items(), key=lambda kv: kv[1])
     grand = sum(by_buyer.values())
+
+    # 校準狀態要講清楚：使用者必須知道拿到的是「對齊真實統計的分布」
+    # 還是「開發者拍腦袋的猜測值」。這兩者的可信度差很多。
+    try:
+        from flowmind import calibration
+        if calibration.is_calibrated():
+            ind = calibration.industry_distribution()
+            print(f"📊 分布已對齊信保基金真實承保統計（{ind.period}）"
+                  f"｜組織型態 {', '.join(f'{k} {v:.1%}' for k, v in _suffix_weights().items())}")
+        else:
+            print("⚠️  找不到承保統計，公司型態分布使用未校準的猜測值")
+    except Exception:                                  # noqa: BLE001
+        print("⚠️  校準模組不可用，使用未校準的猜測值")
 
     print(f"公司：{args.company}（{args.industry}）｜期間 {args.months} 個月｜賣方統編 {gen.seller_ban}")
     print(f"客戶主檔 {len(gen.customers)} 家、供應商 {len(gen.suppliers)} 家、年度合約 {len(gen.contracts)} 份")

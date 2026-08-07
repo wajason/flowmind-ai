@@ -1,0 +1,65 @@
+[
+  {
+    "ban": "38792170",
+    "name": "晶陽機電股份有限公司",
+    "payment_terms_days": 60,
+    "behaviour": "偏慢",
+    "share_weight": 1.0
+  },
+  {
+    "ban": "77929081",
+    "name": "鴻昇機械有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "準時",
+    "share_weight": 0.5743491774985175
+  },
+  {
+    "ban": "85793832",
+    "name": "祥昇機電股份有限公司",
+    "payment_terms_days": 45,
+    "behaviour": "準時",
+    "share_weight": 0.4152436465385057
+  },
+  {
+    "ban": "91453842",
+    "name": "永驊機械股份有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "偏慢",
+    "share_weight": 0.32987697769322355
+  },
+  {
+    "ban": "71003302",
+    "name": "順澤貿易有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "偏慢",
+    "share_weight": 0.27594593229224296
+  },
+  {
+    "ban": "55145064",
+    "name": "晶宇機械股份有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "偏慢",
+    "share_weight": 0.23849484685087588
+  },
+  {
+    "ban": "82837832",
+    "name": "銘麒工業社有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "不穩定",
+    "share_weight": 0.2108247373706503
+  },
+  {
+    "ban": "14940320",
+    "name": "泰昇貿易企業社",
+    "payment_terms_days": 30,
+    "behaviour": "準時",
+    "share_weight": 0.18946457081379975
+  },
+  {
+    "ban": "64611132",
+    "name": "隆昇企業股份有限公司",
+    "payment_terms_days": 30,
+    "behaviour": "偏慢",
+    "share_weight": 0.1724272859905955
+  }
+]

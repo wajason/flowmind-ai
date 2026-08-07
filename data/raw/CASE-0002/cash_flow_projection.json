@@ -1,0 +1,107 @@
+{
+  "current_balance": 21396164,
+  "horizon_days": 90,
+  "timeline": [
+    {
+      "date": "2026-08-14",
+      "amount": -145441,
+      "type": "outflow",
+      "counterparty": "隆模具有限公司",
+      "reference": "AP54016615",
+      "projected_balance": 21250723
+    },
+    {
+      "date": "2026-08-15",
+      "amount": -46819,
+      "type": "outflow",
+      "counterparty": "鴻五金有限公司",
+      "reference": "AP36836119",
+      "projected_balance": 21203904
+    },
+    {
+      "date": "2026-08-16",
+      "amount": 268272,
+      "type": "inflow",
+      "counterparty": "晶陽機電股份有限公司",
+      "reference": "AB15302658",
+      "projected_balance": 21472176
+    },
+    {
+      "date": "2026-08-18",
+      "amount": 270554,
+      "type": "inflow",
+      "counterparty": "隆昇企業股份有限公司",
+      "reference": "AB36755152",
+      "projected_balance": 21742730
+    },
+    {
+      "date": "2026-08-18",
+      "amount": 349502,
+      "type": "inflow",
+      "counterparty": "晶陽機電股份有限公司",
+      "reference": "AB85248396",
+      "projected_balance": 22092232
+    },
+    {
+      "date": "2026-08-18",
+      "amount": 481843,
+      "type": "inflow",
+      "counterparty": "鴻昇機械有限公司",
+      "reference": "AB17085548",
+      "projected_balance": 22574075
+    },
+    {
+      "date": "2026-08-26",
+      "amount": -194478,
+      "type": "outflow",
+      "counterparty": "祥包材有限公司",
+      "reference": "AP36167144",
+      "projected_balance": 22379597
+    },
+    {
+      "date": "2026-09-03",
+      "amount": 299040,
+      "type": "inflow",
+      "counterparty": "銘麒工業社有限公司",
+      "reference": "AB21705082",
+      "projected_balance": 22678637
+    },
+    {
+      "date": "2026-09-05",
+      "amount": -382500,
+      "type": "outflow",
+      "counterparty": "固定營運支出(人事/房租/水電)",
+      "reference": "",
+      "projected_balance": 22296137
+    },
+    {
+      "date": "2026-09-05",
+      "amount": -130124,
+      "type": "outflow",
+      "counterparty": "鴻五金有限公司",
+      "reference": "AP50904804",
+      "projected_balance": 22166013
+    },
+    {
+      "date": "2026-10-05",
+      "amount": -382500,
+      "type": "outflow",
+      "counterparty": "固定營運支出(人事/房租/水電)",
+      "reference": "",
+      "projected_balance": 21783513
+    },
+    {
+      "date": "2026-11-05",
+      "amount": -382500,
+      "type": "outflow",
+      "counterparty": "固定營運支出(人事/房租/水電)",
+      "reference": "",
+      "projected_balance": 21401013
+    }
+  ],
+  "gap_detected": false,
+  "gap_date": null,
+  "gap_amount": null,
+  "overdue_receivables_total": 1024784,
+  "computation_method": "deterministic_netting"
+}

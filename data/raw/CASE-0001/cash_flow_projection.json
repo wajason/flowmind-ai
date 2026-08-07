@@ -1,78 +1,78 @@
 {
-  "current_balance": 15159189,
+  "current_balance": 15201605,
   "horizon_days": 90,
   "timeline": [
     {
-      "date": "2026-08-07",
+      "date": "2026-08-08",
       "amount": -146965,
       "type": "outflow",
       "counterparty": "群模具股份有限公司",
       "reference": "AP69934576",
-      "projected_balance": 15012224
+      "projected_balance": 15054640
     },
     {
-      "date": "2026-08-08",
+      "date": "2026-08-09",
       "amount": 354198,
       "type": "inflow",
-      "counterparty": "偉宇工業有限公司",
+      "counterparty": "偉宇工業股份有限公司",
       "reference": "AB70152969",
-      "projected_balance": 15366422
+      "projected_balance": 15408838
     },
     {
-      "date": "2026-08-10",
+      "date": "2026-08-11",
       "amount": 290606,
       "type": "inflow",
-      "counterparty": "銘毅機械股份有限公司",
+      "counterparty": "銘毅機械有限公司",
       "reference": "AB63238057",
-      "projected_balance": 15657028
+      "projected_balance": 15699444
     },
     {
-      "date": "2026-08-12",
+      "date": "2026-08-13",
       "amount": -105563,
       "type": "outflow",
       "counterparty": "群五金有限公司",
       "reference": "AP16172803",
-      "projected_balance": 15551465
-    },
-    {
-      "date": "2026-08-20",
-      "amount": 453182,
-      "type": "inflow",
-      "counterparty": "銓麒自動化科技有限公司",
-      "reference": "AB36445607",
-      "projected_balance": 16004647
+      "projected_balance": 15593881
     },
     {
       "date": "2026-08-21",
+      "amount": 453182,
+      "type": "inflow",
+      "counterparty": "銓麒自動化科技股份有限公司",
+      "reference": "AB36445607",
+      "projected_balance": 16047063
+    },
+    {
+      "date": "2026-08-22",
       "amount": 321294,
       "type": "inflow",
-      "counterparty": "隆陞機械有限公司",
+      "counterparty": "隆陞機械股份有限公司",
       "reference": "AB57553014",
-      "projected_balance": 16325941
+      "projected_balance": 16368357
     },
     {
-      "date": "2026-08-27",
+      "date": "2026-08-28",
       "amount": 292720,
       "type": "inflow",
-      "counterparty": "隆陞機械有限公司",
+      "counterparty": "隆陞機械股份有限公司",
       "reference": "AB33357554",
-      "projected_balance": 16618661
+      "projected_balance": 16661077
     },
     {
-      "date": "2026-08-31",
+      "date": "2026-09-01",
       "amount": -72286,
       "type": "outflow",
       "counterparty": "群模具股份有限公司",
       "reference": "AP88270025",
-      "projected_balance": 16546375
+      "projected_balance": 16588791
     },
     {
-      "date": "2026-09-01",
+      "date": "2026-09-02",
       "amount": 351221,
       "type": "inflow",
-      "counterparty": "隆陞機械有限公司",
+      "counterparty": "隆陞機械股份有限公司",
       "reference": "AB38754377",
-      "projected_balance": 16897596
+      "projected_balance": 16940012
     },
     {
       "date": "2026-09-05",
@@ -80,7 +80,7 @@
       "type": "outflow",
       "counterparty": "固定營運支出(人事/房租/水電)",
       "reference": "",
-      "projected_balance": 16659096
+      "projected_balance": 16701512
     },
     {
       "date": "2026-10-05",
@@ -88,15 +88,15 @@
       "type": "outflow",
       "counterparty": "固定營運支出(人事/房租/水電)",
       "reference": "",
-      "projected_balance": 16420596
+      "projected_balance": 16463012
     },
     {
-      "date": "2026-10-06",
+      "date": "2026-10-07",
       "amount": 250536,
       "type": "inflow",
-      "counterparty": "德宇機械有限公司",
+      "counterparty": "德宇機械股份有限公司",
       "reference": "AB92097999",
-      "projected_balance": 16671132
+      "projected_balance": 16713548
     },
     {
       "date": "2026-11-05",
@@ -104,7 +104,7 @@
       "type": "outflow",
       "counterparty": "固定營運支出(人事/房租/水電)",
       "reference": "",
-      "projected_balance": 16432632
+      "projected_balance": 16475048
     }
   ],
   "gap_detected": false,
