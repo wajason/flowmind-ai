@@ -113,7 +113,7 @@ def answer_deterministic(tenant_id: str, question: str,
     信心分數給 1.0 不是自誇，是因為這裡根本沒有不確定性可言：
     同樣的檔案、同樣的公式，任何人跑都會得到同一個數字。
     """
-    ms = metrics.compute(tenant_id, metric_keys)
+    ms = metrics.compute(tenant_id, metric_keys, question=question)
     if not ms:
         return None
 

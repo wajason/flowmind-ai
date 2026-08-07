@@ -255,8 +255,45 @@ def m_summary(data: dict) -> Optional[Metric]:
         sources=["receivables.json"])
 
 
+def m_statistics(data: dict, question: str = "") -> Optional[Metric]:
+    """
+    從公開統計表取出精確數字。
+
+    這一項與其他指標不同：它查的是 SHARED 公開統計，不是這個委任案的憑證。
+    但同樣的原則適用 —— 有原始檔案可以查的數字，就不該讓語言模型從摘要裡推估。
+    """
+    from . import tables
+    terms = tables.match_question(question)
+    if not terms:
+        return None
+    all_hits, used = [], []
+    for t in terms:
+        hits = tables.lookup(t, limit=8)
+        if hits:
+            all_hits.extend(hits)
+            used.append(t)
+    if not all_hits:
+        return None
+
+    # 依查詢詞分組呈現
+    parts = []
+    for t in used:
+        hs = [h for h in all_hits if t in h.row_label]
+        if hs:
+            parts.append(tables.render_hits(hs, t))
+    return Metric(
+        key="statistics",
+        title="公開統計表精確查詢",
+        text="\n\n".join(parts),
+        value=[{"source": h.source, "row": h.row_label, "columns": h.columns,
+                "period": h.period, "unit": h.unit} for h in all_hits],
+        method="直接從 data/raw/SHARED 的原始 CSV/XLSX 讀取指定列，未經語言模型處理",
+        sources=sorted({h.source for h in all_hits}))
+
+
 METRIC_FNS = {"concentration": m_concentration, "ageing": m_ageing,
-              "cashflow": m_cashflow, "integrity": m_integrity, "summary": m_summary}
+              "cashflow": m_cashflow, "integrity": m_integrity,
+              "summary": m_summary, "statistics": m_statistics}
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -281,21 +318,35 @@ ROUTES: list[tuple[str, list[str]]] = [
 def route(question: str) -> list[str]:
     """回傳這個問題命中的決定性指標清單（可能多個，也可能空）。"""
     q = re.sub(r"\s+", "", question)
-    return [key for key, kws in ROUTES if any(k in q for k in kws)]
+    keys = [key for key, kws in ROUTES if any(k in q for k in kws)]
+
+    # 統計表查詢：問題裡若出現真實存在於統計表的類別名稱
+    # （例如「機械設備製造業」「台北市」「股份有限公司」），
+    # 就把精確數字直接從原始檔案讀出來，不要讓 LLM 從摘要裡湊。
+    # 這是把入庫摘要那句「完整數據請查原始檔案」真的兌現。
+    try:
+        from . import tables
+        if tables.match_question(question):
+            keys.append("statistics")
+    except Exception:                                  # noqa: BLE001
+        pass
+    return keys
 
 
-def compute(tenant_id: str, keys: list[str]) -> list[Metric]:
+def compute(tenant_id: str, keys: list[str], question: str = "") -> list[Metric]:
     data = load_engagement_files(tenant_id)
     out = []
     for k in keys:
         fn = METRIC_FNS.get(k)
-        if fn:
-            try:
-                m = fn(data)
-            except Exception as e:                     # noqa: BLE001
-                m = Metric(k, k, f"[計算失敗：{e}]", None, "-", [])
-            if m:
-                out.append(m)
+        if not fn:
+            continue
+        try:
+            # statistics 需要原始問題才知道要查哪個類別
+            m = fn(data, question) if k == "statistics" else fn(data)
+        except Exception as e:                         # noqa: BLE001
+            m = Metric(k, k, f"[計算失敗：{e}]", None, "-", [])
+        if m:
+            out.append(m)
     return out
 
 
