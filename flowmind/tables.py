@@ -198,6 +198,35 @@ def describe(source: str, tenant_dir: str = "SHARED") -> Optional[dict]:
             "row_labels_sample": labels[:20]}
 
 
+# 通用詞：出現在幾乎每張表裡，配對到它們等於沒有配對
+_GENERIC_LABELS = {"合計", "總計", "小計", "平均", "其他", "未分類", "不詳",
+                   "全體", "總和", "年", "月", "季", "合計數"}
+_CJK_RE = re.compile(r"[㐀-䶿一-鿿]")
+
+
+def _is_meaningful_label(s: str) -> bool:
+    """
+    判斷一個列標籤能不能當作「問題在問這個類別」的證據。
+
+    這個判斷被踩過一次坑：某張統計表的列標籤裡有 "2015"（年份值），
+    於是「依 2015 年版作業手冊，現在的費率是多少？」被判定為統計查詢，
+    系統回了一堆無關的年份數字**並給信心 1.00** ——
+    因為決定性路徑固定給滿分信心，這等於整個繞過了拒答閘門。
+
+    修法是提高標籤的門檻：
+      · 純數字（年份、代碼）不算 —— 它們是「值」不是「類別名稱」
+      · 至少要有 2 個中文字 —— 排除「其他」以外的雜訊與英文縮寫誤配
+      · 通用詞不算 —— 配對到「合計」等於沒有配對
+    """
+    if len(s) < 3 or len(s) > 30:
+        return False
+    if s in _GENERIC_LABELS or s in ("nan", "None"):
+        return False
+    if re.fullmatch(r"[\d\s\.,\-/年月季]+", s):
+        return False                                   # 純數字/日期，是值不是類別
+    return len(_CJK_RE.findall(s)) >= 2
+
+
 @lru_cache(maxsize=4)
 def _row_label_index(tenant_dir: str = "SHARED") -> tuple[str, ...]:
     """
@@ -217,7 +246,7 @@ def _row_label_index(tenant_dir: str = "SHARED") -> tuple[str, ...]:
         first = cols[0] if cols else body.columns[0]
         for v in body[first]:
             s = str(v).strip()
-            if 2 <= len(s) <= 30 and s not in ("nan", "None", "合計", "總計"):
+            if _is_meaningful_label(s):
                 labels.add(s)
     # 長的優先：「機械設備製造業」要贏過「製造業」
     return tuple(sorted(labels, key=len, reverse=True))

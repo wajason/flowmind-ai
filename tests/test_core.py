@@ -223,6 +223,39 @@ def test_router() -> None:
           metrics.route("無追索權承購的法律依據是什麼？"))
 
 
+def test_table_label_index() -> None:
+    """
+    這一組測的是一個真實踩過的坑（50 題評測 H11）：
+
+    統計表某張 CSV 的列標籤裡有 "2015"（年份值），於是
+    「依 2015 年版作業手冊，現在的費率是多少？」被判定為統計查詢，
+    系統回了無關的年份數字**並給信心 1.00** ——
+    因為決定性路徑固定給滿分信心，這等於整個繞過拒答閘門。
+
+    版本陷阱題本來就該拒答，卻拿到滿分信心，是最糟的一種失敗。
+    """
+    section("統計表標籤索引（防止路由誤觸發）")
+    from flowmind import tables
+
+    check("純數字不得成為類別標籤", not tables._is_meaningful_label("2015"))
+    check("年月不得成為類別標籤", not tables._is_meaningful_label("115年07月"))
+    check("通用詞不得成為類別標籤", not tables._is_meaningful_label("合計"))
+    check("兩字通用詞不得成為類別標籤", not tables._is_meaningful_label("其他"))
+    check("真實行業名稱可以成為標籤", tables._is_meaningful_label("機械設備製造業"))
+    check("縣市名稱可以成為標籤", tables._is_meaningful_label("台北市"))
+
+    q_trap = "依 2015 年版作業手冊，現在的保證手續費率是多少？"
+    check("版本陷阱題不得誤觸發統計路由",
+          "statistics" not in metrics_route(q_trap), metrics_route(q_trap))
+    q_real = "機械設備製造業的承保融資金額是多少？"
+    check("真實統計題仍正確觸發", "statistics" in metrics_route(q_real))
+
+
+def metrics_route(q: str):
+    from flowmind import metrics
+    return metrics.route(q)
+
+
 # ══════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     print("═" * 70)
@@ -230,7 +263,8 @@ if __name__ == "__main__":
     print("═" * 70)
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate, test_hpes,
-               test_counterfactual, test_crosscheck, test_router):
+               test_counterfactual, test_crosscheck, test_router,
+               test_table_label_index):
         fn()
     print("\n" + "═" * 70)
     print(f"  通過 {PASS}　失敗 {FAIL}")
