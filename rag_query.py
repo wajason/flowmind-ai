@@ -231,9 +231,14 @@ def render_retrieval_panel(chunks: list[retrieval.Chunk], diag: dict) -> None:
         scope = "公開" if c.is_shared else "本案"
         print(f"[{i}] 📂 {c.source}#{c.chunk_index}　{c.category}（{scope}）")
         print(f"    ├─ RRF {c.rrf_score:.5f}　Dense {c.dense_score:.4f}　"
-              f"Sparse {c.sparse_score:.4f}")
+              f"Sparse {c.sparse_score:.4f}　版本 {c.freshness_label}")
         print(f"    └─ {c.parent_content[:88].replace(chr(10), ' ')}…")
     print("─" * 80)
+    dropped = chunks[0].metadata.get("_dropped_superseded") if chunks else None
+    if dropped:
+        print(f"  🕓 已排除舊版本文件：{'、'.join(dropped)}")
+        print(f"     （引用舊版規定回答新問題，引用驗證仍會給 100 分 —— "
+              f"這類錯誤只能靠版本管理擋）")
     print(f"  來源多樣性 {diag['distinct_sources']} 份　"
           f"本案文件 {diag['own_docs']}／公開資料 {diag['shared_docs']}")
     # 這一行是靜默失效的偵測器：中文分詞一旦壞掉，sparse 會長期掛 0

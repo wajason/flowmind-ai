@@ -51,6 +51,21 @@ class Chunk:
         scope = "公開資料" if self.is_shared else "本案文件"
         return f"{self.source}#{self.chunk_index}（{scope}）"
 
+    @property
+    def published(self) -> Optional[str]:
+        return self.metadata.get("published")
+
+    @property
+    def doc_status(self) -> str:
+        """current / superseded / reference / 未登錄"""
+        return self.metadata.get("doc_status") or "未登錄"
+
+    @property
+    def freshness_label(self) -> str:
+        icon = {"current": "", "superseded": " ⚠️已被取代",
+                "reference": " 📎僅供參考"}.get(self.doc_status, " ❓未登錄")
+        return f"{self.published or '—'}{icon}"
+
 
 def hybrid_search(
     conn,
@@ -60,12 +75,22 @@ def hybrid_search(
     max_per_source: int = 3,
     candidate_pool: int = 200,
     categories: Optional[list[str]] = None,
+    include_superseded: bool = False,
 ) -> list[Chunk]:
     """
-    雙路召回後用 RRF 融合，再做來源多樣性過濾。
+    雙路召回後用 RRF 融合，再做來源多樣性與版本過濾。
 
     max_per_source 的用意：一份 300 頁的白皮書若不設限，很容易把 top-8 全部佔滿，
     導致「銀行商品說明書」這種只有 3 頁但關鍵的文件永遠進不了 context。
+
+    include_superseded 預設 False：已被新版取代的文件不進檢索。
+    這擋的是引用驗證擋不住的一類錯誤 —— 系統可以完全正確地引用
+    2015 年的舊作業手冊回答 2026 年的問題，引用驗證還會給 exact 100 分，
+    因為那句話確實在那份文件裡。**引用是真的，答案是錯的。**
+    要查歷史版本時才明確打開這個開關。
+
+    注意這裡是**過濾**而不是調整分數。刻意不去動 RRF 分數：
+    分數一旦被人為加權，「檢索強度」這個信心分項就不再是可獨立解讀的量了。
     """
     qvec = embeddings.to_pgvector(embeddings.embed_one(query))
     tsq = textnorm.to_fts_query(query)
@@ -132,11 +157,15 @@ def hybrid_search(
         cur.execute(sql, params)
         rows = cur.fetchall()
 
-    # 多樣性過濾
+    # 版本過濾 + 多樣性過濾
     seen: dict[str, int] = {}
     out: list[Chunk] = []
+    dropped_superseded: set[str] = set()
     for (tenant, source, idx, content, meta, dense_s, sparse_s, rrf) in rows:
         meta = meta if isinstance(meta, dict) else {}
+        if not include_superseded and meta.get("doc_status") == "superseded":
+            dropped_superseded.add(source)
+            continue
         if seen.get(source, 0) >= max_per_source:
             continue
         seen[source] = seen.get(source, 0) + 1
@@ -154,6 +183,13 @@ def hybrid_search(
         ))
         if len(out) >= top_k:
             break
+
+    if dropped_superseded:
+        # 記在第一個 chunk 上，讓透明度面板能顯示「有舊版本被擋掉」。
+        # 靜靜地過濾掉東西而不告訴使用者，是另一種形式的不透明。
+        if out:
+            out[0].metadata.setdefault(
+                "_dropped_superseded", sorted(dropped_superseded))
     return out
 
 

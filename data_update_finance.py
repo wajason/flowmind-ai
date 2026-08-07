@@ -72,6 +72,33 @@ def guess_category(path: Path) -> str:
     return "企業自有文件"
 
 
+# ── 資料來源登錄表（由 scripts/build_sources_manifest.py 產生）─────────────
+_REGISTRY: dict[str, dict] | None = None
+
+
+def load_registry() -> dict[str, dict]:
+    """
+    載入資料來源登錄表，取得每份文件的發布時間、狀態與權威層級。
+
+    這是為了處理一個引用驗證擋不住的錯誤：**引用是真的，但答案過期了**。
+    系統可以完全正確地引用 2015 年的舊作業手冊回答 2026 年的問題，
+    而且引用驗證會顯示 exact 100 分 —— 因為那句話確實在那份文件裡。
+    只能靠資料層的版本標註來擋。
+    """
+    global _REGISTRY
+    if _REGISTRY is None:
+        p = config.DATA_DIR / "sources_registry.json"
+        if p.exists():
+            data = json.loads(p.read_text(encoding="utf-8"))
+            _REGISTRY = {e["filename"]: e for e in data.get("entries", [])}
+        else:
+            _REGISTRY = {}
+            print("  [WARN] 找不到 data/sources_registry.json，"
+                  "文件將缺少發布時間與版本狀態。"
+                  "請先執行 python scripts/build_sources_manifest.py")
+    return _REGISTRY
+
+
 # ══════════════════════════════════════════════════════════════════════════
 # 1. 文字抽取
 # ══════════════════════════════════════════════════════════════════════════
@@ -265,7 +292,8 @@ def clean_text(raw: str) -> str:
     return text.strip()
 
 
-def chunk_text(text: str, source: str, category: str) -> list[dict]:
+def chunk_text(text: str, source: str, category: str,
+               registry_entry: dict | None = None) -> list[dict]:
     from langchain_text_splitters import (MarkdownHeaderTextSplitter,
                                           RecursiveCharacterTextSplitter)
 
@@ -294,12 +322,20 @@ def chunk_text(text: str, source: str, category: str) -> list[dict]:
         for p in parents:
             parent_text = f"[分類: {category}] [章節: {header_ctx}]\n{p.page_content}"
             for c in child_splitter.split_documents([p]):
+                meta = {"category": category, "headers": headers,
+                        "parent_content": parent_text,
+                        "is_intact_section": intact}
+                if registry_entry:
+                    meta.update({
+                        "published": registry_entry.get("published"),
+                        "doc_status": registry_entry.get("status"),
+                        "authority": registry_entry.get("authority"),
+                        "publisher": registry_entry.get("publisher"),
+                        "superseded_by": registry_entry.get("superseded_by"),
+                    })
                 chunks.append({
                     "content": f"[{header_ctx}]\n{c.page_content}",
-                    "source": source, "chunk_index": idx,
-                    "metadata": {"category": category, "headers": headers,
-                                 "parent_content": parent_text,
-                                 "is_intact_section": intact},
+                    "source": source, "chunk_index": idx, "metadata": meta,
                 })
                 idx += 1
     return chunks
@@ -385,9 +421,14 @@ def process_file(path: Path, conn, tenant_id: str, processed_dir: Path) -> bool:
     processed_dir.mkdir(parents=True, exist_ok=True)
     (processed_dir / (path.stem + ".txt")).write_text(cleaned, encoding="utf-8")
 
-    category = guess_category(path)
-    chunks = chunk_text(cleaned, source=path.name, category=category)
-    print(f"    → {len(chunks)} chunks｜分類：{category}")
+    entry = load_registry().get(path.name)
+    # 登錄表的分類優先於檔名猜測 —— 登錄表是人工確認過的，檔名規則只是 fallback
+    category = (entry or {}).get("category") or guess_category(path)
+    chunks = chunk_text(cleaned, source=path.name, category=category,
+                        registry_entry=entry)
+    status = (entry or {}).get("status", "未登錄")
+    pub = (entry or {}).get("published") or "—"
+    print(f"    → {len(chunks)} chunks｜分類：{category}｜發布：{pub}｜狀態：{status}")
 
     delete_by_source(conn, path.name)
     insert_chunks(conn, tenant_id, chunks, file_hash(path))
