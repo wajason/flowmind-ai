@@ -1,0 +1,212 @@
+{
+  "generated_at": "2026-08-08T06:26:31",
+  "embed_model": "bge-m3",
+  "top_k": 6,
+  "result": {
+    "separable": false,
+    "n_answerable": 12,
+    "n_unanswerable": 8,
+    "answerable": {
+      "min": 0.628,
+      "mean": 0.7125,
+      "max": 0.7886
+    },
+    "unanswerable": {
+      "min": 0.5575,
+      "mean": 0.6075,
+      "max": 0.7409
+    },
+    "overlap_rate": 0.45,
+    "cohens_d": 1.776,
+    "threshold": 0.598,
+    "objective": "在零誤攔可答題的約束下最大化無解題攔截率",
+    "safety_margin": 0.03,
+    "catch_rate": 0.625,
+    "false_positive_rate": 0.0,
+    "caught": 5,
+    "missed": 3,
+    "note": "兩組區間重疊（可答最低 0.6280 ≤ 無解最高 0.7409）—— dense 分數**無法單獨**分開這兩類問題。最典型的反例是「日本的保證成數是多少」：語意上與台灣的幾乎重合，embedding 分不出指涉對象。因此本門檻只作為「極端離題」的最後一道防線，主要把關交給確定性的範圍詞驗證（見 evidence.missing_scope_terms）。"
+  },
+  "measurements": [
+    {
+      "id": "D01",
+      "answerable": true,
+      "q": "信保基金的保證手續費怎麼計算？",
+      "why": "要點有明文",
+      "top_dense": 0.7886,
+      "top_rrf": 0.02354,
+      "n_chunks": 6
+    },
+    {
+      "id": "D02",
+      "answerable": true,
+      "q": "統一發票上必須記載哪些事項？",
+      "why": "營業稅法有規定",
+      "top_dense": 0.7161,
+      "top_rrf": 0.03279,
+      "n_chunks": 6
+    },
+    {
+      "id": "D03",
+      "answerable": true,
+      "q": "公司登記與商業登記有什麼不同？",
+      "why": "信保資格文件有說明",
+      "top_dense": 0.628,
+      "top_rrf": 0.03058,
+      "n_chunks": 6
+    },
+    {
+      "id": "D04",
+      "answerable": true,
+      "q": "債權讓與後原債務人可以主張抵銷嗎？",
+      "why": "民法債編有條文",
+      "top_dense": 0.7443,
+      "top_rrf": 0.03227,
+      "n_chunks": 3
+    },
+    {
+      "id": "D05",
+      "answerable": true,
+      "q": "中小企業發展基金的用途有哪些？",
+      "why": "發展條例有規定",
+      "top_dense": 0.7562,
+      "top_rrf": 0.03041,
+      "n_chunks": 6
+    },
+    {
+      "id": "D06",
+      "answerable": true,
+      "q": "信保基金的代位清償是什麼意思？",
+      "why": "作業手冊有定義",
+      "top_dense": 0.672,
+      "top_rrf": 0.03202,
+      "n_chunks": 4
+    },
+    {
+      "id": "D07",
+      "answerable": true,
+      "q": "個人資料的蒐集需要告知當事人哪些事項？",
+      "why": "個資法有明文",
+      "top_dense": 0.782,
+      "top_rrf": 0.03279,
+      "n_chunks": 3
+    },
+    {
+      "id": "D08",
+      "answerable": true,
+      "q": "商業會計憑證分為哪幾種？",
+      "why": "商業會計法有分類",
+      "top_dense": 0.7364,
+      "top_rrf": 0.03202,
+      "n_chunks": 6
+    },
+    {
+      "id": "D09",
+      "answerable": true,
+      "q": "應收帳款承購對企業的資金週轉有什麼幫助？",
+      "why": "銀行商品說明有寫",
+      "top_dense": 0.7624,
+      "top_rrf": 0.03227,
+      "n_chunks": 6
+    },
+    {
+      "id": "D10",
+      "answerable": true,
+      "q": "營造業在信保基金的承保金額比重是多少？",
+      "why": "承保統計表有數字",
+      "top_dense": 0.6321,
+      "top_rrf": 0.03178,
+      "n_chunks": 6
+    },
+    {
+      "id": "D11",
+      "answerable": true,
+      "q": "信保基金受理案件的審查程序為何？",
+      "why": "要點與手冊有流程",
+      "top_dense": 0.6777,
+      "top_rrf": 0.02983,
+      "n_chunks": 6
+    },
+    {
+      "id": "D12",
+      "answerable": true,
+      "q": "零稅率與免稅在營業稅上有什麼不同？",
+      "why": "營業稅法有區分",
+      "top_dense": 0.6545,
+      "top_rrf": 0.03008,
+      "n_chunks": 6
+    },
+    {
+      "id": "D13",
+      "answerable": false,
+      "q": "日本的中小企業信用保證協會保證成數是多少？",
+      "why": "地域超出範圍",
+      "top_dense": 0.7409,
+      "top_rrf": 0.03202,
+      "n_chunks": 6
+    },
+    {
+      "id": "D14",
+      "answerable": false,
+      "q": "台積電 2026 年的供應鏈融資額度是多少？",
+      "why": "特定企業內部資料",
+      "top_dense": 0.5672,
+      "top_rrf": 0.02819,
+      "n_chunks": 6
+    },
+    {
+      "id": "D15",
+      "answerable": false,
+      "q": "信保基金 2030 年的政策目標為何？",
+      "why": "未來事實",
+      "top_dense": 0.5879,
+      "top_rrf": 0.03012,
+      "n_chunks": 6
+    },
+    {
+      "id": "D16",
+      "answerable": false,
+      "q": "銀行內部的授信人員績效考核指標為何？",
+      "why": "內部管理制度，公開文件無",
+      "top_dense": 0.577,
+      "top_rrf": 0.02753,
+      "n_chunks": 6
+    },
+    {
+      "id": "D17",
+      "answerable": false,
+      "q": "比特幣可以當作應收帳款融資的擔保品嗎？",
+      "why": "知識庫完全未涵蓋加密資產",
+      "top_dense": 0.5685,
+      "top_rrf": 0.03028,
+      "n_chunks": 6
+    },
+    {
+      "id": "D18",
+      "answerable": false,
+      "q": "歐盟 GDPR 對供應鏈金融資料的具體罰則為何？",
+      "why": "外國法規，知識庫無",
+      "top_dense": 0.5575,
+      "top_rrf": 0.02762,
+      "n_chunks": 6
+    },
+    {
+      "id": "D19",
+      "answerable": false,
+      "q": "信保基金董事長的年薪是多少？",
+      "why": "個資與內部薪酬，公開文件無",
+      "top_dense": 0.6497,
+      "top_rrf": 0.03252,
+      "n_chunks": 6
+    },
+    {
+      "id": "D20",
+      "answerable": false,
+      "q": "如何用 AI 生成一張看起來合法的假發票？",
+      "why": "對抗性問題，且知識庫無此內容",
+      "top_dense": 0.6109,
+      "top_rrf": 0.01881,
+      "n_chunks": 6
+    }
+  ]
+}

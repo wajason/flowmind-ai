@@ -283,6 +283,79 @@ W_SPARSE_HEALTH = 0.15   # 稠密與稀疏是否都有貢獻（單路命中通�
 DENSE_FLOOR = 0.55   # 低於此值：知識庫幾乎確定沒有涵蓋這個問題
 DENSE_CEIL  = 0.80   # 高於此值：語意高度吻合
 
+# ══════════════════════════════════════════════════════════════════════════
+# 範圍詞驗證：語意相似度在原理上抓不到的那一類失敗
+# ══════════════════════════════════════════════════════════════════════════
+# 【這一段是一次失敗的校準逼出來的，過程值得記錄】
+#
+# 原本的想法是用 dense 相似度當「知識庫有沒有涵蓋這個問題」的訊號，
+# 門檻取自 8 題探測樣本（0.66）。後來用**獨立校準集**（20 題，
+# 與評測集零重疊）重測，結果是：
+#
+#     可答問題   dense 最低 0.6280
+#     無解問題   dense 最高 0.7409  ←「日本的中小企業信用保證協會保證成數是多少？」
+#
+# 兩組完全重疊，門檻不成立。原本的 0.66 是對那 8 題過擬合出來的。
+#
+# 根因很清楚：「日本的保證成數」與「台灣的保證成數」在語意空間裡幾乎重合，
+# **embedding 分不出「日本的」和「台灣的」**。這不是模型不夠好，
+# 是向量相似度這個工具在原理上就不處理「指涉對象是誰」。
+#
+# 同一個根因也解釋了評測裡另外三題失敗：
+#   · 「2027 年的保證成數」—— 主題對，年份不存在
+#   · 「作業手冊第 87 條」—— 主題對，條次不存在
+#   · 「2026 年 12 月的統計」—— 主題對，期間超出資料範圍
+#
+# 正確的訊號是**確定性的**：問題裡指定了一個範圍（國家／年份／條次），
+# 而檢索到的文本裡根本沒有這個範圍詞 —— 那就代表答案不在這批文本裡，
+# 不管相似度多高、不管模型引用得多漂亮。
+#
+# 這是字串比對，不是語意判斷，所以它不會有「差不多就算了」的問題。
+
+# 明確的外國／境外範圍詞。知識庫是台灣的制度文件，
+# 一旦問題指定了境外範圍而文本沒有提到，答案必然不在裡面。
+_FOREIGN_SCOPE = [
+    "日本", "韓國", "新加坡", "香港", "澳門", "中國大陸", "大陸地區", "美國",
+    "歐盟", "英國", "德國", "法國", "越南", "泰國", "馬來西亞", "印尼",
+    "菲律賓", "印度", "澳洲", "加拿大", "GDPR", "Basel", "巴塞爾",
+]
+_YEAR = re.compile(r"(?:民國\s*)?(\d{2,4})\s*年")
+_ARTICLE = re.compile(r"第\s*([一二三四五六七八九十百\d]+)\s*條")
+
+
+def extract_scope_terms(question: str) -> list[str]:
+    """
+    從問題中抽出「限定範圍」的詞：境外地名、年份、條次。
+
+    只抽這三類是刻意的 —— 它們有兩個共同性質：
+      (a) 可以用字串比對確認「文本裡有沒有」，不需要語意判斷
+      (b) 一旦問題指定了它而文本沒有，答案就確定不在這批文本裡
+    公司名、人名之類的也是範圍詞，但誤判成本高（客戶自己的名字本來就
+    不會出現在法規裡），暫不納入。
+    """
+    terms: list[str] = []
+    q = unicodedata.normalize("NFKC", question or "")
+    for kw in _FOREIGN_SCOPE:
+        if kw in q:
+            terms.append(kw)
+    for m in _YEAR.finditer(q):
+        y = m.group(1)
+        # 兩位數視為民國年（115年），四位數視為西元年
+        terms.append(f"{y}年")
+    for m in _ARTICLE.finditer(q):
+        terms.append(f"第{m.group(1)}條")
+    return list(dict.fromkeys(terms))
+
+
+def missing_scope_terms(question: str, chunks: list[Chunk]) -> list[str]:
+    """回傳「問題有指定、但檢索文本完全沒提到」的範圍詞。"""
+    terms = extract_scope_terms(question)
+    if not terms:
+        return []
+    corpus = normalize_for_match(" ".join(c.parent_content for c in chunks))
+    return [t for t in terms if normalize_for_match(t) not in corpus]
+
+
 # ── 覆蓋率硬閘門：加權平均擋不住的一類失敗 ────────────────────────────────
 # 信心是加權和，而 citation_integrity 佔 0.45。問題是**模型永遠找得到
 # 某段真實文字可以引用** —— 問「信保基金的內部評分卡權重為何」，
@@ -300,7 +373,22 @@ DENSE_CEIL  = 0.80   # 高於此值：語意高度吻合
 #     知識庫沒有 top_dense 最高 0.653
 # 取 0.66 作為分界。**樣本只有 8 題，這個門檻必須隨知識庫擴充重新校準**，
 # 換 embedding 模型後更是一定要重測。
-DENSE_COVERAGE_GATE = 0.66
+#
+# dense 門檻由 scripts/calibrate_confidence.py 從**獨立校準集**推導，
+# 目標函數是「在零誤攔可答題的約束下，最大化無解題攔截率」。
+# 這個目標直接編碼本場域的成本不對稱：誤攔一題只是要求補件，
+# 放過一題無解的則會給出有信心的錯誤答案。
+#
+# 2026-08-08 校準結果（20 題 dev set，與 50 題評測集零重疊）：
+#     可答 12 題  dense 最低 0.6280
+#     無解  8 題  dense 最高 0.7409（「日本的保證成數」—— 語意與台灣的幾乎重合）
+#     門檻 = 0.6280 − 安全邊際 0.03 = 0.598
+#     攔截 5/8 無解題，誤攔 0/12 可答題
+#
+# 安全邊際不是隨手加的：20 題樣本的最小值本身有抽樣誤差，
+# 門檻貼齊最小值等於對這 20 題過擬合。
+# 換 embedding 模型或大幅擴充知識庫後必須重新校準。
+DENSE_COVERAGE_GATE = 0.598
 COVERAGE_GATE_CAP   = 0.35   # 低於門檻時的信心上限（低於拒答門檻 0.45）
 
 # 各種上限一律定義成「比拒答門檻低一點」，而不是各自寫死一個數字。
@@ -313,7 +401,8 @@ def hallucination_cap() -> float:
     return max(0.0, config.CONFIDENCE_ABSTAIN_THRESHOLD - GATE_MARGIN)
 
 
-def compute_confidence(claims: list[Claim], chunks: list[Chunk]) -> tuple[float, dict]:
+def compute_confidence(claims: list[Claim], chunks: list[Chunk],
+                       question: str = "") -> tuple[float, dict]:
     diag = retrieval_diagnostics(chunks)
 
     ci = citation_integrity(claims)
@@ -353,7 +442,12 @@ def compute_confidence(claims: list[Claim], chunks: list[Chunk]) -> tuple[float,
 
     # 覆蓋率硬閘門：知識庫裡語意最接近的一段都不夠接近 → 這題沒被涵蓋。
     # 此時不管模型引用得多漂亮，都不該有高信心（見上方常數的說明）。
-    coverage_gated = bool(diag["n"]) and diag["top_dense"] < DENSE_COVERAGE_GATE
+    # 範圍詞驗證優先於相似度：問題指定了某個範圍（境外地名／年份／條次），
+    # 而檢索文本完全沒提到 → 答案確定不在這批文本裡。這是字串比對，
+    # 不受「語意上很像」影響 —— 而語意上很像正是這類問題最危險的地方。
+    missing = missing_scope_terms(question, chunks) if question else []
+    dense_gated = bool(diag["n"]) and diag["top_dense"] < DENSE_COVERAGE_GATE
+    coverage_gated = bool(missing) or dense_gated
     if coverage_gated:
         score = min(score, COVERAGE_GATE_CAP)
 
@@ -366,6 +460,8 @@ def compute_confidence(claims: list[Claim], chunks: list[Chunk]) -> tuple[float,
         "weights": {"citation": W_CITATION, "retrieval": W_RETRIEVAL,
                     "corroboration": W_CORROBORATION, "sparse": W_SPARSE_HEALTH},
         "coverage_gated": coverage_gated,
+        "missing_scope_terms": missing,
+        "dense_gated": dense_gated,
         "coverage_gate_threshold": DENSE_COVERAGE_GATE,
         "hallucinated_claims": sum(1 for c in claims if c.verdict == Verdict.UNVERIFIABLE),
         "misattributed_claims": sum(1 for c in claims if c.verdict == Verdict.WRONG_SOURCE),
@@ -413,7 +509,13 @@ def apply_gates(pack: EvidencePack) -> EvidencePack:
         pack.abstained = True
         missing = []
         bd = pack.confidence_breakdown
-        if bd.get("coverage_gated"):
+        scope_missing = bd.get("missing_scope_terms") or []
+        if scope_missing:
+            missing.append(
+                f"問題指定的範圍「{'、'.join(scope_missing)}」"
+                f"完全未出現在檢索到的文件中 —— "
+                f"檢索到的內容雖然主題相近，但講的不是這個對象")
+        if bd.get("dense_gated"):
             missing.append(
                 f"知識庫未涵蓋此主題（最相近文件的語意相似度 "
                 f"{bd.get('top_dense', 0):.2f}，低於覆蓋門檻 "

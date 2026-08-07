@@ -240,6 +240,43 @@ def test_router() -> None:
           metrics.route("無追索權承購的法律依據是什麼？"))
 
 
+def test_scope_terms() -> None:
+    """
+    範圍詞驗證。這是被一次失敗的校準逼出來的機制：
+
+    原本想用 dense 相似度判斷「知識庫有沒有涵蓋這個問題」，
+    但在獨立校準集上兩組完全重疊 ——「日本的保證成數是多少」拿到 0.7409，
+    比大多數可答問題還高，因為它跟台灣的保證成數在語意空間裡幾乎重合。
+    **embedding 分不出指涉對象是誰。**
+
+    範圍詞驗證用字串比對處理這件事：問題指定了境外地名／年份／條次，
+    而檢索文本完全沒提到 → 答案確定不在這批文本裡。
+    """
+    section("範圍詞驗證（相似度抓不到的失敗類型）")
+
+    check("抽得出境外地名", "日本" in evidence.extract_scope_terms(
+        "日本的中小企業信用保證協會成數是多少？"))
+    check("抽得出年份", "2027年" in evidence.extract_scope_terms(
+        "2027 年的保證成數上限是多少？"))
+    check("抽得出條次", "第87條" in evidence.extract_scope_terms(
+        "請引用作業手冊第 87 條說明"))
+    check("一般問題不應抽出範圍詞",
+          evidence.extract_scope_terms("保證成數最高幾成？") == [],
+          evidence.extract_scope_terms("保證成數最高幾成？"))
+
+    ch = _chunks()   # 內容是台灣信保基金的要點，沒有提到日本或 2027
+    check("文本未提及的範圍詞被標為缺失",
+          "日本" in evidence.missing_scope_terms("日本的保證成數是多少？", ch))
+    check("文本有提及的內容不算缺失",
+          evidence.missing_scope_terms("信用保證成數最高幾成？", ch) == [])
+
+    c, bd = evidence.compute_confidence(
+        [_verify("信用保證成數最高九成。")], ch, question="日本的保證成數是多少？")
+    check("範圍詞缺失時觸發覆蓋率閘門", bd.get("coverage_gated") is True)
+    check("範圍詞缺失時信心低於拒答門檻",
+          c < config.CONFIDENCE_ABSTAIN_THRESHOLD, c)
+
+
 def test_table_label_index() -> None:
     """
     這一組測的是一個真實踩過的坑（50 題評測 H11）：
@@ -281,7 +318,7 @@ if __name__ == "__main__":
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate, test_hpes,
                test_counterfactual, test_crosscheck, test_router,
-               test_table_label_index):
+               test_scope_terms, test_table_label_index):
         fn()
     print("\n" + "═" * 70)
     print(f"  通過 {PASS}　失敗 {FAIL}")

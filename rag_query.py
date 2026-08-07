@@ -208,7 +208,7 @@ def answer_question(tenant_id: str, question: str, top_k: int = 8,
         # ── 這三行是整個產品的核心：驗證 → 計分 → 閘門 ──────────────
         evidence.verify_claims(pack.claims, chunks)
         pack.confidence, pack.confidence_breakdown = evidence.compute_confidence(
-            pack.claims, chunks)
+            pack.claims, chunks, question=question)
         evidence.strip_ungrounded(pack)
         evidence.apply_gates(pack)
 
