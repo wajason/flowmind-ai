@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from flowmind import crosscheck, evidence, textnorm, verifin       # noqa: E402
+from flowmind import config, crosscheck, evidence, textnorm, verifin   # noqa: E402
 from flowmind.evidence import Claim, Verdict                       # noqa: E402
 from flowmind.retrieval import Chunk                               # noqa: E402
 from flowmind.verifin import FieldPrediction                       # noqa: E402
@@ -128,8 +128,25 @@ def test_confidence_gate() -> None:
     c_good, _ = evidence.compute_confidence(good, _chunks())
     c_bad, bd = evidence.compute_confidence(bad, _chunks())
     check("全部引用可驗證時信心較高", c_good > c_bad, f"{c_good} vs {c_bad}")
-    check("出現幻覺時信心被壓在 0.5 以下", c_bad <= 0.50, c_bad)
     check("幻覺數量有被記錄", bd["hallucinated_claims"] == 1)
+
+    # 這是被 50 題評測抓出來的不變量：原本幻覺上限寫死 0.50、
+    # 拒答門檻 0.45，兩個各自訂的數字讓「含幻覺的答案」剛好卡在門檻之上
+    # 被放行。現在上限綁定在門檻之下，由建構保證。
+    check("含幻覺的答案信心必定低於拒答門檻",
+          c_bad < config.CONFIDENCE_ABSTAIN_THRESHOLD,
+          f"{c_bad} vs 門檻 {config.CONFIDENCE_ABSTAIN_THRESHOLD}")
+    check("幻覺上限恆低於拒答門檻（不變量）",
+          evidence.hallucination_cap() < config.CONFIDENCE_ABSTAIN_THRESHOLD)
+
+    # 覆蓋率硬閘門：知識庫語意最接近的一段都不夠接近 → 不管引用多漂亮都不該有高信心
+    far = [Chunk(source="無關.md", chunk_index=0, tenant_id="SHARED",
+                 child_content="與問題無關的內容", parent_content="與問題無關的內容",
+                 category="", dense_score=0.40, sparse_score=0.0, rrf_score=0.03)]
+    c_far, bd_far = evidence.compute_confidence(good, far)
+    check("知識庫未涵蓋時觸發覆蓋率閘門", bd_far.get("coverage_gated") is True)
+    check("覆蓋率閘門把信心壓到拒答門檻以下",
+          c_far < config.CONFIDENCE_ABSTAIN_THRESHOLD, c_far)
 
 
 # ══════════════════════════════════════════════════════════════════════════

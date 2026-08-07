@@ -151,33 +151,38 @@ def summarise(rows: list[dict]) -> dict:
     }
 
 
+def _pct(v) -> str:
+    """只跑單一 tier 時其他 tier 會是 None，直接丟給 :.1% 會 TypeError。"""
+    return f"{v:.1%}" if isinstance(v, (int, float)) else "—"
+
+
 def render(s: dict, rows: list[dict]) -> str:
     a = s["abstention"]
     L = [
         "═" * 78,
         f"  中文金融問答評測　{s['n']} 題",
         "═" * 78, "",
-        f"  整體通過率　{s['overall_pass_rate']:.1%}",
-        f"  分層：簡單 {s['by_tier']['easy']:.1%}　"
-        f"中等 {s['by_tier']['medium']:.1%}　困難 {s['by_tier']['hard']:.1%}",
+        f"  整體通過率　{_pct(s['overall_pass_rate'])}",
+        f"  分層：簡單 {_pct(s['by_tier']['easy'])}　"
+        f"中等 {_pct(s['by_tier']['medium'])}　困難 {_pct(s['by_tier']['hard'])}",
         "",
         "─" * 78,
         "  ★ 拒答紀律（本評測最關鍵的一組）",
         "─" * 78,
         f"  無解題數　　　　　　　{a['should_abstain_n']} 題",
-        f"  正確拒答率　　　　　　{a['correct_abstain_rate']:.1%}",
+        f"  正確拒答率　　　　　　{_pct(a['correct_abstain_rate'])}",
         f"  ⚠ 對無解題產生幻覺　　{a['hallucinated_on_unanswerable']} 題",
         f"  過度保守（有答案卻拒答）{a['over_abstain_n']} 題"
-        f"（{a['over_abstain_rate']:.1%}）",
+        f"（{_pct(a['over_abstain_rate'])}）",
         "",
         "  判讀：對無解題產生幻覺是最嚴重的失分 —— 那正是授信場域最不能發生的事。",
         "        過度保守雖然也扣分，但代價低得多（要求補件 vs 整份申請被退）。",
         "",
         "─" * 78,
-        f"  來源引用正確率　{s['source_accuracy']:.1%}" if s["source_accuracy"] is not None else "",
-        f"  關鍵事實命中率　{s['fact_accuracy']:.1%}" if s["fact_accuracy"] is not None else "",
-        f"  決定性路徑正確率{s['route_accuracy']:.1%}" if s["route_accuracy"] is not None else "",
-        f"  平均引用可驗證率{s['mean_citation_rate']:.1%}" if s["mean_citation_rate"] is not None else "",
+        f"  來源引用正確率　{_pct(s['source_accuracy'])}",
+        f"  關鍵事實命中率　{_pct(s['fact_accuracy'])}",
+        f"  決定性路徑正確率{_pct(s['route_accuracy'])}",
+        f"  平均引用可驗證率{_pct(s['mean_citation_rate'])}",
         "",
     ]
     fails = [r for r in rows if not r["pass"]]

@@ -260,18 +260,68 @@ def citation_integrity(claims: list[Claim]) -> float:
 
 # 權重公開在程式碼裡，不是黑盒。任何人都可以檢查、質疑、重算。
 W_CITATION      = 0.45   # 引用驗證通過率 —— 權重最高，因為它最難造假
-W_RETRIEVAL     = 0.20   # 檢索強度（top RRF 相對於理論上限）
+W_RETRIEVAL     = 0.20   # 檢索強度（top-1 的絕對語意相似度）
 W_CORROBORATION = 0.20   # 幾份彼此獨立的文件支持這個結論
 W_SPARSE_HEALTH = 0.15   # 稠密與稀疏是否都有貢獻（單路命中通常較脆弱）
 
-MAX_RRF = 2.0 / (60 + 1)   # 兩路都排第一時的 RRF 理論上限
+# ── 檢索強度為什麼用 dense 分數而不是 RRF ─────────────────────────────────
+# 原本用 top_rrf / MAX_RRF 當檢索強度，這是**概念上的誤用**：
+# RRF 是為了「融合兩份排名」設計的，它只看名次不看相似度 ——
+# 排第一名永遠得 1/(60+1)，不管那筆結果到底有多相關。
+#
+# 實測（各 4 題，見 docs/SDD.md）：
+#     有答案的問題   top_dense 0.691~0.799   rrf/MAX 0.969~1.000
+#     知識庫沒有的   top_dense 0.581~0.653   rrf/MAX 0.739~1.000
+#
+# RRF 完全分不出來（無解題也能拿 1.000），dense 相似度則有乾淨的分界。
+# 這直接造成一個嚴重後果：問「信保基金的內部授信評分卡權重為何」
+# （公開文件必然沒有）拿到信心 0.852 —— 因為模型從相關但不對題的段落
+# 引用了真實存在的句子，引用驗證通過，而檢索強度又被 RRF 灌成滿分。
+#
+# 下限/上限是從實測資料設的，**樣本只有 8 題**，換 embedding 模型或
+# 大幅擴充知識庫後必須重新校準（scripts/calibrate_confidence.py）。
+DENSE_FLOOR = 0.55   # 低於此值：知識庫幾乎確定沒有涵蓋這個問題
+DENSE_CEIL  = 0.80   # 高於此值：語意高度吻合
+
+# ── 覆蓋率硬閘門：加權平均擋不住的一類失敗 ────────────────────────────────
+# 信心是加權和，而 citation_integrity 佔 0.45。問題是**模型永遠找得到
+# 某段真實文字可以引用** —— 問「信保基金的內部評分卡權重為何」，
+# 它會從「保證成數」「徵信」相關段落抄一句真的存在的話，
+# 引用驗證通過、citation_integrity 拿滿分，信心就被拉到 0.85。
+#
+# 引用是真的，但它沒有回答那個問題。**可驗證 ≠ 切題。**
+#
+# 加權和沒辦法處理這件事：把 citation 權重調低會傷害正常情況。
+# 需要的是一個閘門 —— 如果整個知識庫裡語意最接近的一段都不夠接近，
+# 那就是「沒有涵蓋這個問題」，此時模型引用得多漂亮都不該有高信心。
+#
+# 門檻取自實測（8 題）：
+#     有答案   top_dense 最低 0.691
+#     知識庫沒有 top_dense 最高 0.653
+# 取 0.66 作為分界。**樣本只有 8 題，這個門檻必須隨知識庫擴充重新校準**，
+# 換 embedding 模型後更是一定要重測。
+DENSE_COVERAGE_GATE = 0.66
+COVERAGE_GATE_CAP   = 0.35   # 低於門檻時的信心上限（低於拒答門檻 0.45）
+
+# 各種上限一律定義成「比拒答門檻低一點」，而不是各自寫死一個數字。
+# 這樣 .env 調整 CONFIDENCE_ABSTAIN_THRESHOLD 時，
+# 「含幻覺必定拒答」這個不變量不會悄悄失效。
+GATE_MARGIN = 0.05
+
+
+def hallucination_cap() -> float:
+    return max(0.0, config.CONFIDENCE_ABSTAIN_THRESHOLD - GATE_MARGIN)
 
 
 def compute_confidence(claims: list[Claim], chunks: list[Chunk]) -> tuple[float, dict]:
     diag = retrieval_diagnostics(chunks)
 
     ci = citation_integrity(claims)
-    retrieval_strength = min(1.0, diag["top_rrf"] / MAX_RRF) if diag["n"] else 0.0
+    if diag["n"]:
+        raw = (diag["top_dense"] - DENSE_FLOOR) / (DENSE_CEIL - DENSE_FLOOR)
+        retrieval_strength = max(0.0, min(1.0, raw))
+    else:
+        retrieval_strength = 0.0
 
     grounded_sources = {c.matched_source for c in claims if c.is_grounded and c.matched_source}
     corroboration = min(1.0, len(grounded_sources) / 3.0)   # 3 份獨立來源即視為充分
@@ -283,21 +333,40 @@ def compute_confidence(claims: list[Claim], chunks: list[Chunk]) -> tuple[float,
              + W_CORROBORATION * corroboration
              + W_SPARSE_HEALTH * sparse_health)
 
-    # 硬性上限：只要有任何一個主張被判定為幻覺，整體信心不得超過 0.5。
-    # 這是刻意設計的不對稱 —— 九句對、一句瞎編的報告，
+    # ── 硬性上限：只要有任何一個主張被判定為幻覺 ──────────────────────
+    # 這是刻意設計的不對稱：九句對、一句瞎編的報告，
     # 在授信場域的可用性不是 90%，而是接近 0。
+    #
+    # 上限**綁定在拒答門檻之下**，不是一個獨立的魔術數字。
+    # 這一點是被 50 題評測抓出來的：原本上限寫死 0.50、拒答門檻 0.45，
+    # 兩個數字各自訂、從沒放在一起檢查，結果是
+    # 「內含幻覺的答案」信心剛好 0.500，卡在門檻之上被放行 ——
+    # 三題無解題（不存在的條次、已失效的版本、超出期間的統計）
+    # 就是這樣溜過去的。
+    #
+    # 綁定之後這個不變量由建構保證：**含幻覺的答案一定觸發拒答**，
+    # 而且之後有人調整拒答門檻時，關係仍然成立。
     if any(c.verdict == Verdict.UNVERIFIABLE for c in claims):
-        score = min(score, 0.50)
+        score = min(score, hallucination_cap())
     if any(c.verdict == Verdict.WRONG_SOURCE for c in claims):
         score = min(score, 0.65)
+
+    # 覆蓋率硬閘門：知識庫裡語意最接近的一段都不夠接近 → 這題沒被涵蓋。
+    # 此時不管模型引用得多漂亮，都不該有高信心（見上方常數的說明）。
+    coverage_gated = bool(diag["n"]) and diag["top_dense"] < DENSE_COVERAGE_GATE
+    if coverage_gated:
+        score = min(score, COVERAGE_GATE_CAP)
 
     return round(score, 3), {
         "citation_integrity": round(ci, 3),
         "retrieval_strength": round(retrieval_strength, 3),
+        "top_dense": round(diag.get("top_dense", 0.0), 4),
         "corroboration": round(corroboration, 3),
         "sparse_health": round(sparse_health, 3),
         "weights": {"citation": W_CITATION, "retrieval": W_RETRIEVAL,
                     "corroboration": W_CORROBORATION, "sparse": W_SPARSE_HEALTH},
+        "coverage_gated": coverage_gated,
+        "coverage_gate_threshold": DENSE_COVERAGE_GATE,
         "hallucinated_claims": sum(1 for c in claims if c.verdict == Verdict.UNVERIFIABLE),
         "misattributed_claims": sum(1 for c in claims if c.verdict == Verdict.WRONG_SOURCE),
         "grounded_sources": sorted(s for s in grounded_sources if s),
@@ -344,9 +413,14 @@ def apply_gates(pack: EvidencePack) -> EvidencePack:
         pack.abstained = True
         missing = []
         bd = pack.confidence_breakdown
+        if bd.get("coverage_gated"):
+            missing.append(
+                f"知識庫未涵蓋此主題（最相近文件的語意相似度 "
+                f"{bd.get('top_dense', 0):.2f}，低於覆蓋門檻 "
+                f"{bd.get('coverage_gate_threshold', 0):.2f}）")
         if bd.get("citation_integrity", 0) < 0.6:
             missing.append("模型提出的主張無法在現有文件中逐字驗證")
-        if bd.get("retrieval_strength", 0) < 0.4:
+        if bd.get("retrieval_strength", 0) < 0.4 and not bd.get("coverage_gated"):
             missing.append("知識庫中沒有與此問題足夠相關的文件")
         if bd.get("corroboration", 0) < 0.34:
             missing.append("僅有單一來源支持，缺乏交叉佐證")
