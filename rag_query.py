@@ -228,11 +228,27 @@ def answer_question(tenant_id: str, question: str, top_k: int = 8,
             for c in (obj.get("claims") or []) if isinstance(c, dict)
         ]
 
-        # ── 這三行是整個產品的核心：驗證 → 計分 → 閘門 ──────────────
+        # ── 這幾行是整個產品的核心：驗證 → 移除幻覺 → 計分 → 閘門 ──────
+        #
+        # 順序很重要，而且曾經是錯的：
+        # 原本是「驗證 → 計分 → 移除 → 閘門」，也就是信心分數描述的是
+        # **含幻覺的版本**，但實際輸出的是**已移除幻覺的版本** ——
+        # 用 A 的分數去否決 B。
+        #
+        # 50 題評測抓到後果：16 題過度保守裡有 12 題是這樣來的。
+        # 例如「供應商融資可以憑哪些文件申請撥貸」，答案本身完全正確，
+        # 只因為夾帶一句無法驗證的敘述（而那句話已經被移除了），
+        # 整個答案被拒絕。這是雙重懲罰。
+        #
+        # 改為先移除、再對「實際會輸出的內容」計分。
+        # 這不是把門檻調鬆 —— 全部主張都無法驗證時，移除後就沒有任何
+        # 有根據的主張，citation_integrity 為 0，一樣會被拒答。
         evidence.verify_claims(pack.claims, chunks)
-        pack.confidence, pack.confidence_breakdown = evidence.compute_confidence(
-            pack.claims, chunks, question=question)
+        had_hallucination = any(not c.is_grounded for c in pack.claims)
         evidence.strip_ungrounded(pack)
+        pack.confidence, pack.confidence_breakdown = evidence.compute_confidence(
+            pack.claims, chunks, question=question,
+            had_hallucination=had_hallucination)
         evidence.apply_gates(pack)
 
         # 輸出端最後一道防線：確認沒有洩漏系統提示或連線資訊。

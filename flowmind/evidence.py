@@ -396,13 +396,31 @@ COVERAGE_GATE_CAP   = 0.35   # 低於門檻時的信心上限（低於拒答門�
 # 「含幻覺必定拒答」這個不變量不會悄悄失效。
 GATE_MARGIN = 0.05
 
+# 「曾經掰過但已被移除」的扣分係數。
+# 輸出是乾淨的所以不判死，但這次生成會掰本身是可靠度訊號。
+# 0.8 代表信心打八折 —— 一個有根據但生成過程不穩的答案，
+# 比一個全程穩定的答案該低一級，但不該被完全丟掉。
+HALLUCINATION_PENALTY = 0.8
+
 
 def hallucination_cap() -> float:
     return max(0.0, config.CONFIDENCE_ABSTAIN_THRESHOLD - GATE_MARGIN)
 
 
 def compute_confidence(claims: list[Claim], chunks: list[Chunk],
-                       question: str = "") -> tuple[float, dict]:
+                       question: str = "",
+                       had_hallucination: bool = False) -> tuple[float, dict]:
+    """
+    計算信心分數。
+
+    `claims` 應該是**移除幻覺之後**、實際會輸出的那批主張 ——
+    計分要對得起實際輸出的內容，不是對得起中間狀態。
+
+    `had_hallucination` 則記錄「模型原本有沒有掰過」。
+    這件事仍然要罰（模型會掰代表這次生成不夠可靠），
+    但罰的方式是扣分而不是直接判死 —— 因為那句話已經被移除了，
+    輸出給使用者的內容是乾淨的。
+    """
     diag = retrieval_diagnostics(chunks)
 
     ci = citation_integrity(claims)
@@ -435,8 +453,14 @@ def compute_confidence(claims: list[Claim], chunks: list[Chunk],
     #
     # 綁定之後這個不變量由建構保證：**含幻覺的答案一定觸發拒答**，
     # 而且之後有人調整拒答門檻時，關係仍然成立。
+    # 仍在清單裡的幻覺（呼叫端沒先移除）→ 直接判死，因為它會被輸出。
     if any(c.verdict == Verdict.UNVERIFIABLE for c in claims):
         score = min(score, hallucination_cap())
+    elif had_hallucination:
+        # 曾經掰過但已被移除：輸出是乾淨的，所以不判死；
+        # 但「這次生成會掰」本身是可靠度訊號，扣一段分數。
+        # 扣分幅度刻意固定且公開，不是可調的旋鈕。
+        score *= HALLUCINATION_PENALTY
     if any(c.verdict == Verdict.WRONG_SOURCE for c in claims):
         score = min(score, 0.65)
 
