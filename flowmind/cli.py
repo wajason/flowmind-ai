@@ -129,6 +129,44 @@ def cmd_engagements(_args) -> None:
     print()
 
 
+def cmd_auth(args) -> None:
+    """認證鏈的可執行驗證與授權管理。"""
+    from . import auth
+
+    if args.list:
+        rows = auth.list_access(args.user)
+        print(f"\n{'使用者':<10}{'姓名':<24}{'委任案':<12}{'權限':<8}"
+              f"{'授權者':<10}{'到期':<12}狀態")
+        print("─" * 92)
+        for a in rows:
+            print(f"{a['user_id']:<10}{(a['display_name'] or '')[:22]:<24}"
+                  f"{a['tenant_id']:<12}{a['access_level']:<8}"
+                  f"{a['granted_by']:<10}{str(a['expires_at'] or '—')[:10]:<12}"
+                  f"{'✅ 有效' if a['effective'] else '⛔ 失效'}")
+        print("\n授權預設 90 天到期 —— 人員調動後權限沒收回，是內控稽核最常開的缺失。\n")
+        return
+
+    if args.grant:
+        user, tenant = args.grant
+        auth.grant_access(user, tenant, granted_by=args.by, days=args.days)
+        print(f"✅ 已授權 {user} 存取 {tenant}（{args.days} 天後到期，授權者 {args.by}）")
+        return
+
+    if args.revoke:
+        user, tenant = args.revoke
+        auth.revoke_access(user, tenant)
+        print(f"✅ 已撤銷 {user} 對 {tenant} 的存取權（立即生效）")
+        return
+
+    if args.verify:
+        user, pw, allowed, denied = args.verify
+        print(auth.render_verification(
+            auth.verify_auth_chain(user, pw, allowed, denied)))
+        return
+
+    print("請指定 --list / --grant / --revoke / --verify 其中一項")
+
+
 def cmd_doctor(_args) -> None:
     """開跑前的環境自檢。把「為什麼跑不起來」從除錯變成一句話。"""
     print("\n" + "═" * 70)
@@ -219,6 +257,18 @@ def main():
 
     e = sub.add_parser("engagements", help="列出所有委任案")
     e.set_defaults(func=cmd_engagements)
+
+    a = sub.add_parser("auth", help="認證鏈驗證與委任案授權管理")
+    a.add_argument("--list", action="store_true", help="列出所有授權")
+    a.add_argument("--user", help="搭配 --list 只看某人")
+    a.add_argument("--grant", nargs=2, metavar=("USER", "TENANT"))
+    a.add_argument("--revoke", nargs=2, metavar=("USER", "TENANT"))
+    a.add_argument("--by", default="sysadm", help="授權者（會寫進稽核紀錄）")
+    a.add_argument("--days", type=int, default=90, help="授權效期天數")
+    a.add_argument("--verify", nargs=4,
+                   metavar=("USER", "PASSWORD", "ALLOWED_TENANT", "DENIED_TENANT"),
+                   help="執行完整認證鏈驗證（四個情境）")
+    a.set_defaults(func=cmd_auth)
 
     d = sub.add_parser("doctor", help="環境自檢")
     d.set_defaults(func=cmd_doctor)
