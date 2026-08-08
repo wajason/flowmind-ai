@@ -27,6 +27,13 @@ EXTRACT_MODEL = os.getenv("LLM_EXTRACT_MODEL") or os.getenv("LLM_MODEL", "gemma4
 ADVISOR_MODEL = os.getenv("LLM_ADVISOR_MODEL") or os.getenv("LLM_MODEL", "gemma4:e4b")
 SYNTH_MODEL   = os.getenv("LLM_SYNTH_MODEL")   or ADVISOR_MODEL
 
+# 模型在 Ollama 記憶體中的常駐時間。Ollama 預設 5 分鐘。
+# 實測 gemma4:26b 冷啟動 123.7 秒 vs 熱啟動 9 秒 —— 差 13 倍，
+# 而 demo 或問答對話很容易出現超過 5 分鐘的停頓。
+# 設在這裡而不是靠 OLLAMA_KEEP_ALIVE 環境變數，是因為後者要求
+# Ollama 服務**啟動時**就帶著，在別人的機器上重現不了。
+OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
+
 # ── Embedding ─────────────────────────────────────────────────────────────
 EMBED_BACKEND = os.getenv("EMBED_BACKEND", "ollama").lower()
 EMBED_MODEL   = os.getenv("EMBED_MODEL", "bge-m3")

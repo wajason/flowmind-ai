@@ -118,6 +118,10 @@ def extract_json(
         "options": {"temperature": 0.0, "num_ctx": num_ctx},
         "format": schema if schema else "json",
         "think": False,
+        # 實測：gemma4:26b 冷啟動載入要 123.7 秒，熱啟動只要 9 秒。
+        # Ollama 預設閒置 5 分鐘就卸載模型 —— demo 現場只要停下來講兩句話，
+        # 下一題就要當著評審的面等兩分鐘。keep_alive 從設定檔帶入。
+        "keep_alive": config.OLLAMA_KEEP_ALIVE,
     }
     if system:
         payload["system"] = system
@@ -195,6 +199,7 @@ def chat_local(
         "options": {"temperature": temperature,
                     "num_ctx": num_ctx,
                     "num_predict": num_predict},
+        "keep_alive": config.OLLAMA_KEEP_ALIVE,   # 理由同 extract_json()
     }
     r = httpx.post(f"{config.OLLAMA_BASE_URL}/api/chat", json=payload, timeout=timeout)
     if r.status_code == 400 and "think" in payload:   # 舊模型不吃 think 參數
