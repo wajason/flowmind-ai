@@ -291,9 +291,57 @@ def m_statistics(data: dict, question: str = "") -> Optional[Metric]:
         sources=sorted({h.source for h in all_hits}))
 
 
+def m_industry(data: dict, question: str = "") -> Optional[Metric]:
+    """
+    產業側寫：從 29 份真實官方統計推導，零 LLM。
+
+    為什麼這條要走決定性路由而不是走 RAG：
+    「製造業的出口依存度是多少」有一個**唯一正確的數字**，
+    它躺在一份 CSV 的某一列裡。讓 LLM 從摘要文字裡找這個數字，
+    是把一個確定的問題變成一個機率問題 —— 沒有任何好處。
+    """
+    from . import industry                              # noqa: PLC0415
+
+    try:
+        series = industry.load_series()
+    except (FileNotFoundError, ValueError) as e:
+        return Metric("industry", "產業側寫", f"[產業統計無法載入：{e}]",
+                      None, "-", [])
+
+    q = re.sub(r"\s+", "", question)
+    # 長名稱優先，否則「製造業」會先吃掉「金屬製品製造業」
+    hits = [i for i in sorted(industry.industries(series), key=len, reverse=True)
+            if i in q]
+    if not hits:
+        return None
+
+    parts, srcs = [], set()
+    for ind in hits[:3]:
+        try:
+            p = industry.profile(ind, series=series)
+        except KeyError:
+            continue
+        parts.append(p.render())
+        srcs |= {v[0] for v in industry.SOURCES.values()}
+    if not parts:
+        return None
+    if len(hits) > 1:
+        parts.append(industry.compare(hits[:4]))
+
+    return Metric(
+        key="industry",
+        title="產業側寫（推導自官方統計）",
+        text="\n\n".join(parts),
+        value=[{"industry": h} for h in hits[:3]],
+        method="直接讀取中小企業處統計 CSV 並做四則運算；"
+               "統計事實與授信判讀分開標示，未經語言模型處理",
+        sources=sorted(srcs))
+
+
 METRIC_FNS = {"concentration": m_concentration, "ageing": m_ageing,
               "cashflow": m_cashflow, "integrity": m_integrity,
-              "summary": m_summary, "statistics": m_statistics}
+              "summary": m_summary, "statistics": m_statistics,
+              "industry": m_industry}
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -330,7 +378,31 @@ def route(question: str) -> list[str]:
             keys.append("statistics")
     except Exception:                                  # noqa: BLE001
         pass
+
+    # 產業側寫：問題提到某個實際存在於統計中的行業別，
+    # 且在問這個行業的**特徵**（而不是問本案的某筆交易）。
+    # 需要兩個條件同時成立 —— 只憑行業名稱就路由，
+    # 會把「我們賣給製造業客戶的那筆帳款」也誤判成產業查詢。
+    try:
+        from . import industry
+        inds = industry.industries()
+        if any(i in q for i in inds) and any(
+                k in q for k in ["產業", "行業", "同業", "出口依存", "內銷",
+                                 "平均規模", "家數", "受僱", "產業特性",
+                                 "產業特徵", "產業風險", "比較"]):
+            keys.append("industry")
+    except Exception:                                  # noqa: BLE001
+        pass
     return keys
+
+
+def _takes_question(fn) -> bool:
+    """這個指標函式吃不吃第二個參數（原始問題）。"""
+    import inspect                                      # noqa: PLC0415
+    try:
+        return len(inspect.signature(fn).parameters) >= 2
+    except (TypeError, ValueError):
+        return False
 
 
 def compute(tenant_id: str, keys: list[str], question: str = "") -> list[Metric]:
@@ -341,8 +413,15 @@ def compute(tenant_id: str, keys: list[str], question: str = "") -> list[Metric]
         if not fn:
             continue
         try:
-            # statistics 需要原始問題才知道要查哪個類別
-            m = fn(data, question) if k == "statistics" else fn(data)
+            # 有些指標需要原始問題才知道要查什麼（statistics 要查哪個類別、
+            # industry 要查哪個行業別）。
+            #
+            # 這裡刻意用**函式簽名**判斷，而不是維護一份「哪些 key 要傳問題」
+            # 的清單。原本寫死 `if k == "statistics"`，新增 industry 之後
+            # 它就收到空問題、找不到行業、回 None ——
+            # 不會拋錯，只會安靜地什麼都不回答。
+            # 用簽名判斷的話，新增指標時不會有人忘記更新那份清單。
+            m = fn(data, question) if _takes_question(fn) else fn(data)
         except Exception as e:                         # noqa: BLE001
             m = Metric(k, k, f"[計算失敗：{e}]", None, "-", [])
         if m:

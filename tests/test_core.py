@@ -204,6 +204,23 @@ def test_industry() -> None:
     check("產業知識層零 LLM 呼叫",
           "llm." not in inspect.getsource(industry))
 
+    # ── 接進決定性路由 ────────────────────────────────────────────────
+    from flowmind import metrics as _m
+    check("問產業特徵會路由到 industry",
+          "industry" in _m.route("製造業這個產業的出口依存度是多少？"))
+    # 負向對照：光提到行業名稱不該路由 ——
+    # 「我們賣給製造業客戶的那筆帳款」問的是本案交易，不是產業特徵
+    check("只提到行業名稱不誤入產業路由",
+          "industry" not in _m.route("我們賣給製造業客戶的那筆帳款收到了嗎？"))
+
+    # compute() 必須把原始問題傳給需要它的指標函式。
+    # 這條測項來自一個真實的靜默失效：compute 原本寫死
+    # `if k == "statistics"` 才傳問題，新增 industry 後它收到空問題、
+    # 找不到行業、回 None —— 不拋錯，只是安靜地什麼都不回答。
+    got = _m.compute("CASE-9999", ["industry"], "製造業的出口依存度？")
+    check("compute 會把問題傳給需要它的指標（不是寫死清單）",
+          len(got) == 1 and "出口依存度" in got[0].text, len(got))
+
 
 # ══════════════════════════════════════════════════════════════════════════
 def test_watchtower() -> None:
