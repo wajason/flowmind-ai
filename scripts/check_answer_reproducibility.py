@@ -68,7 +68,13 @@ def probe(question: str, warmup: str | None = None) -> dict:
         # 主張的敘述串接後取雜湊：比答案雜湊有用，
         # 因為拒答時答案會被清空，雜湊全變成空字串的雜湊而失去鑑別力
         "claims_text": " | ".join(c.statement for c in p.claims)[:400],
-        "sources": sorted({c.source for c in p.chunks}) if hasattr(p, "chunks") else [],
+        # EvidencePack 帶的是 sources（輸出契約），不是 chunks（中間狀態）。
+        # 原本寫成 `if hasattr(p, "chunks") else []`，而 chunks 這個屬性
+        # **從來就不存在** —— 於是這個欄位永遠是空清單，
+        # 看起來像「這次沒有引用任何來源」。
+        # 沒有影響結論（判定用的是 confidence 與 citation_integrity），
+        # 但一個永遠為空卻不報錯的欄位，正是最難發現的那種錯。
+        "sources": sorted(p.sources or []),
     }
 
 

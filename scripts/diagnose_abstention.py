@@ -52,9 +52,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import rag_query                                          # noqa: E402
-from flowmind import config, evidence                     # noqa: E402
+from flowmind import config, db, evidence, retrieval      # noqa: E402
 
 EVAL_SET = config.DATA_DIR / "evalset" / "zh_finance_qa.jsonl"
+
+# 必須與 rag_query.answer_question 的預設值一致 ——
+# 用不同的 top_k 去比對，就是在拿另一批文件檢查當初的判定，
+# 那樣的診斷結論不會對。
+RETRIEVAL_TOP_K = 8
 
 _PUNCT = "，。、；：「」『』（）()《》〈〉！？…—－-·　 \t\n\r"
 
@@ -147,8 +152,14 @@ def main() -> int:
             continue
         abstained_n += 1
 
-        hay = [c.parent_content for c in pack.chunks] + \
-              [c.child_content for c in pack.chunks]
+        # EvidencePack 不帶 chunks（它是輸出契約，不是中間狀態），
+        # 所以這裡用**與 answer_question 相同的參數**重跑一次檢索。
+        # 檢索是決定性的（同一個 query 得到同一批 chunk），
+        # 因此重跑得到的就是當初驗證時比對的那批內容。
+        with db.tenant_session(args.tenant) as conn:
+            chunks = retrieval.hybrid_search(conn, q, top_k=RETRIEVAL_TOP_K)
+        hay = [c.parent_content for c in chunks] + \
+              [c.child_content for c in chunks]
         for c in pack.claims:
             if c.verdict in (evidence.Verdict.EXACT, evidence.Verdict.NEAR):
                 continue
