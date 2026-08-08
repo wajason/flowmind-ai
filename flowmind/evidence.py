@@ -808,5 +808,27 @@ def strip_ungrounded(pack: EvidencePack) -> EvidencePack:
         else:
             reason = f"宣稱出處 {c.source}，但檢索文本中查無此段落"
         pack.unknowns.append(f"（已移除未經驗證的敘述）{c.statement[:60]}… — {reason}")
+
+    # ── 也要從 claims 移除，不能只從答案正文移除 ──────────────────────
+    #
+    # 這裡原本只改 pack.answer，沒有動 pack.claims，結果是：
+    # compute_confidence() 收到的清單裡**仍然帶著已被移除的幻覺**，
+    # 於是 `any(verdict == UNVERIFIABLE)` 恆為真、永遠走「判死」那一支，
+    # 而下面那個 `elif had_hallucination: score *= 0.8`（扣分不判死）
+    # **變成永遠執行不到的死碼**。
+    #
+    # 後果是整個系統比設計上更保守：只要模型多說一句沒根據的話，
+    # 即使它同時給了一條逐字驗證通過的正確答案，整題還是被拒答。
+    # 實測 E01（「供應商融資保證成數最高幾成」，最基本的一題）就是這樣：
+    # 保留下來的主張是 [EXACT]「最高為九成」、引用逐字對得上正確來源，
+    # 卻因為另一句已被移除的話而拒答。
+    #
+    # 這不是把門檻調鬆 —— 沒有任何常數被改動。
+    # 安全性質也仍然成立：若全部主張都是幻覺，移除後清單為空，
+    # citation_integrity 回 0.0（空答案不算滿分），照樣拒答。
+    # 「答案正文裡不得含有未驗證內容」這個保證完全不變。
+    if removed:
+        pack.claims = [c for c in pack.claims if c.is_grounded]
+
     pack.answer = re.sub(r"\n{3,}", "\n\n", pack.answer).strip()
     return pack

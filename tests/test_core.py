@@ -161,6 +161,54 @@ def test_confidence_gate() -> None:
     check("不存在的檔名仍然解析不出來（清標記不等於放寬）",
           evidence._resolve_source("隨便亂寫的檔名.md", canon) is None)
 
+    # ── strip 必須真的 strip ──────────────────────────────────────────
+    # 這組測項來自一個讓整個系統比設計更保守的 bug：
+    # strip_ungrounded() 原本只把敘述從 pack.answer 移除，
+    # **沒有從 pack.claims 移除**，於是 compute_confidence 收到的清單
+    # 仍帶著已移除的幻覺，永遠走「判死」那一支，
+    # 而「已移除 → 只扣 0.8 分」那一支變成執行不到的死碼。
+    #
+    # 實測後果：E01（最基本的一題）保留下來的主張是 [EXACT] 且引用
+    # 逐字對得上，卻因為另一句已被移除的話而整題拒答。
+    # 這裡要用真實的 statement（不能用 _verify 的佔位字串 "s"），
+    # 因為 strip_ungrounded 是靠 statement 去答案正文裡做逐字移除的。
+    def _claim(stmt: str, quote: str):
+        c = Claim(statement=stmt, quote=quote, source="要點.md")
+        evidence.verify_claims([c], _chunks())
+        return c
+
+    good_c = _claim("信用保證成數最高九成。", "信用保證成數最高九成。")
+    bad_c = _claim("信用保證成數最高十成。", "信用保證成數最高十成。")
+    pk = evidence.EvidencePack(
+        question="保證成數幾成？", tenant_id="SHARED",
+        answer="信用保證成數最高九成。信用保證成數最高十成。",
+        claims=[good_c, bad_c])
+    evidence.strip_ungrounded(pk)
+    check("未通過驗證的主張會從 claims 移除（不只從答案正文）",
+          [c.statement for c in pk.claims] == ["信用保證成數最高九成。"],
+          [c.statement for c in pk.claims])
+    check("被移除的內容仍記錄在 unknowns（不是靜默消失）",
+          any("十成" in u for u in pk.unknowns), pk.unknowns)
+    check("答案正文不再含未驗證內容", "十成" not in pk.answer, pk.answer)
+
+    # 移除後：走「扣分」而不是「判死」，因為輸出已經是乾淨的
+    c_mixed, bd_mixed = evidence.compute_confidence(
+        pk.claims, _chunks(), had_hallucination=True)
+    check("已移除幻覺後走扣分而非判死（分數高於幻覺上限）",
+          c_mixed > evidence.hallucination_cap(),
+          f"{c_mixed} vs cap {evidence.hallucination_cap()}")
+
+    # 安全性質不得退化：全部都是幻覺時，移除後清單為空 → 仍然拒答
+    pk_all_bad = evidence.EvidencePack(
+        question="保證成數幾成？", tenant_id="SHARED",
+        answer="信用保證成數最高十成。", claims=[_verify("信用保證成數最高十成。")])
+    evidence.strip_ungrounded(pk_all_bad)
+    check("全部都是幻覺時 claims 清空", pk_all_bad.claims == [])
+    c_none, _ = evidence.compute_confidence(
+        pk_all_bad.claims, _chunks(), had_hallucination=True)
+    check("清空後仍低於拒答門檻（空答案不算滿分）",
+          c_none < config.CONFIDENCE_ABSTAIN_THRESHOLD, c_none)
+
     # 覆蓋率硬閘門：知識庫語意最接近的一段都不夠接近 → 不管引用多漂亮都不該有高信心
     far = [Chunk(source="無關.md", chunk_index=0, tenant_id="SHARED",
                  child_content="與問題無關的內容", parent_content="與問題無關的內容",
