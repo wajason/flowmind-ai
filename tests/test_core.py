@@ -150,6 +150,62 @@ def test_confidence_gate() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+def test_industry() -> None:
+    """
+    產業知識層。這一層的價值全繫於「數字是算出來的、且算對了」——
+    所以測項集中在**曾經真的出過的兩個錯**，以及揭露機制。
+    """
+    from flowmind import industry
+    section("產業知識層（從真實統計推導）")
+
+    s = industry.load_series()
+    check("讀得到多年度資料", len(industry.available_years(s)) >= 10,
+          industry.available_years(s))
+
+    p = industry.profile("製造業", series=s)
+
+    # 錯誤一：單位。受僱人數的原始單位是「千人」，一開始當成「人」，
+    # 算出來的平均每家受僱人數全是 0.0 —— 而 0.0 不會拋錯。
+    emp = p.facts.get("平均每家受僱人數", "0")
+    emp_v = float(str(emp).replace(" 人", ""))
+    check("受僱人數單位換算正確（千人→人，不是 0.0）",
+          1.0 <= emp_v <= 500.0, emp)
+
+    # 錯誤二：跨檔的產業名稱寫法不一致（「農林漁牧業」vs「農、林、漁、牧業」），
+    # 直接用字串比對會安靜對不上，該產業的欄位就消失。
+    check("產業名稱正規化後可跨檔比對",
+          industry._norm_industry("農、林、漁、牧業")
+          == industry._norm_industry("農林漁牧業"))
+
+    check("百分比欄位算得出來", "出口依存度" in p.facts, p.facts)
+    check("每個事實都附來源檔案與年度", len(p.provenance) == len(industry.SOURCES))
+
+    # 事實與判讀必須分開存放 —— 混在一起就兩者都不可信
+    check("授信意涵與統計事實分開存放",
+          isinstance(p.implications, list) and "出口依存度" not in
+          " ".join(i["point"] for i in p.implications))
+    check("每條判讀都附可被反駁的依據",
+          all(i.get("basis") for i in p.implications), p.implications)
+
+    # 覆蓋率必須是可查詢的，因為跨檔比對失敗不會拋錯
+    cov = industry.coverage_report(s)
+    check("提供跨檔覆蓋率自檢", 0.0 < cov["full_coverage_rate"] <= 1.0, cov)
+    check("覆蓋不全時明確列出是哪些產業缺",
+          cov["full_coverage_rate"] == 1.0 or bool(cov["missing_by_source"]))
+
+    # 查無資料要明說，不能回一個空殼讓人以為「這個產業沒有特徵」
+    try:
+        industry.profile("不存在的產業", series=s)
+        check("查無此產業時拋錯而非回空殼", False)
+    except KeyError:
+        check("查無此產業時拋錯而非回空殼", True)
+
+    import inspect
+    check("產業知識層零 LLM 呼叫",
+          "llm." not in inspect.getsource(industry))
+
+
+# ══════════════════════════════════════════════════════════════════════════
 def test_watchtower() -> None:
     """
     主動監控。
@@ -682,7 +738,7 @@ if __name__ == "__main__":
     print("═" * 70)
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate,
-               test_query_plan, test_watchtower,
+               test_query_plan, test_industry, test_watchtower,
                test_claim_corroboration, test_hpes,
                test_counterfactual, test_crosscheck, test_router,
                test_scope_terms, test_table_label_index, test_guardrail,
