@@ -154,48 +154,24 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph IN["輸入"]
-        I1["發票 PDF/XML · 合約 DOCX<br/>銀行流水 CSV · 統計表 XLSX<br/>法規 · 商品說明"]
-    end
-
-    subgraph PARSE["① 文件解析層"]
-        P1["父子切塊 Parent 2500 / Child 400"]
-        P2["中文 bigram 稀疏索引"]
-        P3["統計表摘要化（不逐列入庫）"]
-    end
-
-    Q[使用者提問] --> ROUTE{"決定性路由<br/>關鍵詞規則，非 LLM 分類器"}
-
-    subgraph DET["② 決定性層（零 LLM）"]
-        C1["crosscheck.py<br/>統編檢核碼 · 加總 · 5%稅率<br/>自我交易 · 重複請款<br/>帳期勾稽 · 流水對帳"]
-        C2["metrics.py<br/>集中度 · 帳齡 · 呆帳 · 現金缺口"]
-    end
-
-    subgraph RET["③ 檢索層"]
-        R1["Dense: pgvector HNSW"]
-        R2["Sparse: CJK bigram BM25"]
-        R3["RRF 融合 + 來源多樣性過濾"]
-    end
-
-    subgraph CORE["④ 機率性核心（可替換）"]
-        L1["grammar-constrained JSON"]
-        L2["Ollama / LiteLLM → 可換 Claude"]
-    end
-
-    subgraph EV["⑤ 證據層"]
-        E1["引用逐字驗證"]
-        E2["決定性信心分數"]
-        E3["拒答閘門 · 人工複核旗標"]
-    end
-
-    DB[("PostgreSQL 17 + pgvector<br/>Row-Level Security<br/>audit_log 雜湊鏈")]
+    IN["📥 輸入<br/>發票 · 合約 · 銀行流水<br/>統計表 · 法規 · 商品說明"]
+    PARSE["① 文件解析層<br/>父子切塊 · 中文 bigram 索引<br/>統計表摘要化"]
+    Q["❓ 使用者提問"]
+    ROUTE{"決定性路由<br/>關鍵詞規則"}
+    DET["② 決定性層（零 LLM）<br/>統編檢核 · 金額加總 · 稅率<br/>自我交易 · 重複請款<br/>帳期勾稽 · 流水對帳<br/>集中度 · 帳齡 · 現金缺口"]
+    RET["③ 檢索層<br/>Dense 向量 + CJK BM25<br/>RRF 融合 + 多樣性過濾"]
+    CORE["④ 機率性核心<br/>受約束 JSON 解碼<br/>Ollama / 可換 Claude"]
+    EV["⑤ 證據層<br/>引用逐字驗證<br/>決定性信心分數<br/>拒答閘門"]
+    DB[("PostgreSQL 17 + pgvector<br/>RLS · audit_log 雜湊鏈")]
+    OUT["📋 證據包<br/>Evidence · Confidence<br/>Source · Reason"]
 
     IN --> PARSE --> DB
+    Q --> ROUTE
     ROUTE -->|可以用算的| DET
     ROUTE -->|需要理解文義| RET
     RET --> DB
     RET --> CORE --> EV
-    DET --> OUT["Evidence / Confidence<br/>Source / Reason 證據包"]
+    DET --> OUT
     EV --> OUT
     OUT --> DB
 

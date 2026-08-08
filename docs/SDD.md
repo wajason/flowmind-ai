@@ -202,10 +202,10 @@ flowchart TB
         E4[人工複核旗標]
     end
 
-    subgraph DB[("PostgreSQL 17 + pgvector<br/>Row-Level Security")]
-        DB1[documents]
-        DB2[engagements]
-        DB3["audit_log<br/>雜湊鏈"]
+    subgraph DB["PostgreSQL 17 + pgvector · Row-Level Security"]
+        DB1[("documents")]
+        DB2[("engagements")]
+        DB3[("audit_log 雜湊鏈")]
     end
 
     IN --> PARSE --> DB
