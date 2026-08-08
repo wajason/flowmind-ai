@@ -1,14 +1,76 @@
 {
-  "generated_at": "2026-08-08T15:56:57",
-  "drift_runs": 6,
-  "extract_n": 10,
+  "generated_at": "2026-08-08T23:37:33",
+  "drift_runs": 8,
+  "extract_n": 15,
   "results": [
     {
-      "model": "gemma4:e4b",
-      "origin": "Google · 美國",
-      "note": "9.6GB，先前的抽取模型",
+      "model": "granite4.1:8b",
+      "origin": "IBM · 美國",
+      "note": "5.3GB。★論文中輸出一致性 100% 的系列，本評測最重要的對照組",
+      "exclusive_vram": true,
       "drift": {
-        "runs": 6,
+        "runs": 8,
+        "bitwise": 1.0,
+        "structural": 1.0,
+        "semantic": 1.0,
+        "distinct_outputs": 1,
+        "tier": 1,
+        "tier_label": "Tier 1 稽核級（零漂移）",
+        "error": null
+      },
+      "fixed_doc_accuracy": 0.4286,
+      "fixed_doc_latency_s": 3.21,
+      "hpes_raw": -0.3667,
+      "naive_accuracy": 0.5333,
+      "abstain_count": 1,
+      "wrong_count": 27,
+      "correct_count": 32,
+      "strict_json_failure_rate": 0.0,
+      "sroie_elapsed_s": 68.7,
+      "zh_simplified_chars": 0,
+      "zh_cjk_chars": 529,
+      "zh_purity": 1.0,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 0,
+          "cjk": 168,
+          "simplified_chars": [],
+          "sample": "中小企業辦理「無追索權應收帳款承購」與「有追索權」的最關鍵差別在於，前者表示買方對應收帳款沒有追究賣方履行的權利，因此這筆款項在會計上不被視為可靠的現金流入來源；而後者則表示買方可以要求賣方履行支付義務，使得應收帳款具有更高的清偿確保性。在銀行授信上，無追索權應收帳款通常不被視為可轉讓的抵押物，因此對於貸款人來說其價值較低，可能會影響信用評估和貸款額度。不確"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 108,
+          "simplified_chars": [],
+          "sample": "銀行在審查中小企業的應收帳款融資時，特別關注買方（債務人）的信用，主要是因為應收帳款的核心是客戶未付款項，而這些款項最終由買方支付。如果買方的信用較差或破產，銀行就無法收回資金，從而增加了貸款風險。然而，若對具體情況不夠確定，我會說：不確定。"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 117,
+          "simplified_chars": [],
+          "sample": "「帳期」是指購買商品或服務後，客戶需要支付款項給供應商的時間範圍。通常以天、週或月計算。\n\n若供應商拉長帳期，可能會對其現金流產生負面影響，因為收款延遲會減少可用資金，增加資金周轉壓力。但具體影響取決於供應商的現金流管理能力和市場條件，因此若不確定，則說明「不確定」。"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 0,
+          "cjk": 136,
+          "simplified_chars": [],
+          "sample": "信用保證機制通過政府或第三方機構為銀行提供担保，承擔部分或全部借款人违約風險。這使得銀行在發放中小企業貸款時更加謹慎，因為有了保證，即使借款人無法償還貸款，保證方也能承担損失。這樣可以降低銀行的潛在損失，從而增加銀行願意向中小企業提供貸款的願望和規模。不確定是否涉及其他具體機制或政策細節。"
+        }
+      ],
+      "zh_latency_s": 7.3,
+      "zh_sample": "中小企業辦理「無追索權應收帳款承購」與「有追索權」的最關鍵差別在於，前者表示買方對應收帳款沒有追究賣方履行的權利，因此這筆款項在會計上不被視為可靠的現金流入來源；而後者則表示買方可以要求賣方履行支付義務，使得應收帳款具有更高的清偿確保性。在銀行授信上，無追索權應收帳款通常不被視為可轉讓的抵押物，因此對於貸款人來說其價值較低，可能會影響信用評估和貸款額度。不確"
+    },
+    {
+      "model": "olmo2:7b",
+      "origin": "AI2 · 美國",
+      "note": "4.5GB，完全開放（含訓練資料），可稽核性的極端案例",
+      "exclusive_vram": true,
+      "drift": {
+        "runs": 8,
         "bitwise": 1.0,
         "structural": 1.0,
         "semantic": 1.0,
@@ -18,26 +80,322 @@
         "error": null
       },
       "fixed_doc_accuracy": 1.0,
-      "fixed_doc_latency_s": 7.52,
-      "hpes_raw": -0.125,
-      "naive_accuracy": 0.625,
-      "abstain_count": 0,
-      "wrong_count": 15,
-      "correct_count": 25,
+      "fixed_doc_latency_s": 2.53,
+      "hpes_raw": -0.6,
+      "naive_accuracy": 0.4,
+      "abstain_count": 6,
+      "wrong_count": 30,
+      "correct_count": 24,
       "strict_json_failure_rate": 0.0,
-      "sroie_elapsed_s": 84.0,
+      "sroie_elapsed_s": 55.7,
       "zh_simplified_chars": 0,
-      "zh_cjk_chars": 181,
+      "zh_cjk_chars": 482,
       "zh_purity": 1.0,
-      "zh_latency_s": 31.78,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 0,
+          "cjk": 64,
+          "simplified_chars": [],
+          "sample": "沒有追索權的「無追索權應收帳款承購」，通常在會計上不需要經過同等程度的監管和報告，並且銀行可能不對這類貸款提出特定的信用評估或要求。不確定。"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 88,
+          "simplified_chars": [],
+          "sample": "在銀行審查中，銀行對小企業的應收帳款融資時，特別關注債務人（買方）的信用而不是賣方（借方），因為信用評估能更准確地反映出是否有機會偿還融款。如果未確定，直接說銀行在這種情況下對賣方的信用不太重視。"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 117,
+          "simplified_chars": [],
+          "sample": "帳期是指一個時間段，通常是月度或季度，供應商需要按時支付他人的費用或購買貨物。拉長帳期會影響供應商的現金流動性，因為它可能導致更多的流出在這段時間內，而未來收入尚未到來。不確定的情況意味着無法預測準確的負債或購買支出，從而影響供應商的營運和資產管理。"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 0,
+          "cjk": 213,
+          "simplified_chars": [],
+          "sample": "信用保證是一種銀行對於其借款人能力的明確承諾，它允許企業在經濟困難時期或遇到突如其來的財務壓力而得到一定程度的保證。通常情況下，銀行將要求借款人提供某種形式的信用保證，比如 PERSONAL GUARANTEE（個人保證）或COMPANY GUARANTEE（公司保證），來降低其承擔的風險。這些保證意味著如果企業無法偿还貸款，保證者將贏回或支付债款的數額。因"
+        }
+      ],
+      "zh_latency_s": 4.25,
+      "zh_sample": "沒有追索權的「無追索權應收帳款承購」，通常在會計上不需要經過同等程度的監管和報告，並且銀行可能不對這類貸款提出特定的信用評估或要求。不確定。"
+    },
+    {
+      "model": "mistral:latest",
+      "origin": "Mistral · 法國",
+      "note": "4.4GB，歐洲來源；資料主權考量下的選項",
+      "exclusive_vram": true,
+      "drift": {
+        "runs": 8,
+        "bitwise": 0.125,
+        "structural": 1.0,
+        "semantic": 0.125,
+        "distinct_outputs": 2,
+        "tier": 2,
+        "tier_label": "Tier 2 有界不確定（需 invariant 檢查）",
+        "error": null
+      },
+      "fixed_doc_accuracy": 0.8571,
+      "fixed_doc_latency_s": 3.39,
+      "hpes_raw": -0.4,
+      "naive_accuracy": 0.4667,
+      "abstain_count": 6,
+      "wrong_count": 26,
+      "correct_count": 28,
+      "strict_json_failure_rate": 0.0,
+      "sroie_elapsed_s": 91.3,
+      "zh_simplified_chars": 2,
+      "zh_cjk_chars": 654,
+      "zh_purity": 0.9969,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 2,
+          "cjk": 218,
+          "simplified_chars": [
+            "证"
+          ],
+          "sample": "無追索權應收帳款承購（Net-Term Invoicing）是一種付款方式，中小企業可以使用，其中客戶在收到商品或服務後，有固定期限內支付帳款，而不需要提前進行抵押或保证。相比於有追索權（Bill of Exchange），最關鍵的差別在於會計處理和銀行授信方面：\n\n1. 會計處理上，無追索權應收帳款承購可以減少帳務人員的工作量，因為不需要針對每個帳單進行追"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 153,
+          "simplified_chars": [],
+          "sample": "在銀行審查中小企業的應收帳款融資時，特別在意買方（債務人）的信用，是因為買方的信用水平直接影響到倉權人（銀行）所擁有的債權的安全性。如果買方的信用水平不良，可能無法按時還款，造成應收帳款流動性差、債權遺失等問題。相比之下，賣方的信用水平對於應收帳款融資的安全性影響不大，因為賣方已經完成了產品交易，而且通常也已經收到了部分或全部的款項。"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 138,
+          "simplified_chars": [],
+          "sample": "\"帳期\" (Accounts Receivable Period) 是指公司收到客戶支付的時間之間的期間，也就是從發票日期到實際收到款項所花費的天數。\n\n如果供應商拉長帳期，意味著他們需要更久的時間來收到客戶支付，這將對自身現金流造成影響。因為在拉長帳期之前，公司需要提供產品或服務，但尚未收到款項，這樣就會增加其短期負債和償還風險，同時也可能影響他們的信用等"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 0,
+          "cjk": 145,
+          "simplified_chars": [],
+          "sample": "信用保證機制可以減少銀行承作中小企業貸款的風險，因為它允許銀行在提供貸款時，將部分或全部債權轉移給一個信用保證機構。這樣一來，如果中小企業無法還貸款，那麼信用保證機構就會負起負債人的義務，讓銀行不必担心貸款的回收問題。這樣可以增加銀行對中小企業的信任度，促使其願意提供更多貸款，從而減少中小企業獲得貸款的困难。"
+        }
+      ],
+      "zh_latency_s": 5.8,
+      "zh_sample": "無追索權應收帳款承購（Net-Term Invoicing）是一種付款方式，中小企業可以使用，其中客戶在收到商品或服務後，有固定期限內支付帳款，而不需要提前進行抵押或保证。相比於有追索權（Bill of Exchange），最關鍵的差別在於會計處理和銀行授信方面：\n\n1. 會計處理上，無追索權應收帳款承購可以減少帳務人員的工作量，因為不需要針對每個帳單進行追"
+    },
+    {
+      "model": "mistral-nemo:latest",
+      "origin": "Mistral · 法國",
+      "note": "7.1GB，同來源較大版本",
+      "exclusive_vram": true,
+      "drift": {
+        "runs": 8,
+        "bitwise": 1.0,
+        "structural": 1.0,
+        "semantic": 1.0,
+        "distinct_outputs": 1,
+        "tier": 1,
+        "tier_label": "Tier 1 稽核級（零漂移）",
+        "error": null
+      },
+      "fixed_doc_accuracy": 1.0,
+      "fixed_doc_latency_s": 7.82,
+      "hpes_raw": 0.0333,
+      "naive_accuracy": 0.5333,
+      "abstain_count": 13,
+      "wrong_count": 15,
+      "correct_count": 32,
+      "strict_json_failure_rate": 0.0,
+      "sroie_elapsed_s": 163.9,
+      "zh_simplified_chars": 42,
+      "zh_cjk_chars": 841,
+      "zh_purity": 0.9501,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 31,
+          "cjk": 271,
+          "simplified_chars": [
+            "产",
+            "关",
+            "处",
+            "权",
+            "计",
+            "认",
+            "该",
+            "账",
+            "资",
+            "银",
+            "键"
+          ],
+          "sample": "\"無追索權應收帳款承購\"和\"有追索權應收帳款承購\"在會計處理和銀行授信方面的关键差别在于：\n\n1. **会计处理**：\n   - \"无追索权\"：中小企业将应收账款出售给承兑机构后，不再对该笔账款拥有追索权。因此，在会计上，中小企业应当确认销售收入和相关成本费用，并记录应付款项。\n   - \"有追索权\"：中小企业将应收账款质押给银行后，仍保留对该笔账款的追索权"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 265,
+          "simplified_chars": [],
+          "sample": "當銀行審查中小企業的應收帳款融資時，它們通常更關注買方（債務人）的信用而不是賣方，原因如下：\n\n1. **風險轉移**：銀行主要關心的是能否安全地回收貸款。如果買方信用差，可能會拖欠或無法支付帳款，這將直接影響到銀行的貸款安全。\n2. **現金流確定性**：對於中小企業而言，應收帳款是其主要的現金來源。如果賣方信用好但買方信用差，企業可能無法如期回收帳款，這"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 193,
+          "simplified_chars": [],
+          "sample": "帳期（Accounting Period）指的是一個財務報表所涵蓋的時間段，例如月度、季度或年度。\n\n**當供應商拉長帳期時，意味著他們延後了客戶支付債款的日期。這對自身現金流的影響包括：**\n\n1. **改善短期現金流**：拉長帳期可以幫助供應商在未來某個時間點一次性收到大筆款項，從而改善其短期現金流。\n2. **增加貨幣風險**：然而，這也意味著供應商需"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 11,
+          "cjk": 112,
+          "simplified_chars": [
+            "济",
+            "证",
+            "资",
+            "银",
+            "险"
+          ],
+          "sample": "信用保证机制通过为银行承担一部分贷款风险，来降低银行放贷给中小企业时面临的风险。当中小企业无法偿还贷款时，信用保证机构会根据约定对银行进行赔付，从而减轻银行的损失。这有助于鼓励银行更愿意放贷给中小企业，帮助它们获得资金支持并推动经济发展。"
+        }
+      ],
+      "zh_latency_s": 18.27,
+      "zh_sample": "\"無追索權應收帳款承購\"和\"有追索權應收帳款承購\"在會計處理和銀行授信方面的关键差别在于：\n\n1. **会计处理**：\n   - \"无追索权\"：中小企业将应收账款出售给承兑机构后，不再对该笔账款拥有追索权。因此，在会计上，中小企业应当确认销售收入和相关成本费用，并记录应付款项。\n   - \"有追索权\"：中小企业将应收账款质押给银行后，仍保留对该笔账款的追索权"
+    },
+    {
+      "model": "vanilj/Phi-4:latest",
+      "origin": "Microsoft · 美國",
+      "note": "9.1GB，強調合成資料訓練的小型模型",
+      "exclusive_vram": true,
+      "drift": {
+        "runs": 8,
+        "bitwise": 1.0,
+        "structural": 1.0,
+        "semantic": 1.0,
+        "distinct_outputs": 1,
+        "tier": 1,
+        "tier_label": "Tier 1 稽核級（零漂移）",
+        "error": null
+      },
+      "fixed_doc_accuracy": 1.0,
+      "fixed_doc_latency_s": 14.43,
+      "hpes_raw": -0.3333,
+      "naive_accuracy": 0.5,
+      "abstain_count": 5,
+      "wrong_count": 25,
+      "correct_count": 30,
+      "strict_json_failure_rate": 0.0,
+      "sroie_elapsed_s": 292.0,
+      "zh_simplified_chars": 0,
+      "zh_cjk_chars": 878,
+      "zh_purity": 1.0,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 0,
+          "cjk": 341,
+          "simplified_chars": [],
+          "sample": "中小企業辦理「無追索權應收帳款承購」與「有追索權」在會計處理和銀行授信上的關鍵差別主要如下：\n\n1. **會計處理**：無追索權應收帳款承購意味著企業將其應收帳款出售給第三方，且放棄對客戶的債權追索權。因此，在會計上，這些應收帳款被直接轉為現金或等值資產，而不再列為資產負債表中的應收帳款。相反，在有追索權情況下，企業仍保留對客戶的債權追索權，因此這些應收帳款"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 181,
+          "simplified_chars": [],
+          "sample": "在銀行審查中小企業的應收帳款融資時，會特別關注買方（債務人）的信用狀況，因為這些應收帳款的支付能力直接依賴於買方的財務穩定性和付款意願。銀行需要確保買方有足夠的信用良好，才能在到期時履行付款義務，從而降低融資風險。相比之下，賣方（即申請融資的企業）雖然也重要，但其信用狀況主要影響到其他類型的貸款或投資決策。在應收帳款融資中，最終的支付來源是買方，因此買方的信"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 169,
+          "simplified_chars": [],
+          "sample": "「帳期」指的是購買商品或服務後，由供應商給予客戶支付款項的時間範圍。這通常以天數計算，例如30天、60天等。當供應商拉長帳期時，意味著他們允許客戶在更長的時間內支付款項。\n\n供應商拉長帳期會對自身現金流造成負面影響。因為延遲收到款項，他們可能需要等待較長時間才能用這筆資金來支付自己的開支或投入其他業務活動中。這樣會增加現金流管理的壓力，並可能影響供應商的經營"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 0,
+          "cjk": 187,
+          "simplified_chars": [],
+          "sample": "信用保證機制可以有效降低銀行對中小企業貸款的風險，由政府或其他金融機構提供的信用保證意味著在借款人無法償還時，保證方承擔部分或全部貸款風險。這減少了銀行對中小企業信用不足的擔憂，因為即使借款人遇到困難，銀行仍能從保證方獲得賠償。此外，這種機制通常會提高中小企業的信用評級，使其更容易獲得貸款，同時也鼓勵銀行放寬對中小企業的嚴格信用標準。最終，這種保證降低了銀行"
+        }
+      ],
+      "zh_latency_s": 45.96,
+      "zh_sample": "中小企業辦理「無追索權應收帳款承購」與「有追索權」在會計處理和銀行授信上的關鍵差別主要如下：\n\n1. **會計處理**：無追索權應收帳款承購意味著企業將其應收帳款出售給第三方，且放棄對客戶的債權追索權。因此，在會計上，這些應收帳款被直接轉為現金或等值資產，而不再列為資產負債表中的應收帳款。相反，在有追索權情況下，企業仍保留對客戶的債權追索權，因此這些應收帳款"
+    },
+    {
+      "model": "gemma4:e4b",
+      "origin": "Google · 美國",
+      "note": "9.6GB",
+      "exclusive_vram": true,
+      "drift": {
+        "runs": 8,
+        "bitwise": 1.0,
+        "structural": 1.0,
+        "semantic": 1.0,
+        "distinct_outputs": 1,
+        "tier": 1,
+        "tier_label": "Tier 1 稽核級（零漂移）",
+        "error": null
+      },
+      "fixed_doc_accuracy": 1.0,
+      "fixed_doc_latency_s": 7.35,
+      "hpes_raw": -0.1,
+      "naive_accuracy": 0.6333,
+      "abstain_count": 0,
+      "wrong_count": 22,
+      "correct_count": 38,
+      "strict_json_failure_rate": 0.0,
+      "sroie_elapsed_s": 96.2,
+      "zh_simplified_chars": 0,
+      "zh_cjk_chars": 581,
+      "zh_purity": 1.0,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 0,
+          "cjk": 181,
+          "simplified_chars": [],
+          "sample": "中小企業辦理**「無追索權應收帳款承購」**，相較於「有追索權」，在會計處理和銀行授信上的最關鍵差異點是：\n\n1. **會計處理上：** 無追索權的交易通常被視為一次性的資產出售（或投資），其會計處理更接近於**處分資產**，而非單純的融資行為。\n2. **銀行授信上：** 由於無追索權代表賣方已將帳款風險轉移給承購方，這使得該筆交易在評估貸款時，對企業自身"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 142,
+          "simplified_chars": [],
+          "sample": "銀行在審查中小企業的應收帳款融資時，特別關注**買方（即貴公司的客戶）的信用狀況**，主要是因為這決定了**現金流回籠的可靠性**。\n\n如果買方的信用風險高，即使賣方（您公司）的營運穩健，銀行也擔心最終收款會出現延遲甚至無法收回的風險。因此，銀行更傾向於評估「錢能否準時、確實地從客戶那裡流出來」，而不是僅看賣方帳冊上的應收金額有多大。"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 136,
+          "simplified_chars": [],
+          "sample": "**帳期（Credit Period）**指的是買方和賣方之間約定的付款時間範圍，即買方在收到貨物或服務後，有特定天數的時間來支付款項的期限。\n\n當供應商拉長帳期時，會讓客戶可以延遲付款，這對**自身（指收款方的供應商）**的現金流是**負面影響**的，因為它推遲了預期的收入回籠時間，使得公司必須更長時間地等待營運資金，可能導致短期資金周轉壓力增加。"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 0,
+          "cjk": 122,
+          "simplified_chars": [],
+          "sample": "信用保證機制透過**第三方擔保機構**介入，為中小企業（SME）向銀行申請的貸款提供額外的信用背書。這能有效彌補中小企業自身缺乏足夠抵押品或信用紀錄的不足，從而**降低銀行評估和承作風險**。當借款人違約時，保證機構會先承擔部分損失，使銀行在決策上更願意放寬條件，擴大對SME的信貸覆蓋範圍。"
+        }
+      ],
+      "zh_latency_s": 9.12,
       "zh_sample": "中小企業辦理**「無追索權應收帳款承購」**，相較於「有追索權」，在會計處理和銀行授信上的最關鍵差異點是：\n\n1. **會計處理上：** 無追索權的交易通常被視為一次性的資產出售（或投資），其會計處理更接近於**處分資產**，而非單純的融資行為。\n2. **銀行授信上：** 由於無追索權代表賣方已將帳款風險轉移給承購方，這使得該筆交易在評估貸款時，對企業自身"
     },
     {
       "model": "gemma4:26b",
       "origin": "Google · 美國",
-      "note": "17GB，測「大模型是否更穩定」",
+      "note": "17GB，目前選用",
+      "exclusive_vram": true,
       "drift": {
-        "runs": 6,
+        "runs": 8,
         "bitwise": 1.0,
         "structural": 1.0,
         "semantic": 1.0,
@@ -47,99 +405,138 @@
         "error": null
       },
       "fixed_doc_accuracy": 1.0,
-      "fixed_doc_latency_s": 8.05,
-      "hpes_raw": 0.175,
-      "naive_accuracy": 0.725,
+      "fixed_doc_latency_s": 10.11,
+      "hpes_raw": 0.1,
+      "naive_accuracy": 0.7,
       "abstain_count": 0,
-      "wrong_count": 11,
-      "correct_count": 29,
+      "wrong_count": 18,
+      "correct_count": 42,
       "strict_json_failure_rate": 0.0,
-      "sroie_elapsed_s": 114.0,
+      "sroie_elapsed_s": 183.6,
       "zh_simplified_chars": 0,
-      "zh_cjk_chars": 189,
+      "zh_cjk_chars": 543,
       "zh_purity": 1.0,
-      "zh_latency_s": 72.51,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 0,
+          "cjk": 189,
+          "simplified_chars": [],
+          "sample": "在會計處理上，最關鍵的差別在於資產負債表的呈現： 「無追索權」因風險已轉移給承購銀行，可視為資產出售，進而將應收帳款從資產負債表中沖銷（Off-balance sheet）；而「有追索權」則僅視為以應收帳款作為擔保的短期借款，需維持應收帳款並新增一筆負債。\n\n在銀行授信方面，「無追索權」能有效降低企業的負債比率，改善財務比率（如負債比、流動比率），有助於提升"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 127,
+          "simplified_chars": [],
+          "sample": "在應收帳款融資中，資金的最終還款來源並非賣方（中小企業），而是支付貨款的買方（債務人）。由於銀行承擔的是債權回收風險，因此買方的財務穩健度與履約能力，直接決定了這筆貸款能否如期償還。相比之下，賣方僅是融資的申請人，其信用狀況雖重要，但對資金流回籠的決定性因素仍取決於買方的支付信用。"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 96,
+          "simplified_chars": [],
+          "sample": "「帳期」是指買方在收到商品或服務後，約定應支付貨款的期限。當供應商被客戶拉長帳期時，意味著資金回收的時間點被迫延後，會導致企業的現金流壓力增加。這可能造成營運資金周轉不靈，甚至在面臨短期債務償還時出現資金缺口。"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 0,
+          "cjk": 131,
+          "simplified_chars": [],
+          "sample": "信用保證機制透過第三方機構（如中小企業信用保證基金）為借款人提供擔保，在企業違約時由保證人代為履行償付責任。這能有效彌補中小企業缺乏足夠抵押品或信用紀錄不足的缺點，將原本由銀行承擔的信用風險轉移至保證機構。因此，銀行在評估貸款時能降低預期損失，進而提高對中小企業放款的意願與規模。"
+        }
+      ],
+      "zh_latency_s": 19.63,
       "zh_sample": "在會計處理上，最關鍵的差別在於資產負債表的呈現： 「無追索權」因風險已轉移給承購銀行，可視為資產出售，進而將應收帳款從資產負債表中沖銷（Off-balance sheet）；而「有追索權」則僅視為以應收帳款作為擔保的短期借款，需維持應收帳款並新增一筆負債。\n\n在銀行授信方面，「無追索權」能有效降低企業的負債比率，改善財務比率（如負債比、流動比率），有助於提升"
-    },
-    {
-      "model": "gpt-oss:20b",
-      "origin": "OpenAI · 美國",
-      "note": "13GB。★論文中一致性僅 12.5% 的模型，本評測嘗試複現該發現",
-      "drift": {
-        "runs": 0,
-        "bitwise": 0.0,
-        "structural": 0.0,
-        "semantic": 0.0,
-        "distinct_outputs": 0,
-        "tier": 3,
-        "tier_label": "Tier 3 專家主導（強制人工覆核）",
-        "error": "Client error '400 Bad Request' for url 'http://localhost:11434/api/generate'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Statu"
-      }
     },
     {
       "model": "llama3.2:latest",
       "origin": "Meta · 美國",
       "note": "2GB，小模型下限",
+      "exclusive_vram": true,
       "drift": {
-        "runs": 6,
-        "bitwise": 0.16666666666666666,
-        "structural": 0.16666666666666666,
-        "semantic": 0.16666666666666666,
+        "runs": 8,
+        "bitwise": 0.125,
+        "structural": 0.125,
+        "semantic": 0.125,
         "distinct_outputs": 2,
         "tier": 3,
         "tier_label": "Tier 3 專家主導（強制人工覆核）",
         "error": null
       },
       "fixed_doc_accuracy": 0.8571,
-      "fixed_doc_latency_s": 2.63,
-      "hpes_raw": -0.825,
-      "naive_accuracy": 0.375,
-      "abstain_count": 1,
-      "wrong_count": 24,
-      "correct_count": 15,
+      "fixed_doc_latency_s": 1.45,
+      "hpes_raw": -0.7167,
+      "naive_accuracy": 0.3833,
+      "abstain_count": 4,
+      "wrong_count": 33,
+      "correct_count": 23,
       "strict_json_failure_rate": 0.0,
-      "sroie_elapsed_s": 56.1,
+      "sroie_elapsed_s": 39.6,
       "zh_simplified_chars": 0,
-      "zh_cjk_chars": 154,
+      "zh_cjk_chars": 386,
       "zh_purity": 1.0,
-      "zh_latency_s": 9.96,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 0,
+          "cjk": 154,
+          "simplified_chars": [],
+          "sample": "無追索權應收帳款承購和有追索權是兩種不同的會計類型，主要區別在於是否能追索未付帳款的金額。\n\n無追索權承購意味著企業不能追索未付帳款的金額，這可能會影響銀行授信的評估。相較之下，有追索權承購允許企業追索未付帳款的金額，從而提高了銀行授信的可靠性。\n\n因此，無追索權應收帳款承購在會計處理與銀行授信上最關鍵的差別是銀行授信評估的可靠性。"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 85,
+          "simplified_chars": [],
+          "sample": "銀行審查中，小企業的應收帳款融資時，特別在意買方（債務人的）信用是因為買方的信用決定了借款的風險和可靠性。如果買方信用不好，很可能會導致借款不回本或延遲 repayment，因此銀行需要確保買方的信用穩定。"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 81,
+          "simplified_chars": [],
+          "sample": "帳期是指公司在提供商品或服務之前，需要先收取款項的時間段。供應商如果拉長帳期，可能會導致自身現金流減少，因為需要更長時間才能收到款項，這樣就會影響供應商的財務狀況和營運能力。"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 0,
+          "cjk": 66,
+          "simplified_chars": [],
+          "sample": "信用保證機制可以降低銀行承作中小企業貸款的風險，例如借贈公司的保證、個人保證或其他形式的保證。這樣銀行就能減少貸款的風險，並提高貸款的可行性。"
+        }
+      ],
+      "zh_latency_s": 2.51,
       "zh_sample": "無追索權應收帳款承購和有追索權是兩種不同的會計類型，主要區別在於是否能追索未付帳款的金額。\n\n無追索權承購意味著企業不能追索未付帳款的金額，這可能會影響銀行授信的評估。相較之下，有追索權承購允許企業追索未付帳款的金額，從而提高了銀行授信的可靠性。\n\n因此，無追索權應收帳款承購在會計處理與銀行授信上最關鍵的差別是銀行授信評估的可靠性。"
     },
     {
       "model": "qwen3.5:9b",
       "origin": "Alibaba · 中國",
-      "note": "6.6GB，先前選用；納入以如實比較效能代價",
+      "note": "6.6GB，曾選用；納入以如實比較效能代價",
+      "exclusive_vram": true,
       "drift": {
-        "runs": 6,
+        "runs": 1,
         "bitwise": 1.0,
         "structural": 1.0,
         "semantic": 1.0,
         "distinct_outputs": 1,
         "tier": 1,
         "tier_label": "Tier 1 稽核級（零漂移）",
-        "error": null
-      },
-      "fixed_doc_accuracy": 0.0,
-      "fixed_doc_latency_s": 4.42,
-      "hpes_raw": 0.15,
-      "naive_accuracy": 0.3,
-      "abstain_count": 25,
-      "wrong_count": 3,
-      "correct_count": 12,
-      "strict_json_failure_rate": 0.0,
-      "sroie_elapsed_s": 84.0,
-      "zh_simplified_chars": 26,
-      "zh_cjk_chars": 185,
-      "zh_purity": 0.8595,
-      "zh_latency_s": 32.36,
-      "zh_sample": "在无追索权应收帐款承购中，中小企业将债权出售给银行即视为风险转移，因此会计上需终止确认该笔资产并视同现金流入；相比之下有追索权的交易因保留信用风险，企业仍须继续列示为应收账款且仅作为融资借款处理。在授信层面，无追索权模式能直接降低企业的负债比率与财务杠杆，有助于改善财务报表结构以符合上市或贷款条件；而有追索权则不会优化这些关键指标，银行亦可能将此类交易视为一"
+        "error": "timed out"
+      }
     },
     {
       "model": "qwen3.6:35b",
       "origin": "Alibaba · 中國",
       "note": "23GB，大模型對照",
+      "exclusive_vram": false,
+      "co_resident_models": [
+        "qwen3.6-unlocked:latest"
+      ],
       "drift": {
-        "runs": 6,
+        "runs": 8,
         "bitwise": 1.0,
         "structural": 1.0,
         "semantic": 1.0,
@@ -149,18 +546,49 @@
         "error": null
       },
       "fixed_doc_accuracy": 1.0,
-      "fixed_doc_latency_s": 7.96,
-      "hpes_raw": 0.225,
-      "naive_accuracy": 0.725,
-      "abstain_count": 1,
-      "wrong_count": 10,
-      "correct_count": 29,
+      "fixed_doc_latency_s": 6.25,
+      "hpes_raw": 0.1667,
+      "naive_accuracy": 0.7,
+      "abstain_count": 2,
+      "wrong_count": 16,
+      "correct_count": 42,
       "strict_json_failure_rate": 0.0,
-      "sroie_elapsed_s": 637.0,
+      "sroie_elapsed_s": 728.9,
       "zh_simplified_chars": 0,
-      "zh_cjk_chars": 179,
+      "zh_cjk_chars": 540,
       "zh_purity": 1.0,
-      "zh_latency_s": 466.15,
+      "zh_prompts_n": 4,
+      "zh_per_prompt": [
+        {
+          "prompt_index": 1,
+          "simplified": 0,
+          "cjk": 179,
+          "simplified_chars": [],
+          "sample": "在會計處理上，無追索權承購通常被視為資產出售，企業可將應收帳款從資產負債表中移除並認列損益；而有追索權則多被視為以帳款為擔保的借款，帳款仍保留在資產負債表內。在銀行授信方面，無追索權業務屬於表外融資，不會增加企業的負債比率或占用傳統貸款額度；反之，有追索權會直接計入負債並消耗授信額度。因此，兩者最關鍵的差別在於無追索權能實現資產出表與優化財務結構，而有追索權"
+        },
+        {
+          "prompt_index": 2,
+          "simplified": 0,
+          "cjk": 130,
+          "simplified_chars": [],
+          "sample": "因為應收帳款融資的本質是以「未來現金流」作為主要還款來源，而該現金流的實現完全取決於買方是否按約付款。若買方信用不佳導致違約或拖延，賣方雖有債權卻難以換取實際資金，使融資風險實質上轉移至買方身上。因此，銀行為確保貸款安全，必須優先評估買方的償付能力與意願，而非僅依賴賣方的經營狀況。"
+        },
+        {
+          "prompt_index": 3,
+          "simplified": 0,
+          "cjk": 103,
+          "simplified_chars": [],
+          "sample": "帳期是指買方在收到貨物或服務後，向賣方支付款項所允許的時間間隔。當供應商主動拉長帳期時，意味著其應收帳款的回收速度變慢，導致資金被客戶長期佔用。這會直接減少供應商手邊的可用現金，增加營運資金的壓力，甚至可能引發流動性風險。"
+        },
+        {
+          "prompt_index": 4,
+          "simplified": 0,
+          "cjk": 128,
+          "simplified_chars": [],
+          "sample": "信用保證機制透過由政府或專責機構提供擔保，將銀行面臨的違約損失轉移至保證單位，從而大幅降低潛在的信貸風險敞口。這種風險分攤設計消除了銀行對中小企業缺乏足額抵押品的顧慮，使其更願意放寬審核標準並提供資金。最終，這不僅提升了銀行的放款意願，也有效緩解了中小企業融資困難的問題。"
+        }
+      ],
+      "zh_latency_s": 44.42,
       "zh_sample": "在會計處理上，無追索權承購通常被視為資產出售，企業可將應收帳款從資產負債表中移除並認列損益；而有追索權則多被視為以帳款為擔保的借款，帳款仍保留在資產負債表內。在銀行授信方面，無追索權業務屬於表外融資，不會增加企業的負債比率或占用傳統貸款額度；反之，有追索權會直接計入負債並消耗授信額度。因此，兩者最關鍵的差別在於無追索權能實現資產出表與優化財務結構，而有追索權"
     }
   ]
