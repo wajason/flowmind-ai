@@ -19,6 +19,8 @@ flowmind.crosscheck — 決定性交叉驗證引擎（輕量知識圖譜的替�
 
 from __future__ import annotations
 
+import math
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, asdict, field
 from datetime import date, datetime, timedelta
@@ -259,14 +261,326 @@ def check_bank_reconciliation(invoices: list[dict], ledger: list[dict]) -> list[
     paid_n = max(1, sum(1 for i in invoices
                         if str(i.get("status", "")).upper() == "PAID"))
     ratio = 1 - len(unmatched) / paid_n
+
+    # 通過條件是「零筆對不上」，不是「比例夠高」。
+    #
+    # 原本設 ratio >= 0.8 是錯的：80 張已收款發票裡混一張虛報，
+    # 勾稽率仍有 98.7%，檢查照樣通過 —— 造假被平均掉了。
+    # 評測時 D15（虛報收款）命中率 0% 就是這樣來的。
+    #
+    # 在授信場域，「一張對不上」本來就該被指出來讓人查，
+    # 而不是因為其他 79 張都對得上就放行。
+    # 比例仍然報告出來，因為它反映整體資料品質，但不作為通過條件。
     return [Finding(
-        "BANK-01", "收款與銀行流水勾稽", Severity.CRITICAL, ratio >= 0.8,
+        "BANK-01", "收款與銀行流水勾稽", Severity.CRITICAL, not unmatched,
         f"已收款發票中有 {ratio:.0%} 能在銀行流水找到對應入帳"
         f"（其中 {by_ref} 張以發票號碼直接勾稽，屬強證據）。" +
-        ("" if not unmatched else
-         f"另有 {len(unmatched)} 張標記為已收款、但流水中查無對應入帳，需說明："
-         + "、".join(unmatched[:5])),
+        ("所有已收款發票皆有對應入帳。" if not unmatched else
+         f"\n      ⚠ {len(unmatched)} 張標記為已收款、但流水中查無對應入帳，"
+         f"每一張都需要說明：" + "、".join(unmatched[:5])
+         + ("…" if len(unmatched) > 5 else "")),
         refs=unmatched[:20])]
+
+
+def check_date_sanity(invoices: list[dict], as_of: Optional[date] = None) -> list[Finding]:
+    """
+    日期合理性。三種都是「不可能發生」而非「不太可能」，所以是 CRITICAL。
+    """
+    as_of = as_of or date.today()
+    future, reversed_due, too_long = [], [], []
+    for i in invoices:
+        idate, ddate = _d(i.get("invoice_date")), _d(i.get("due_date"))
+        num = str(i.get("invoice_number"))
+        if idate and idate > as_of:
+            future.append(num)
+        if idate and ddate and ddate < idate:
+            reversed_due.append(num)
+        # 帳期超過 365 天在 B2B 幾乎不存在，多半是打錯或竄改
+        if idate and ddate and (ddate - idate).days > 365:
+            too_long.append(num)
+    return [
+        Finding("DATE-01", "發票日期不得為未來", Severity.CRITICAL, not future,
+                "無未來日期發票。" if not future else
+                f"{len(future)} 張發票的開立日在基準日之後：" + "、".join(future[:5]),
+                refs=future[:20]),
+        Finding("DATE-02", "到期日不得早於開立日", Severity.CRITICAL, not reversed_due,
+                "所有到期日皆晚於開立日。" if not reversed_due else
+                f"{len(reversed_due)} 張發票的到期日早於開立日：" + "、".join(reversed_due[:5]),
+                refs=reversed_due[:20]),
+        Finding("DATE-03", "帳期合理性(≤365天)", Severity.WARNING, not too_long,
+                "帳期皆在一年以內。" if not too_long else
+                f"{len(too_long)} 張發票帳期超過 365 天，B2B 極罕見，需說明："
+                + "、".join(too_long[:5]),
+                refs=too_long[:20]),
+    ]
+
+
+def check_amount_sanity(invoices: list[dict]) -> list[Finding]:
+    """金額合理性：負數、零、稅額為負。"""
+    nonpos, neg_tax, huge = [], [], []
+    for i in invoices:
+        num = str(i.get("invoice_number"))
+        tot = i.get("total_amount")
+        tax = i.get("tax_amount")
+        if tot is None or float(tot) <= 0:
+            nonpos.append(num)
+        if tax is not None and float(tax) < 0:
+            neg_tax.append(num)
+        # 中小企業單筆超過 5000 萬極罕見，值得標記而非直接判錯
+        if tot is not None and float(tot) > 50_000_000:
+            huge.append(num)
+    return [
+        Finding("AMT-01", "發票金額須為正數", Severity.CRITICAL, not nonpos,
+                "所有發票金額皆為正數。" if not nonpos else
+                f"{len(nonpos)} 張發票金額為零或負數：" + "、".join(nonpos[:5]),
+                refs=nonpos[:20]),
+        Finding("AMT-02", "稅額不得為負", Severity.CRITICAL, not neg_tax,
+                "無負稅額。" if not neg_tax else
+                f"{len(neg_tax)} 張發票稅額為負：" + "、".join(neg_tax[:5]),
+                refs=neg_tax[:20]),
+        Finding("AMT-03", "單筆金額量級合理性", Severity.WARNING, not huge,
+                "單筆金額量級正常。" if not huge else
+                f"{len(huge)} 張發票單筆超過 5,000 萬，中小企業罕見，建議附合約佐證："
+                + "、".join(huge[:5]),
+                refs=huge[:20]),
+    ]
+
+
+def check_round_numbers(invoices: list[dict]) -> list[Finding]:
+    """
+    整數金額比例。真實交易的金額因為數量×單價、折扣、運費等，很少剛好是整萬整十萬。
+    人為編造的金額則傾向使用整數。這是鑑識會計的常用訊號之一。
+
+    門檻設 25%：真實資料本來就會有一些整數報價（尤其服務業、開口契約），
+    設太低會對正常公司誤報。
+    """
+    if not invoices:
+        return []
+    amounts = [float(i.get("sales_amount") or 0) for i in invoices]
+    amounts = [a for a in amounts if a > 0]
+    if not amounts:
+        return []
+    round_10k = sum(1 for a in amounts if a % 10_000 == 0)
+    ratio = round_10k / len(amounts)
+    return [Finding(
+        "FORENSIC-01", "整數金額比例", Severity.WARNING, ratio < 0.25,
+        f"銷售額為萬元整數者占 {ratio:.1%}（{round_10k}/{len(amounts)}）。"
+        + ("屬正常範圍。" if ratio < 0.25 else
+           "比例偏高。真實交易因數量×單價、折扣、運費，金額很少剛好是整數；"
+           "人為編造則傾向使用整數。建議抽查這些發票的出貨單。"))]
+
+
+def check_benford(invoices: list[dict]) -> list[Finding]:
+    """
+    班佛定律（Benford's Law）首位數字分布檢定。
+
+    自然產生的財務數據，首位數字為 1 的機率約 30.1%，為 9 的約 4.6%，
+    呈對數分布。人為編造的數字則傾向均勻分布。
+    這是鑑識會計（forensic accounting）的標準技術，
+    美國曾用於偵測選舉舞弊與企業財報造假。
+
+    用卡方檢定量化偏離程度。樣本數少於 50 筆時不做判定 ——
+    班佛定律是統計性質，小樣本的偏離沒有意義，硬要判定會製造誤報。
+    """
+    amounts = [float(i.get("sales_amount") or 0) for i in invoices]
+    amounts = [a for a in amounts if a >= 10]          # 個位數金額不適用
+    n = len(amounts)
+    if n < 50:
+        return [Finding(
+            "FORENSIC-02", "班佛定律首位數字檢定", Severity.INFO, True,
+            f"樣本數 {n} 筆，少於 50 筆的統計門檻，不進行班佛檢定。"
+            f"（班佛定律是統計性質，小樣本的偏離沒有意義。）")]
+
+    # ── 適用性前提檢查 ────────────────────────────────────────────────
+    # 班佛定律只在資料**跨越足夠多個數量級**時成立。
+    # 一家公司若所有發票都在 10 萬～50 萬之間（不到一個數量級），
+    # 首位數字本來就不可能呈對數分布，此時做檢定必然誤報。
+    #
+    # 這個前提是被真實資料驗證出來的：
+    #     真實政府決標金額  跨 2.50 decades  χ²=5.14  ✅ 符合班佛
+    #     早期合成資料      跨 1.32 decades  χ²=101   ❌ 但那是分布太窄，不是造假
+    # 門檻取 1.5 decades（約 30 倍）—— 低於此值，檢定沒有鑑別力。
+    span = math.log10(max(amounts) / min(amounts))
+    if span < 1.5:
+        return [Finding(
+            "FORENSIC-02", "班佛定律首位數字檢定", Severity.INFO, True,
+            f"金額僅跨越 {span:.2f} 個數量級（{min(amounts):,.0f}~{max(amounts):,.0f}），"
+            f"低於 1.5 的適用門檻，不進行班佛檢定。\n"
+            f"      班佛定律要求資料跨越多個數量級；範圍過窄時首位數字本來就不會呈對數分布，"
+            f"此時做檢定必然誤報。這不是資料有問題，是檢定不適用。")]
+
+    expected_p = [math.log10(1 + 1 / d) for d in range(1, 10)]
+    observed = [0] * 9
+    for a in amounts:
+        first = int(str(int(a))[0])
+        if 1 <= first <= 9:
+            observed[first - 1] += 1
+
+    chi2 = sum((observed[i] - n * expected_p[i]) ** 2 / (n * expected_p[i])
+               for i in range(9))
+    # 自由度 8，α=0.05 的臨界值 15.507；α=0.01 為 20.090
+    critical_05 = 15.507
+    passed = chi2 < critical_05
+    dist = "、".join(f"{d+1}:{observed[d]}" for d in range(9))
+    return [Finding(
+        "FORENSIC-02", "班佛定律首位數字檢定", Severity.WARNING, passed,
+        f"樣本 {n} 筆，卡方統計量 χ²={chi2:.2f}（自由度 8，α=0.05 臨界值 15.51）。"
+        f"\n      首位數字分布：{dist}"
+        + ("\n      分布符合班佛定律，未偵測到人為編造的跡象。" if passed else
+           "\n      分布顯著偏離班佛定律。自然產生的財務數字首位為 1 的機率約 30%、"
+           "為 9 約 4.6%；人為編造則趨於均勻。建議擴大抽查範圍。"))]
+
+
+def check_invoice_sequence(invoices: list[dict]) -> list[Finding]:
+    """
+    同一買方的發票號碼連號偵測。
+
+    真實營運中，開給同一買方的發票會散布在其他買方的發票之間，
+    號碼不會連續。大量連號代表這批發票是**同一時間一次補開的** ——
+    可能是為了送件而事後補製。
+    """
+    from collections import defaultdict
+    by_buyer: dict[str, list[str]] = defaultdict(list)
+    for i in invoices:
+        num = str(i.get("invoice_number") or "")
+        m = re.search(r"(\d{6,})$", num)
+        if m and i.get("buyer_ban"):
+            by_buyer[i["buyer_ban"]].append(m.group(1))
+
+    suspicious = []
+    for ban, nums in by_buyer.items():
+        if len(nums) < 3:
+            continue
+        vals = sorted(int(x) for x in nums)
+        runs = 1
+        max_run = 1
+        for a, b in zip(vals, vals[1:]):
+            runs = runs + 1 if b - a == 1 else 1
+            max_run = max(max_run, runs)
+        if max_run >= 3:
+            suspicious.append(f"{ban}(連號 {max_run} 張)")
+
+    return [Finding(
+        "SEQ-01", "同一買方發票連號偵測", Severity.WARNING, not suspicious,
+        "未發現同一買方的發票號碼連續。" if not suspicious else
+        f"發現 {len(suspicious)} 個買方有連號發票："
+        + "、".join(suspicious[:5]) +
+        "。真實營運中開給同一買方的發票會散布在其他買方之間；"
+        "大量連號代表這批發票可能是同一時間一次補開的。",
+        refs=suspicious[:20])]
+
+
+def check_related_party(invoices: list[dict]) -> list[Finding]:
+    """
+    關係企業徵兆：買賣方統編前綴高度相似。
+
+    ⚠️ 這是**弱訊號**，刻意設為 INFO 而非 WARNING。
+    統編前綴相同不代表是關係企業（統編不是按集團編碼的），
+    但在缺乏商工登記負責人資料時，這是唯一能用純程式做的粗篩。
+    真正的關係企業偵測需要商工登記的負責人／董監事資料建圖（見 Roadmap）。
+    """
+    hits = []
+    for i in invoices:
+        s, b = normalize_tax_id(i.get("seller_ban")), normalize_tax_id(i.get("buyer_ban"))
+        if s and b and s != b and s[:4] == b[:4]:
+            hits.append(f"{i.get('invoice_number')}({s}/{b})")
+    return [Finding(
+        "RELATED-01", "關係企業徵兆（統編前綴相似）", Severity.INFO, not hits,
+        "未發現買賣方統編前綴高度相似的情形。" if not hits else
+        f"{len(hits)} 張發票的買賣方統編前四碼相同：" + "、".join(hits[:5]) +
+        "。此為**弱訊號**（統編非按集團編碼），需以商工登記負責人資料進一步查證。",
+        refs=hits[:20])]
+
+
+def check_ledger_integrity(ledger: list[dict]) -> list[Finding]:
+    """
+    銀行流水的內部一致性：餘額必須等於前一筆餘額加上本筆金額。
+
+    這是最容易被忽略、卻最有效的一項 —— 竄改流水的人通常只改金額，
+    忘記把後續所有餘額一起改。
+    """
+    if len(ledger) < 2:
+        return [Finding("LEDGER-01", "銀行流水餘額連續性", Severity.INFO, True,
+                        "流水筆數不足，無法檢驗餘額連續性。")]
+    broken = []
+    prev = None
+    for idx, row in enumerate(ledger):
+        try:
+            bal = float(row.get("balance"))
+            amt = float(row.get("amount"))
+        except (TypeError, ValueError):
+            continue
+        if prev is not None and abs((prev + amt) - bal) > AMOUNT_TOLERANCE:
+            broken.append(f"第{idx+1}筆({row.get('date')})")
+        prev = bal
+    return [Finding(
+        "LEDGER-01", "銀行流水餘額連續性", Severity.CRITICAL, not broken,
+        "所有流水的餘額皆等於前筆餘額加本筆金額。" if not broken else
+        f"{len(broken)} 筆流水的餘額不連續：" + "、".join(broken[:5]) +
+        "。竄改流水者通常只改金額而忘記重算後續餘額，此為強訊號。",
+        refs=broken[:20])]
+
+
+def check_contract_coverage(invoices: list[dict], contracts: list[dict]) -> list[Finding]:
+    """
+    重大金額發票是否有合約支撐，以及是否超出年度承諾額。
+    """
+    if not contracts:
+        return [Finding("CONTRACT-01", "重大發票的合約支撐", Severity.INFO, True,
+                        "本案未提供合約，無法檢驗合約支撐。銀行受理時通常會要求。")]
+
+    by_buyer = {normalize_tax_id(c.get("buyer_ban")): c for c in contracts if c.get("buyer_ban")}
+    # 金額前 25% 視為重大
+    amts = sorted((float(i.get("total_amount") or 0) for i in invoices), reverse=True)
+    threshold = amts[max(0, len(amts) // 4 - 1)] if amts else 0
+
+    uncovered, over_commit = [], []
+    accum: dict[str, float] = {}
+    for i in invoices:
+        ban = normalize_tax_id(i.get("buyer_ban"))
+        amt = float(i.get("total_amount") or 0)
+        c = by_buyer.get(ban)
+        if amt >= threshold and c is None:
+            uncovered.append(str(i.get("invoice_number")))
+        if c:
+            accum[ban] = accum.get(ban, 0.0) + amt
+            commit = float(c.get("annual_commitment_amount") or 0)
+            # 24 個月資料對應 2 年承諾額
+            if commit and accum[ban] > commit * 2:
+                if ban not in [x.split("(")[0] for x in over_commit]:
+                    over_commit.append(f"{ban}(累計{accum[ban]:,.0f}/承諾{commit:,.0f}×2)")
+
+    return [
+        Finding("CONTRACT-01", "重大發票的合約支撐", Severity.WARNING, not uncovered,
+                "重大金額發票皆有對應合約。" if not uncovered else
+                f"{len(uncovered)} 張重大金額發票的買方無合約："
+                + "、".join(uncovered[:5]) + "。銀行通常要求重大交易附合約。",
+                refs=uncovered[:20]),
+        Finding("CONTRACT-02", "累計開票 vs 年度承諾額", Severity.WARNING, not over_commit,
+                "累計開票未超出合約承諾額。" if not over_commit else
+                f"{len(over_commit)} 個買方的累計開票超出合約承諾額："
+                + "、".join(over_commit[:3]) + "。可能為虛增營收或合約未更新。",
+                refs=over_commit[:20]),
+    ]
+
+
+def check_weekend_issuance(invoices: list[dict]) -> list[Finding]:
+    """
+    假日開立比例。B2B 交易多在工作日發生；大量假日開票是「一次補製」的訊號。
+    門檻設 20%：部分產業（食品、零售供貨）確實有假日出貨，設太嚴會誤報。
+    """
+    dated = [(_d(i.get("invoice_date")), str(i.get("invoice_number"))) for i in invoices]
+    dated = [(d, n) for d, n in dated if d]
+    if not dated:
+        return []
+    weekend = [n for d, n in dated if d.weekday() >= 5]
+    ratio = len(weekend) / len(dated)
+    return [Finding(
+        "FORENSIC-03", "假日開立比例", Severity.WARNING, ratio < 0.20,
+        f"假日（週六日）開立者占 {ratio:.1%}（{len(weekend)}/{len(dated)}）。"
+        + ("屬正常範圍。" if ratio < 0.20 else
+           "比例偏高。B2B 交易多在工作日發生，大量假日開票是「一次補製」的訊號。"),
+        refs=weekend[:20])]
 
 
 def check_concentration(invoices: list[dict]) -> list[Finding]:
@@ -361,12 +675,26 @@ def run_all(
     ledger = ledger or []
 
     findings: list[Finding] = []
+    # ── 憑證本體（單張就能判定）────────────────────────────────────
     findings += check_tax_ids(invoices)
     findings += check_invoice_arithmetic(invoices)
+    findings += check_date_sanity(invoices, as_of)
+    findings += check_amount_sanity(invoices)
+    # ── 跨憑證（需要看整批才能判定）─────────────────────────────────
     findings += check_self_dealing(invoices)
     findings += check_duplicates(invoices)
+    findings += check_invoice_sequence(invoices)
+    findings += check_related_party(invoices)
+    # ── 跨文件（需要合約或流水才能判定）─────────────────────────────
     findings += check_terms_consistency(invoices, contracts)
+    findings += check_contract_coverage(invoices, contracts)
     findings += check_bank_reconciliation(invoices, ledger)
+    findings += check_ledger_integrity(ledger)
+    # ── 鑑識會計（統計性質，需要足夠樣本）───────────────────────────
+    findings += check_round_numbers(invoices)
+    findings += check_benford(invoices)
+    findings += check_weekend_issuance(invoices)
+    # ── 授信風險指標（不是造假偵測，是風險揭露）─────────────────────
     findings += check_concentration(invoices)
     findings += check_overdue(invoices, as_of)
 

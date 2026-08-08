@@ -1,0 +1,270 @@
+{
+  "generated_at": "2026-08-08T13:52:17",
+  "trials_per_defect": 10,
+  "seed": 2026,
+  "tiers": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "invoices_per_trial": 90,
+  "checks_per_run": 26,
+  "baseline_findings": [
+    "CONTRACT-01"
+  ],
+  "per_defect": {
+    "D01": {
+      "tier": 1,
+      "name": "買方統編檢核碼錯誤",
+      "expected_check": "TAXID-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D02": {
+      "tier": 1,
+      "name": "金額加總不符",
+      "expected_check": "ARITH-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D03": {
+      "tier": 1,
+      "name": "營業稅率異常",
+      "expected_check": "ARITH-02",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D04": {
+      "tier": 1,
+      "name": "發票日期在未來",
+      "expected_check": "DATE-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D05": {
+      "tier": 1,
+      "name": "到期日早於開立日",
+      "expected_check": "DATE-02",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 1.0
+    },
+    "D06": {
+      "tier": 1,
+      "name": "發票金額為零",
+      "expected_check": "AMT-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 1.0
+    },
+    "D07": {
+      "tier": 1,
+      "name": "稅額為負",
+      "expected_check": "AMT-02",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 1.0
+    },
+    "D08": {
+      "tier": 1,
+      "name": "帳期超過一年",
+      "expected_check": "DATE-03",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.8
+    },
+    "D09": {
+      "tier": 2,
+      "name": "自我交易",
+      "expected_check": "FRAUD-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D10": {
+      "tier": 2,
+      "name": "發票號碼重複",
+      "expected_check": "DUP-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 1.0
+    },
+    "D11": {
+      "tier": 2,
+      "name": "重複請款",
+      "expected_check": "DUP-02",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 1.0
+    },
+    "D12": {
+      "tier": 2,
+      "name": "發票號碼連號",
+      "expected_check": "SEQ-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D13": {
+      "tier": 2,
+      "name": "關係企業徵兆",
+      "expected_check": "RELATED-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.8
+    },
+    "D14": {
+      "tier": 3,
+      "name": "帳期與合約不符",
+      "expected_check": "TERM-02",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D15": {
+      "tier": 3,
+      "name": "虛報收款",
+      "expected_check": "BANK-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.2
+    },
+    "D16": {
+      "tier": 3,
+      "name": "銀行流水餘額不連續",
+      "expected_check": "LEDGER-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D17": {
+      "tier": 3,
+      "name": "累計開票超出合約承諾額",
+      "expected_check": "CONTRACT-02",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.8
+    },
+    "D18": {
+      "tier": 4,
+      "name": "整數金額偏好",
+      "expected_check": "FORENSIC-01",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.4
+    },
+    "D19": {
+      "tier": 4,
+      "name": "金額分布違反班佛定律",
+      "expected_check": "FORENSIC-02",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 9,
+      "detection_rate": 0.9,
+      "avg_spurious_alerts": 1.1
+    },
+    "D20": {
+      "tier": 4,
+      "name": "假日開票異常",
+      "expected_check": "FORENSIC-03",
+      "detectable_by_design": true,
+      "trials": 10,
+      "hits": 10,
+      "detection_rate": 1.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D21": {
+      "tier": 5,
+      "name": "完全自洽的偽造發票",
+      "expected_check": null,
+      "detectable_by_design": false,
+      "trials": 10,
+      "hits": 0,
+      "detection_rate": 0.0,
+      "avg_spurious_alerts": 0.0
+    },
+    "D22": {
+      "tier": 5,
+      "name": "人頭公司買方",
+      "expected_check": null,
+      "detectable_by_design": false,
+      "trials": 10,
+      "hits": 0,
+      "detection_rate": 0.0,
+      "avg_spurious_alerts": 0.0
+    }
+  },
+  "metrics_detectable_only": {
+    "TP": 199,
+    "FP": 91,
+    "TN": 5210,
+    "FN": 1,
+    "precision": 0.6862068965517242,
+    "recall": 0.995,
+    "specificity": 0.9828334276551594,
+    "accuracy": 0.9832757680421742,
+    "f1": 0.8122448979591838,
+    "mcc": 0.8190289334287394,
+    "cost": 111.0,
+    "cost_ratio": "20:1",
+    "cost_normalized": 0.9722
+  },
+  "metrics_including_known_undetectable": {
+    "TP": 199,
+    "FP": 91,
+    "TN": 5210,
+    "FN": 21,
+    "precision": 0.6862068965517242,
+    "recall": 0.9045454545454545,
+    "specificity": 0.9828334276551594,
+    "accuracy": 0.9797138199601522,
+    "f1": 0.7803921568627452,
+    "mcc": 0.7780508343079107,
+    "cost": 511.0,
+    "cost_ratio": "20:1",
+    "cost_normalized": 0.8839
+  },
+  "known_undetectable_trials": 20
+}

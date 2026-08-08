@@ -39,6 +39,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import random
 from datetime import date, timedelta
 from pathlib import Path
@@ -250,7 +251,7 @@ class SyntheticSMEGenerator:
             term_days = cust["payment_terms_days"]
             due_date = issue_date + timedelta(days=term_days)
 
-            base = rng.randint(*self.profile["order_range"])
+            base = self._order_amount()
             sales_amount = round(base * self._month_weight(issue_date))
             tax_amount = round(sales_amount * 0.05)
 
@@ -313,7 +314,7 @@ class SyntheticSMEGenerator:
             issue_date = self._random_date_in_range()
             term_days = sup["payment_terms_days"]
             due_date = issue_date + timedelta(days=term_days)
-            amount = round(rng.randint(*self.profile["order_range"])
+            amount = round(self._order_amount()
                            * (1 - self.profile["gross_margin"]) * rng.uniform(0.3, 0.6))
             bills.append({
                 "doc_type": "AP_BILL",
@@ -361,8 +362,58 @@ class SyntheticSMEGenerator:
         return rows, balance
 
     def _random_date_in_range(self) -> date:
+        """
+        取一個營業日。原本是全期間均勻抽樣，導致假日開票占 24.4% ——
+        被 crosscheck 的 FORENSIC-03 當場抓出來。
+
+        真實 B2B 開票幾乎只在工作日：出貨、驗收、請款都需要對方有人上班。
+        少數假日開票（急件、輪班產業）保留約 3%，全部設成 0 反而不真實 ——
+        一個完全沒有假日交易的資料集，本身就是人造的痕跡。
+        """
         span = (self.today - self.start_date).days
-        return self.start_date + timedelta(days=self.rng.randint(0, span))
+        d = self.start_date
+        for _ in range(12):
+            d = self.start_date + timedelta(days=self.rng.randint(0, span))
+            if d.weekday() < 5 or self.rng.random() < 0.03:
+                return d
+        return d
+
+    def _order_amount(self) -> int:
+        """
+        產生訂單金額。
+
+        原本是 `randint(lo, hi)` 均勻分布，被班佛定律檢定抓出來
+        （χ²=30.04，遠超 α=0.05 臨界值 15.51）：
+        自然產生的財務數字首位為 1 的機率約 30.1%、為 9 約 4.6%，呈對數分布；
+        均勻分布則首位數字接近平均，一眼就看得出是人造的。
+
+        修法不是「硬套班佛分布」，而是**還原真實的成因結構**：
+        發票金額 = 數量 × 單價。兩個分布相乘會自然產生對數分布 ——
+        班佛定律本來就是這樣來的（多個分布混合後趨向對數）。
+
+        第一次修正只把分布改成乘積，但跨越的數量級不夠寬，
+        班佛卡方反而從 30 惡化到 101。用真實資料對照才找出根因：
+
+            真實政府決標金額   190,000 ~ 59,900,000   跨 2.50 decades   χ²=5.14 ✅
+            我的合成資料       48,000 ~  1,008,000    跨 1.32 decades   χ²=101 ❌
+
+        **班佛定律只在資料跨越足夠多個數量級時成立。**
+        真實中小企業的發票有小額耗材也有整批設備，跨 2 個數量級以上是常態；
+        我原本的 order_range 是「典型單筆」的區間，被我誤當成「全部範圍」。
+
+        所以 order_range 的語意改為「**中位數量級**」，實際金額圍繞它散布約 2 個數量級。
+        這是用真實資料校準，不是為了通過檢定而調參數 ——
+        差別在於：校準的目標是真實分布，通過檢定只是結果。
+        """
+        lo, hi = self.profile["order_range"]
+        mid = math.sqrt(lo * hi)                      # 幾何中位數
+        # 單價跨兩個數量級（螺絲 5 元、主軸 20 萬都在同一家機械廠的採購裡）
+        unit_price = math.exp(self.rng.uniform(math.log(mid / 300), math.log(mid / 3)))
+        # 數量也取對數分布：小額試單 1~3 件、量產單 100~500 件
+        qty = round(math.exp(self.rng.uniform(math.log(1), math.log(400))))
+        amount = round(unit_price * qty)
+        # 只夾極端值（避免產生 100 元或 1 億的發票），不夾到 order_range 邊界
+        return max(3_000, min(int(hi * 25), amount))
 
     def monthly_fixed_opex(self) -> int:
         avg_order = sum(self.profile["order_range"]) / 2
