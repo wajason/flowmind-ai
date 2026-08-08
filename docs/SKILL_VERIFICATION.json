@@ -1,0 +1,14 @@
+{
+  "skill_file": "skills\\taiwan-supply-chain-finance\\SKILL.md",
+  "corpus_documents": 83,
+  "quoted_total": 1,
+  "quoted_verified": 1,
+  "quoted_rate": 1.0,
+  "measured_total": 13,
+  "measured_verified": 13,
+  "measured_rate": 1.0,
+  "unmarked_concrete_lines": 0,
+  "failures_quoted": [],
+  "failures_measured": [],
+  "unmarked": []
+}
