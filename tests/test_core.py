@@ -139,6 +139,28 @@ def test_confidence_gate() -> None:
     check("幻覺上限恆低於拒答門檻（不變量）",
           evidence.hallucination_cap() < config.CONFIDENCE_ABSTAIN_THRESHOLD)
 
+    # ── 來源檔名正規化 ────────────────────────────────────────────────
+    # 這組測項來自過度保守的根因診斷：有一條引用**逐字符合原文**
+    # （相似度 1.0），卻被判為 wrong_source 而剔除 ——
+    # 因為模型把檔名寫成「中小企業發展$\text{發展}$條例.md」，
+    # 在中文字串裡吐出了 LaTeX 標記。
+    # 引用是真的，壞掉的只是標籤；讓它被剔除是驗證器的錯。
+    canon = {evidence._canon_source(x): x for x in
+             ["中小企業發展條例.md", "信保基金-供應商融資信用保證要點.md"]}
+    check("LaTeX 標記污染的檔名可解析",
+          evidence._resolve_source("中小企業發展$\\text{發展}$條例.md", canon)
+          == "中小企業發展條例.md")
+    check("Markdown 粗體污染的檔名可解析",
+          evidence._resolve_source("**中小企業發展條例.md**", canon)
+          == "中小企業發展條例.md")
+    check("多打空格的檔名可解析（既有行為不得退化）",
+          evidence._resolve_source("信保基金 - 供應商融資信用保證要點.md", canon)
+          == "信保基金-供應商融資信用保證要點.md")
+    # 負向對照：清標記**不等於**放寬。隨便寫的檔名仍然不得被湊上去，
+    # 否則這個修正就會變成「讓模型隨便引用都能過」。
+    check("不存在的檔名仍然解析不出來（清標記不等於放寬）",
+          evidence._resolve_source("隨便亂寫的檔名.md", canon) is None)
+
     # 覆蓋率硬閘門：知識庫語意最接近的一段都不夠接近 → 不管引用多漂亮都不該有高信心
     far = [Chunk(source="無關.md", chunk_index=0, tenant_id="SHARED",
                  child_content="與問題無關的內容", parent_content="與問題無關的內容",

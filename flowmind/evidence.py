@@ -117,9 +117,25 @@ MIN_QUOTE_CHARS = 8           # 太短的引用（「是」「應收帳款」）
 SOURCE_NAME_THRESHOLD = 88.0  # 檔名模糊比對門檻
 
 
+# 模型偶爾會在中文字串裡吐出 LaTeX/Markdown 標記，檔名也不例外。
+# 實測抓到：gemma4:26b 把「中小企業發展條例.md」寫成
+# 「中小企業發展$\text{發展}$條例.md」。
+#
+# 這種情況下**引用內容是逐字正確的**，壞掉的只是來源標籤 ——
+# 若因此把一句完全正確的引用判成幻覺，那是驗證器的錯，不是模型的錯。
+# 這與既有的「多打一個空格」處理是同一類問題，所以放在同一個正規化步驟。
+#
+# 注意這**不是**放寬驗證：引用內容仍然必須在該文件中逐字存在。
+# 這裡只是讓「檔名」這個標籤在比對前先被清乾淨。
+_MARKUP_ARTIFACT = re.compile(
+    r"\$+|\\(?:text|mathrm|mathbf|textbf|mbox)\s*\{|\\[a-zA-Z]+\s*|\{|\}|\*{1,3}|`+"
+)
+
+
 def _canon_source(name: str) -> str:
-    """檔名比對用的正規化：去掉所有空白、統一大小寫、拿掉常見的裝飾字元。"""
+    """檔名比對用的正規化：去標記、去空白、統一大小寫、拿掉常見裝飾字元。"""
     s = unicodedata.normalize("NFKC", str(name or "")).lower()
+    s = _MARKUP_ARTIFACT.sub("", s)
     return re.sub(r"[\s`'\"《》〈〉\[\]()]", "", s)
 
 
