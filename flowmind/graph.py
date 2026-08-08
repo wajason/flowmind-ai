@@ -257,6 +257,43 @@ def build_shared_graph() -> GraphStats:
                 nodes.setdefault(nid2, (nid2, "document", sup, "SHARED", "{}"))
                 edges.append((nid2, doc_id, "supersedes", "SHARED", 1.0, "{}"))
 
+        # ── 產業節點：由官方統計推導，不是從文字裡撈出來的 ────────────
+        #
+        # 這些節點與 topic 節點的性質完全不同，值得說清楚：
+        #   topic     從文件內容的詞頻推出來 —— 「這份文件在談什麼」
+        #   industry  從**統計表**推出來 —— 「這個產業客觀上是什麼樣子」
+        #
+        # 把統計數字放進圖譜的節點屬性，好處是「製造業的出口依存度」
+        # 這種問題可以走圖譜查詢而不必碰語言模型，
+        # 而且答案帶得出來源檔案與年度。
+        #
+        # 這裡**不建立** industry → document 的邊。
+        # 想連的話得先斷定「這份文件是在講哪個產業」，
+        # 那又會退回詞頻推論 —— 也就是 U-01 那個踩過的坑。
+        # 寧可少一種邊，也不要一種會給出錯誤答案的邊。
+        try:
+            from . import industry as _ind
+            series = _ind.load_series()
+            year = max(_ind.available_years(series))
+            for name in _ind.industries(series):
+                try:
+                    prof = _ind.profile(name, year, series)
+                except KeyError:
+                    continue
+                iid = _nid("industry", name)
+                nodes[iid] = (iid, "industry", prof.industry, "SHARED",
+                              json.dumps({"year": year, "facts": prof.facts,
+                                          "source": "中小企業處統計"},
+                                         ensure_ascii=False))
+                per = _nid("period", str(year))
+                nodes.setdefault(per, (per, "period", str(year), "SHARED", "{}"))
+                edges.append((iid, per, "applies_to", "SHARED", 1.0, "{}"))
+        except Exception as e:                             # noqa: BLE001
+            # 產業統計缺檔不該讓整張圖建不起來，但也**不能靜默跳過** ——
+            # 圖譜少了一整類節點卻沒有人知道，比建圖失敗更難查。
+            print(f"  ⚠️ 產業節點未建立（{type(e).__name__}: {e}）"
+                  f"—— 圖譜將缺少 industry 這一類節點")
+
         with conn.cursor() as cur:
             _upsert_nodes(cur, list(nodes.values()))
             _upsert_edges(cur, edges)
