@@ -103,6 +103,56 @@ def build_context(chunks: list[retrieval.Chunk]) -> str:
 # 核心流程
 # ══════════════════════════════════════════════════════════════════════════
 
+def _scope_gate(question: str) -> dict | None:
+    """
+    用知識圖譜判斷問題指涉的法域是否被知識庫涵蓋。
+
+    只在問題**明確指定了境外法域**時才啟動 —— 沒指定就是問本國，
+    不需要也不應該擋。這避免了「什麼都不敢答」的過度保守。
+    """
+    try:
+        from flowmind import graph
+        foreign = [j for j, kws in graph.JURISDICTIONS.items()
+                   if j != "台灣" and any(k in question for k in kws)]
+        if not foreign:
+            return None
+        topics = [t for t, kws in graph.TOPICS.items()
+                  if any(k in question for k in kws)]
+        return graph.scope_check(question, foreign, topics)
+    except Exception:                                  # noqa: BLE001
+        return None
+
+
+def _render_scope_refusal(scope: dict) -> str:
+    """
+    拒答但**給出可用的替代**。
+
+    單純說「我不知道」對使用者沒有幫助。正確的做法是說明
+    「知識庫涵蓋的是什麼、你問的是什麼、兩者差在哪」，
+    並主動提供最接近的可用資訊，同時明確標示那不是他問的東西。
+    """
+    uncovered = scope["uncovered_jurisdictions"]
+    L = [f"本知識庫**不涵蓋 {'、'.join(uncovered)} 的制度**，因此無法提供確切數據。", ""]
+    for j in uncovered:
+        v = scope["jurisdictions"][j]
+        if v.get("mentioned_in"):
+            L.append(f"知識庫中有 {len(v['mentioned_in'])} 份文件**提及**「{j}」：")
+            for m in v["mentioned_in"][:3]:
+                L.append(f"  · {m['source']}（提及 {m['mentions']:.0f} 次）")
+            L += ["", "但那些是**國際比較性敘述**，不是該國的制度規定 ——",
+                  "引用它們來回答「該國的規定是什麼」會是錯的。", ""]
+    L += [
+        "可提供的替代：本知識庫完整涵蓋**台灣**的相關制度"
+        "（信保基金保證要點、中小企業發展條例等）。",
+        "若您需要台灣的對應規定，請改問「台灣的…」，"
+        "系統會提供附逐字引用的答案。",
+        "",
+        "⚠️ 台灣的數字**不能**當作其他國家的參考值 —— "
+        "保證成數、費率、適用條件都是各國制度自行訂定的。",
+    ]
+    return "\n".join(L)
+
+
 def answer_deterministic(tenant_id: str, question: str,
                          metric_keys: list[str]) -> EvidencePack | None:
     """
@@ -167,6 +217,26 @@ def answer_question(tenant_id: str, question: str, top_k: int = 8,
                             model="安全閘門（未進入檢索與生成）")
         pack.abstained = True
         pack.abstain_reason = guardrail.refusal_message(gv)
+        return pack
+
+    # ── 指涉範圍檢查（知識圖譜）─────────────────────────────────────
+    # 這一步處理 embedding 在原理上處理不了的事：
+    # 「日本的保證成數」與「台灣的保證成數」語意幾乎重合，相似度分不出來。
+    # 圖能分，因為 applies_to 是由**發布機關**決定的結構事實，不是文字推論。
+    #
+    # 注意這裡也不是靠「文中有沒有提到日本」—— 白皮書提到日本 35 次，
+    # 但它的 applies_to 指向台灣。提及 ≠ 適用。
+    scope = _scope_gate(question)
+    if scope and not scope["answerable"]:
+        pack = EvidencePack(question=question, tenant_id=tenant_id,
+                            model="知識圖譜範圍檢查（未進入檢索）")
+        pack.abstained = True
+        pack.abstain_reason = _render_scope_refusal(scope)
+        with db.tenant_session(tenant_id) as conn:
+            db.write_audit(conn, tenant_id=tenant_id, action="scope_refuse",
+                           query_text=question,
+                           doc_sources=scope["uncovered_jurisdictions"],
+                           confidence=0.0, abstained=True)
         return pack
 
     # ── 再問：這題該不該給 RAG？ ──────────────────────────────────────

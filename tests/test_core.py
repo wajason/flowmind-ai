@@ -240,6 +240,39 @@ def test_router() -> None:
           metrics.route("無追索權承購的法律依據是什麼？"))
 
 
+def test_graph_scope() -> None:
+    """
+    知識圖譜的「適用 vs 提及」區分。
+
+    這是 U-01 的解法，而且第一版做錯過：原本用「文中提到某國幾次」推導
+    applies_to，結果中小企業白皮書提到日本 35 次（國際比較），
+    就被判定為「適用於日本」—— 那只是字串比對的華麗版本。
+
+    正解是用**發布機關**決定 applies_to（結構事實），
+    文字頻率只用來建 mentions（另一種邊）。
+    """
+    from flowmind import graph
+    section("知識圖譜：適用範圍 vs 提及")
+
+    check("發布機關對應到管轄法域",
+          graph.PUBLISHER_JURISDICTION.get("全國法規資料庫") == "台灣")
+    check("SBA 對應到美國而非台灣",
+          graph.PUBLISHER_JURISDICTION.get("U.S. Small Business Administration") == "美國")
+
+    # 這兩個常數是 applies_to 的唯一來源，不可被文字頻率污染
+    check("法域關鍵詞表與發布機關表是分開的兩份設定",
+          set(graph.JURISDICTIONS) != set(graph.PUBLISHER_JURISDICTION))
+
+    import inspect
+    src = inspect.getsource(graph.build_shared_graph)
+    check("applies_to 由 PUBLISHER_JURISDICTION 決定",
+          "PUBLISHER_JURISDICTION" in src)
+    check("文字頻率只用來建 mentions，不建 applies_to",
+          'edges.append((doc_id, jid, "mentions"' in src)
+    check("mentions 與 applies_to 是不同的邊型別",
+          src.count('"applies_to"') >= 1 and '"mentions"' in src)
+
+
 def test_guardrail() -> None:
     """
     零信任閘門。核心是分清楚兩件常被混為一談的事：
@@ -384,7 +417,8 @@ if __name__ == "__main__":
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate, test_hpes,
                test_counterfactual, test_crosscheck, test_router,
-               test_scope_terms, test_table_label_index, test_guardrail):
+               test_scope_terms, test_table_label_index, test_guardrail,
+               test_graph_scope):
         fn()
     print("\n" + "═" * 70)
     print(f"  通過 {PASS}　失敗 {FAIL}")
