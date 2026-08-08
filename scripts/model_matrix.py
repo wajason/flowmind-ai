@@ -54,28 +54,32 @@ BENCH = config.DATA_DIR / "benchmarks" / "sroie.jsonl"
 # 候選模型與來源國。來源國如實標註，供部署決策參考。
 CANDIDATES = [
     # ── 非中資（部署首選）────────────────────────────────────────────
-    ("gemma4:e4b",         "Google · 美國",    "9.6GB，先前的抽取模型"),
-    ("gemma4:26b",         "Google · 美國",    "17GB，測「大模型是否更穩定」"),
-    ("gpt-oss:20b",        "OpenAI · 美國",    "13GB。★論文中一致性僅 12.5% 的模型，"
-                                              "本評測嘗試複現該發現"),
+    # 排序刻意「小的先跑」：一輪要好幾十分鐘，若中途中斷，
+    # 先跑完的應該是最多樣的模型，而不是最大的那一兩個。
+    ("granite4.1:8b",      "IBM · 美國",       "5.3GB。★論文中輸出一致性 100% 的系列，"
+                                              "本評測最重要的對照組"),
+    ("olmo2:7b",           "AI2 · 美國",       "4.5GB，完全開放（含訓練資料），"
+                                              "可稽核性的極端案例"),
+    ("mistral:latest",     "Mistral · 法國",   "4.4GB，歐洲來源；資料主權考量下的選項"),
+    ("mistral-nemo:latest", "Mistral · 法國",  "7.1GB，同來源較大版本"),
+    ("vanilj/Phi-4:latest", "Microsoft · 美國", "9.1GB，強調合成資料訓練的小型模型"),
+    ("gemma4:e4b",         "Google · 美國",    "9.6GB"),
+    ("gemma4:26b",         "Google · 美國",    "17GB，目前選用"),
     ("llama3.2:latest",    "Meta · 美國",      "2GB，小模型下限"),
     # ── 中資（納入對照，非部署選項）──────────────────────────────────
-    ("qwen3.5:9b",         "Alibaba · 中國",   "6.6GB，先前選用；納入以如實比較效能代價"),
+    ("qwen3.5:9b",         "Alibaba · 中國",   "6.6GB，曾選用；納入以如實比較效能代價"),
     ("qwen3.6:35b",        "Alibaba · 中國",   "23GB，大模型對照"),
-
-    # ── 以下為原訂候選，因網路問題無法下載，如實記錄未評測 ──────────────
-    # granite4.1:8b / granite3.3:8b（IBM）—— 論文中一致性 100% 的系列，最想測
-    # phi4-mini:3.8b（Microsoft）· mistral-nemo:12b（法國）· olmo2:7b（AI2）
-    # 全部因 Cloudflare R2 連線失敗而未能取得。**不列入結果、不做推測。**
 ]
 
-# 原訂但未能下載的候選，如實揭露在報告中
+# 未能評測的候選，如實揭露在報告中
 UNAVAILABLE = [
-    ("granite4.1:8b / granite3.3:8b", "IBM · 美國",
-     "★論文中輸出一致性 100% 的系列，最想測的對照組"),
-    ("phi4-mini:3.8b", "Microsoft · 美國", "小模型下限"),
-    ("mistral-nemo:12b", "Mistral · 法國", "歐洲來源，資料主權考量下的選項"),
-    ("olmo2:7b", "AI2 · 美國", "完全開放（含訓練資料）"),
+    ("gpt-oss:20b", "OpenAI · 美國",
+     "★論文中一致性僅 12.5% 的模型。本地 13GB blob 毀損"
+     "（manifest 在但 ollama show 說 not found，generate 與 chat 都回 400），"
+     "重抓受阻於網路。"),
+    ("TAIDE 系列", "國科會 · 台灣",
+     "台灣本土繁中模型，最貼近本案語境。Ollama registry 無官方發布，"
+     "且現行版本基於較舊的 Llama 架構。未評測，不做推測。"),
 ]
 
 # ── 漂移測試用的固定 prompt（中文 B2B 發票，貼近真實任務）───────────
@@ -177,6 +181,64 @@ def _ollama_text(model: str, prompt: str, *, schema=None, num_ctx: int = 8192,
     return llm.strip_thinking(r.json().get("response", ""))
 
 
+def unload_all(except_model: str | None = None) -> list[str]:
+    """
+    把所有常駐模型踢出記憶體，只留下 except_model。
+
+    【為什麼這件事對評測的有效性是關鍵】
+
+    這台機器只有 8GB 顯存。兩個模型同時常駐時，Ollama 會靜默把其中一個
+    的大部分層搬到 CPU 跑 —— `ollama ps` 會顯示類似 74%/26% CPU/GPU。
+    在這種狀態下量到的延遲，量的是**當下的資源競爭**，不是模型本身。
+
+    更嚴重的是，我們自己的實驗（scripts/check_answer_reproducibility.py
+    條件 D）已經證實：顯存競爭下**連輸出內容都會變**
+    （同一題的 citation_integrity 在 0.500 與 0.667 之間跳動），
+    無競爭時則 9/9 完全一致。
+
+    也就是說，多模型並存不只讓延遲失真，還會污染準確率與漂移這兩項
+    **硬需求**的量測 —— 而硬需求是我們用來淘汰模型的依據。
+    用被污染的數字淘汰模型，等於用錯的理由做對的決定，那不算對。
+
+    所以每個模型測試前後都清場，確保「一次只有一個模型在跑」。
+    代價是每個模型都要重新冷啟動（gemma4:26b 實測 123.7 秒），
+    整輪因此慢很多 —— 這個代價是值得付的。
+    """
+    unloaded: list[str] = []
+    try:
+        r = httpx.get(f"{config.OLLAMA_BASE_URL}/api/ps", timeout=60)
+        r.raise_for_status()
+        running = [m.get("name") or m.get("model")
+                   for m in r.json().get("models", [])]
+    except Exception:                                      # noqa: BLE001
+        return unloaded
+
+    for name in running:
+        if not name or name == except_model:
+            continue
+        # keep_alive=0 是 Ollama 的「立刻卸載」約定
+        for path, extra in (("/api/generate", {"prompt": ""}),
+                            ("/api/chat", {"messages": []})):
+            try:
+                httpx.post(f"{config.OLLAMA_BASE_URL}{path}",
+                           json={"model": name, "keep_alive": 0, **extra},
+                           timeout=300)
+                break
+            except Exception:                              # noqa: BLE001
+                continue
+        unloaded.append(name)
+    return unloaded
+
+
+def resident_models() -> list[str]:
+    try:
+        r = httpx.get(f"{config.OLLAMA_BASE_URL}/api/ps", timeout=60)
+        return [m.get("name") or m.get("model")
+                for m in r.json().get("models", [])]
+    except Exception:                                      # noqa: BLE001
+        return []
+
+
 def _zh_purity_probe(model: str) -> tuple[int, int, list[dict]]:
     """
     繁中純度：跑 ZH_PROMPTS 全部題目並合併計數。
@@ -214,6 +276,18 @@ def eval_model(model: str, origin: str, note: str,
                drift_runs: int, extract_n: int) -> dict:
     out = {"model": model, "origin": origin, "note": note}
     print(f"\n{'─'*84}\n  {model}　（{origin}）\n{'─'*84}")
+
+    # ── ⓪ 清場：確保這台 8GB 顯存的機器上，此刻只有這一個模型 ─────────
+    # 這一步不是效能優化，是**量測有效性的前提**。詳見 unload_all() 的說明。
+    kicked = unload_all(except_model=model)
+    if kicked:
+        print(f"    [0/4] 清場：卸載 {'、'.join(kicked)}")
+    resident = [m for m in resident_models() if m != model]
+    out["exclusive_vram"] = not resident
+    if resident:
+        # 清不掉就如實記錄，不假裝這次量測是乾淨的
+        print(f"    ⚠️ 仍有其他模型常駐：{resident} —— 本次量測不具排他性")
+        out["co_resident_models"] = resident
 
     # ── ① 輸出漂移 ────────────────────────────────────────────────
     print(f"    [1/4] 輸出漂移（{drift_runs} 次相同 prompt，T=0、固定 seed）…",
@@ -394,14 +468,24 @@ def main():
     print(f"  漂移 {args.drift_runs} 次／模型　SROIE {args.extract_n} 份文件／模型")
     print("═" * 84)
 
+    print("  ⚠️ 嚴格序列：每個模型測試前會清空其他常駐模型。")
+    print("     8GB 顯存下多模型並存會讓 Ollama 靜默把層搬到 CPU，")
+    print("     不只延遲失真，連輸出內容都會變（見 check_answer_reproducibility 條件 D）。")
+    print("     代價是每個模型都要重新冷啟動，整輪較慢 —— 這個代價是必要的。")
+    print("═" * 84)
+
     rows = []
-    for m, origin, note in cands:
+    for i, (m, origin, note) in enumerate(cands, 1):
+        print(f"\n  ▶ 進度 {i}/{len(cands)}")
         try:
             rows.append(eval_model(m, origin, note, args.drift_runs, args.extract_n))
         except Exception as e:                         # noqa: BLE001
             print(f"  ❌ {m} 評測失敗：{e}")
             rows.append({"model": m, "origin": origin,
                          "drift": {"error": str(e)[:160]}})
+        finally:
+            # 測完就讓位給下一個，不要讓它繼續佔著顯存
+            unload_all(except_model=None)
 
     print(render(rows))
     out = Path(args.out)

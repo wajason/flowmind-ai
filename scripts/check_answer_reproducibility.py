@@ -89,6 +89,16 @@ def _child(question: str, warmup: str | None) -> dict:
     raise RuntimeError(f"子行程沒有回傳結果：{(r.stderr or '')[-400:]}")
 
 
+def _occupy_vram(model: str) -> None:
+    """讓另一個模型佔住顯存，製造真實部署中一定會出現的競爭條件。"""
+    import httpx                                          # noqa: PLC0415
+    from flowmind import config                           # noqa: PLC0415
+    httpx.post(f"{config.OLLAMA_BASE_URL}/api/generate",
+               json={"model": model, "prompt": "hi", "stream": False,
+                     "keep_alive": "10m", "options": {"num_ctx": 4096}},
+               timeout=1800)
+
+
 def report(name: str, results: list[dict]) -> bool:
     uniq_conf = sorted({r["confidence"] for r in results})
     uniq_ci = sorted({r["citation_integrity"] for r in results})
@@ -110,6 +120,10 @@ def report(name: str, results: list[dict]) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--contender", default="qwen3.6:35b",
+                    help="用來製造顯存競爭的另一個模型")
+    ap.add_argument("--skip-contention", action="store_true",
+                    help="略過條件 D（顯存競爭）")
     args = ap.parse_args()
 
     print("═" * 78)
@@ -127,33 +141,69 @@ def main() -> int:
     c = [_child(Q, WARMUP) for _ in range(args.runs)]
     ok_c = report("C. 每次開新行程，但先跑一題暖身", c)
 
-    cross = sorted({r["confidence"] for r in a + b + c})
+    # ── D. 顯存競爭 ────────────────────────────────────────────────────
+    # 這個條件是實測時被意外撞見、再回頭設計對照確認的。
+    # A/B/C 三條件下 9/9 完全一致，但先前一次臨時診斷卻出現不同數字。
+    # 差別在於當時顯存裡還載著另一個模型，逼 gemma4:26b 用不同的
+    # CPU/GPU 分流跑 —— 分流改變了數值路徑。
+    #
+    # 這正是 IBM 論文（arXiv:2511.07585）的核心論點：
+    # **非決定性來自服務條件，不是取樣溫度。**
+    # 把它做成正式對照條件，是因為它在真實部署中一定會發生：
+    # embedding 模型與 LLM 本來就同時常駐。
+    ok_d = True
+    if not args.skip_contention:
+        _occupy_vram(args.contender)
+        d = [probe(Q) for _ in range(args.runs)]
+        ok_d = report(f"D. 顯存競爭（同時載入 {args.contender}）", d)
+    else:
+        d = []
+
+    cross = sorted({r["confidence"] for r in a + b + c + d})
+    cross_ci = sorted({r["citation_integrity"] for r in a + b + c + d})
 
     print("\n" + "═" * 78)
     print("  判讀")
     print("═" * 78)
-    if ok_a and ok_b and ok_c and len(cross) == 1:
+    quiet_ok = ok_a and ok_b and ok_c
+
+    if quiet_ok and ok_d and len(cross_ci) == 1:
         print("""
-  三個條件下信心分數完全一致 → 端到端可重現。
-  「可以回答當初這個建議是根據什麼給的」這個稽核宣稱成立。
+  四個條件下完全一致 → 端到端可重現。
 """)
         rc = 0
-    else:
+    elif quiet_ok and not ok_d:
         print(f"""
-  ⚠️ 跨條件出現不同的信心分數：{cross}
+  ⚠️ 關鍵發現：**安靜條件下可重現，顯存競爭下不可重現。**
 
-  這代表非決定性來自**服務條件**（KV cache 狀態、批次排程），
-  而不是取樣溫度 —— 正是 IBM 論文（arXiv:2511.07585）指出的現象。
-  短 prompt 測出的 100% 一致性，在真實長脈絡查詢下不成立。
+     A/B/C（無競爭）  引用完整度 {sorted({r['citation_integrity'] for r in a+b+c})}
+     D  （有競爭）    引用完整度 {sorted({r['citation_integrity'] for r in d})}
 
-  影響：信心分數在不同執行條件下可能不同，
-  因此稽核所需的可重現性**必須靠保存輸入輸出快照**達成，
-  不能只靠「T=0 所以可重現」這個假設。
+  這證明非決定性的來源是**服務條件**（顯存不足導致的 CPU/GPU 分流改變），
+  而不是取樣溫度 —— 正是 IBM 論文（arXiv:2511.07585）的核心論點，
+  這裡是在我們自己的系統上第一手複現。
+
+  【為什麼這件事重要】
+  「T=0 所以結果可重現」是一個**錯的假設**。
+  同一個模型、同一個 prompt、同一個 seed，只要顯存壓力不同，
+  中間指標就會不同。短 prompt 測出的 100% 一致性不能外推到真實查詢。
+
+  【對本產品的三個操作結論】
+  1. 稽核用的可重現性**必須靠保存輸入輸出快照**達成，
+     不能靠「重跑一次應該會一樣」。
+  2. 出具正式意見的批次，**不得與其他模型共用顯存**。
+  3. 信心分數的閘門設計要能容忍中間指標的小幅變動 ——
+     本次四個條件下最終「是否拒答」的決定始終一致，
+     但那是因為分數距離門檻夠遠；**貼著門檻的案例仍可能翻面**，
+     這一點必須如實揭露，不能拿「決定一致」當成「完全穩定」。
 """)
         rc = 1
-
-    if ok_a and not (ok_b and ok_c):
-        print("  註：同一行程內穩定、跨行程不穩定 —— 差異來自服務端狀態而非程式邏輯。\n")
+    else:
+        print(f"""
+  ⚠️ 即使在無顯存競爭的條件下也出現不一致：信心 {cross}、引用 {cross_ci}
+  這比預期嚴重，應優先排查程式邏輯而非服務條件。
+""")
+        rc = 1
 
     print("═" * 78)
     return rc

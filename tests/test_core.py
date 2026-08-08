@@ -150,6 +150,122 @@ def test_confidence_gate() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+def test_watchtower() -> None:
+    """
+    主動監控。
+
+    最重要的測項是「**沒觸發的規則，是因為資料乾淨，還是因為它壞了**」。
+    在真實資料上 WATCH-03（集中度 23.3% < 40%）與 WATCH-06 不觸發，
+    那是正確行為。但「不觸發」與「壞掉」在畫面上長得一模一樣，
+    所以這裡用刻意構造的資料證明它們**會**觸發 ——
+    而不是把門檻調低讓 demo 好看。門檻調低就再也測不出真正的異常了。
+    """
+    from datetime import date, timedelta
+    from flowmind import db, watchtower
+    section("主動監控與預警（零 LLM）")
+
+    T = "CASE-TEST-WATCH"
+    today = date(2026, 6, 1)
+
+    def seed(rows: list[tuple]) -> None:
+        with db.tenant_session(T) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM fin_invoices")
+                cur.execute("DELETE FROM fin_contracts")
+                for inv, buyer, ban, issue, due, amt, status, paid in rows:
+                    cur.execute("""
+                        INSERT INTO fin_invoices (tenant_id, invoice_number,
+                          buyer_name, buyer_ban, issue_date, due_date,
+                          total_amount, status, paid_date)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    """, (T, inv, buyer, ban, issue, due, amt, status, paid))
+            conn.commit()
+
+    # ── WATCH-03：單一買方占未收餘額 > 40% ────────────────────────────
+    seed([("I1", "大買方", "11111111", today, today + timedelta(30),
+           900000, "PENDING", None),
+          ("I2", "小買方", "22222222", today, today + timedelta(30),
+           100000, "PENDING", None)])
+    ids = {a.rule_id for a in watchtower.scan(T, today=today, persist=False)}
+    check("WATCH-03 集中度超標時會觸發", "WATCH-03" in ids, ids)
+
+    # 同樣的規則，在分散的資料上**不**該觸發 —— 這是負向對照。
+    # 少了它，一條「永遠都在叫」的規則也會通過上面那個測試。
+    seed([("I1", "買方A", "11111111", today, today + timedelta(30),
+           340000, "PENDING", None),
+          ("I2", "買方B", "22222222", today, today + timedelta(30),
+           330000, "PENDING", None),
+          ("I3", "買方C", "33333333", today, today + timedelta(30),
+           330000, "PENDING", None)])
+    ids = {a.rule_id for a in watchtower.scan(T, today=today, persist=False)}
+    check("WATCH-03 分散時不誤報", "WATCH-03" not in ids, ids)
+
+    # 邊界語意：**正好 40.0% 算不算超標**。
+    # 這是被上面那個負向對照意外撞出來的 —— 原本的測試資料剛好落在
+    # 400k/1000k = 40.0%，於是「分散」的案例反而觸發了。
+    # 處理方式不是把門檻改成 41% 讓測試通過（那是為了通過而調參），
+    # 而是把意圖寫清楚並測它：授信實務上集中度上限是**上限**，
+    # 達到上限即應提示，所以規則用 >= 而不是 >。
+    seed([("I1", "剛好四成", "11111111", today, today + timedelta(30),
+           400000, "PENDING", None),
+          ("I2", "其餘", "22222222", today, today + timedelta(30),
+           600000, "PENDING", None)])
+    ids = {a.rule_id for a in watchtower.scan(T, today=today, persist=False)}
+    check("WATCH-03 正好達門檻即視為超標（上限語意，用 >=）",
+          "WATCH-03" in ids, ids)
+
+    # ── WATCH-02：逾期，且 ≥90 天要升級為 critical ────────────────────
+    seed([("I1", "遲付方", "11111111", today - timedelta(200),
+           today - timedelta(120), 500000, "PENDING", None)])
+    al = watchtower.scan(T, today=today, persist=False)
+    w02 = [a for a in al if a.rule_id == "WATCH-02"]
+    check("WATCH-02 逾期會觸發", bool(w02))
+    check("逾期超過 90 天升級為 critical",
+          bool(w02) and w02[0].severity == "critical",
+          w02[0].severity if w02 else None)
+
+    # ── 指紋去重：同一件事不重複發 ────────────────────────────────────
+    a1 = watchtower.scan(T, today=today, persist=False)
+    a2 = watchtower.scan(T, today=today, persist=False)
+    check("同一狀態產生相同指紋（不會每天重喊）",
+          [a.fingerprint() for a in a1] == [a.fingerprint() for a in a2])
+
+    # 指紋**不含時間** —— 含了的話去重會完全失效，
+    # 這是這類系統最常見的實作錯誤
+    import json as _json
+    fp_payload = _json.dumps({"rule": a1[0].rule_id,
+                              "evidence": a1[0].evidence},
+                             ensure_ascii=False, sort_keys=True, default=str)
+    check("指紋只由規則與證據決定，不含時間戳",
+          "first_seen" not in fp_payload and "ingested_at" not in fp_payload)
+
+    # ── 規則壞掉必須變成警示，不能靜默消失 ────────────────────────────
+    orig = watchtower.RULES[:]
+    def boom(cur, *a, **k):                    # noqa: ANN001
+        raise RuntimeError("模擬規則爆炸")
+    try:
+        watchtower.RULES.append(("WATCH-XX", boom, False))
+        al = watchtower.scan(T, today=today, persist=False)
+        bad = [a for a in al if a.rule_id == "WATCH-XX"]
+        check("規則執行失敗會變成 critical 警示，不會靜默吞掉",
+              bool(bad) and bad[0].severity == "critical")
+    finally:
+        watchtower.RULES[:] = orig
+
+    # ── 零 LLM ────────────────────────────────────────────────────────
+    import inspect
+    src = inspect.getsource(watchtower)
+    check("監控模組零 LLM 呼叫",
+          "llm." not in src and "ollama" not in src.lower())
+
+    with db.tenant_session(T) as conn:          # 清理測試資料
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM fin_invoices")
+            cur.execute("DELETE FROM fin_alerts")
+        conn.commit()
+
+
+# ══════════════════════════════════════════════════════════════════════════
 def test_query_plan() -> None:
     """
     查詢理解層。最重要的測項不是「有沒有抓到實體」，
@@ -566,7 +682,8 @@ if __name__ == "__main__":
     print("═" * 70)
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate,
-               test_query_plan, test_claim_corroboration, test_hpes,
+               test_query_plan, test_watchtower,
+               test_claim_corroboration, test_hpes,
                test_counterfactual, test_crosscheck, test_router,
                test_scope_terms, test_table_label_index, test_guardrail,
                test_graph_scope, test_auditor):
