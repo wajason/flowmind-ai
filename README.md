@@ -219,8 +219,8 @@ uv venv D:\flowmind_AI\.venv --python 3.11
 D:\flowmind_AI\.venv\Scripts\activate
 uv pip install -r requirements.txt
 
-# ③ 下載模型（約 8GB，一次即可）
-ollama pull qwen3.5:9b      # 抽取 + 顧問（6.6GB，完整放進 8GB 顯存）
+# ③ 下載模型（約 18GB，一次即可）
+ollama pull gemma4:26b      # 抽取 + 顧問（17GB，見下方顯存說明）
 ollama pull bge-m3          # Embedding（1024 維）
 
 # ④ 啟動向量資料庫（host port 5433，刻意避開系統既有的 5432）
@@ -238,7 +238,7 @@ python -m flowmind.cli doctor
 
 ```
 ✅ Ollama 連線正常（14 個模型）
-   ✅ 抽取模型 qwen3.5:9b   ✅ 向量模型 bge-m3
+   ✅ 抽取模型 gemma4:26b   ✅ 向量模型 bge-m3
 ✅ PostgreSQL 連線正常（pgvector 0.8.6），SHARED 知識庫 6889 個 chunk
 ✅ 連線角色 flowmind_app 非 superuser，Row-Level Security 生效
 ✅ 稽核軌跡 10 筆，雜湊鏈完整
@@ -299,8 +299,9 @@ python scripts\fetch_benchmarks.py                        # SROIE / FUNSD / CORD
 python scripts\run_verifin.py --suite sroie --limit 50
 python scripts\run_verifin.py --suite all --limit 0 --counterfactual   # 正式數據
 
-# 模型選型實測
-python scripts\eval_models.py --models qwen3.5:9b gemma4:e4b
+# 模型選型實測（6 模型 × 5 面向完整矩陣，約 25 分鐘）
+python scripts\model_matrix.py
+python scripts\model_matrix.py --models gemma4:26b qwen3.6:35b   # 只比特定模型
 ```
 
 ### 5.6 產生領域技能檔
@@ -364,9 +365,20 @@ LiteLLM 的 OpenAI 相容端點無法傳遞這個參數，超長 prompt 會被**
 
 | 角色 | 模型 | 理由 |
 |---|---|---|
-| 抽取 + 顧問 | `qwen3.5:9b` | HPES 主指標勝出三倍；6.6GB 完整放進 8GB 顯存 |
-| 離線合成 | `gpt-oss:20b` | 一次性跑，慢無妨，要的是深度 |
+| 抽取 + 顧問 | `gemma4:26b` | 唯一同時滿足三項硬需求、且 HPES 為正的非中資模型 |
+| 離線合成 | 暫無 | 原定 `gpt-oss:20b`，本地檔案毀損且重抓受阻，如實記錄 |
 | Embedding | `bge-m3` | 多語言、中英混雜金融文件穩定、1024 維 |
+
+**關於顯存**：`gemma4:26b` 是 17GB，在 8GB 顯卡上必定大量溢出
+（實測 `ollama ps` 顯示 74%/26% CPU/GPU）。
+選型前我們預期這樣不可行，**但實測推翻了這個預期**：單次抽取仍只要 8~9 秒。
+
+真正的問題不是溢出而是**冷啟動**：載入 17GB 要 **123.7 秒**，
+而 Ollama 預設閒置 5 分鐘就卸載模型 ——
+demo 中停下來講兩句話，下一題就要當著評審的面等兩分鐘。
+因此 `flowmind/llm.py` 在每次請求都帶 `keep_alive`（預設 30m），
+而不是依賴 `OLLAMA_KEEP_ALIVE` 環境變數 ——
+後者要求 Ollama **服務啟動時**就帶著，在別人的機器上重現不了。
 
 完整實測數據見 [`docs/MODEL_SELECTION.md`](docs/MODEL_SELECTION.md)。
 
@@ -512,7 +524,7 @@ python rag_query.py --verify-isolation CASE-0001 CASE-9999
 |---|---|
 | 決定性交叉驗證 | **五項注入缺陷全中，零漏抓、零額外回報** |
 | RAG 法規問答 | 信心 **0.86**，兩條引用全部 `exact` 100 分 |
-| 引用可驗證率 CVR | **97.5%**（SROIE, qwen3.5:9b） |
+| 引用可驗證率 CVR | **97.5%**（SROIE） |
 | 憑空生成率 | **2.38%** |
 | AURC | **0.241**（越低越好） |
 | 嚴格 JSON 失敗率 | **0.0%** |
@@ -521,15 +533,37 @@ python rag_query.py --verify-isolation CASE-0001 CASE-9999
 | 回歸測試 | **39 / 39** |
 | 知識庫規模 | 47 份文件 / **6,889** chunks |
 
-### 10.2 模型選型：傳統準確率會選錯模型
+### 10.2 模型選型：6 模型 × 5 面向
 
-| 模型 | 傳統準確率 | **HPES** | 留白 | 顯存 |
-|---|---|---|---|---|
-| `gemma4:e4b` | **66.7%** ← 較高 | +0.042 | 1／48 | 9.6GB ⚠️ |
-| `qwen3.5:9b` ← 選用 | 62.5% | **+0.125** ← 較高 | 6／48 | 6.6GB ✅ |
+三項硬需求**事先聲明**（不達標即淘汰），其餘為取捨：
+嚴格 JSON 失敗率 0%｜位元級輸出漂移 100%｜繁體中文純度 100%。
 
-> ⚠️ 樣本僅 12 份文件，只足以支撐「相對排序」，**不足以宣稱絕對準確率**。
-> 提案書引用前須 `--limit 0` 全量重跑。
+| 模型 | 來源 | 位元漂移 | 準確率 | HPES | 留白 | 繁中純度 | 分級 |
+|---|---|---|---|---|---|---|---|
+| `gemma4:e4b` | Google · 美國 | 100% | 62.5% | **−0.125** | 0 | 100% | T1 |
+| **`gemma4:26b`** ← 選用 | Google · 美國 | 100% | **72.5%** | **+0.175** | 0 | 100% | T1 |
+| `llama3.2` | Meta · 美國 | **17%** | 37.5% | −0.825 | 1 | 100% | **T3** |
+| `qwen3.5:9b` | Alibaba · 中國 | 100% | 30.0% | +0.150 | 25 | **96.11%** ❌ | T1 |
+| `qwen3.6:35b` | Alibaba · 中國 | 100% | 72.5% | +0.225 | 1 | 100% | T1 |
+
+三個發現：
+
+1. **傳統準確率會選錯模型。** `gemma4:e4b` 準確率贏 `qwen3.5:9b` 32 個百分點，
+   但它 40 個欄位留白 0 次、猜錯 15 次，HPES 是負的。
+   在授信場域，一個編造的統編比一個空欄位貴太多。
+2. **但 HPES 也不能單獨看。** `qwen3.5:9b` 的 HPES 是正的，
+   卻留白 25 次、只回答 37.5% —— 對每題都留白的模型 HPES 恰好是 0，
+   不難看卻毫無用處。**必須配留白率一起讀。**
+3. **小模型不必然穩定。** 最不穩定的 `llama3.2`（17%）是參數最少的那個，
+   與 IBM 論文（arXiv:2511.07585）「小模型較穩定」的方向相反 ——
+   T=0 不保證可重現是真的，但**每個部署都得自己量測**，不能照抄結論。
+
+> **本表推翻了先前選 `qwen3.5:9b` 的決定**（繁中純度硬需求不達標）。
+> 推翻的完整過程、以及「選非中資付出多少代價」的量化比較，
+> 見 [`docs/MODEL_SELECTION.md`](docs/MODEL_SELECTION.md)。
+
+> ⚠️ 樣本：漂移 6 次重複、SROIE 10 份文件 / 40 欄位、繁中純度 4 題。
+> 足以支撐「相對排序」與「硬需求是否達標」，**不足以宣稱絕對準確率**。
 
 ### 10.3 已知限制（誠實揭露）
 
