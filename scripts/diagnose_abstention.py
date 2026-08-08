@@ -52,7 +52,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import rag_query                                          # noqa: E402
-from flowmind import config, db, evidence, retrieval      # noqa: E402
+from flowmind import (config, db, evidence, llm,          # noqa: E402
+                      retrieval, textnorm)
 
 EVAL_SET = config.DATA_DIR / "evalset" / "zh_finance_qa.jsonl"
 
@@ -145,37 +146,70 @@ def main() -> int:
         if row.get("must_abstain"):
             continue
 
-        import io, contextlib                             # noqa: PLC0415
-        with contextlib.redirect_stdout(io.StringIO()):
-            pack = rag_query.answer_question(args.tenant, q)
-        if not pack.abstain_reason:
-            continue
-        abstained_n += 1
-
-        # EvidencePack 不帶 chunks（它是輸出契約，不是中間狀態），
-        # 所以這裡用**與 answer_question 相同的參數**重跑一次檢索。
-        # 檢索是決定性的（同一個 query 得到同一批 chunk），
-        # 因此重跑得到的就是當初驗證時比對的那批內容。
+        # ── 為什麼不能直接用 answer_question() 的回傳值 ────────────────
+        #
+        # 第一版就是那樣寫的，結果是「18 題拒答，卻有 0 條驗不過的引用」——
+        # 一個邏輯上不可能的數字，正好暴露了診斷本身的錯。
+        #
+        # 原因：`apply_gates()` 在拒答時會把未通過驗證的主張從 pack 移除
+        # （`pack.claims = [c for c in pack.claims if c.is_grounded]`），
+        # 所以拿到的是**清理後**的清單，裡面當然一條失敗都沒有。
+        #
+        # 要診斷「為什麼被拒答」，必須攔截在**移除之前**。
+        # 因此這裡複製 answer_question 的前半段，停在 verify_claims 之後。
         with db.tenant_session(args.tenant) as conn:
             chunks = retrieval.hybrid_search(conn, q, top_k=RETRIEVAL_TOP_K)
+            if not chunks:
+                continue
+            prompt = (f"【檢索文本】{rag_query.build_context(chunks)}\n\n"
+                      f"【使用者問題】\n{q}")
+            obj, _diag = llm.extract_json(
+                prompt, schema=rag_query.ANSWER_SCHEMA,
+                system=rag_query.SYSTEM_PROMPT, num_ctx=16384)
+
+        if not isinstance(obj, dict):
+            continue
+
+        tw = textnorm.to_traditional
+        raw_claims = [
+            evidence.Claim(statement=tw(str(c.get("statement") or "")),
+                           quote=tw(str(c.get("quote") or "")),
+                           source=str(c.get("source") or ""))
+            for c in (obj.get("claims") or []) if isinstance(c, dict)
+        ]
+        if not raw_claims:
+            continue
+
+        # 用產品真正的驗證器跑一次，取得每條主張的判定
+        evidence.verify_claims(raw_claims, chunks)
+        failed = [c for c in raw_claims if not c.is_grounded]
+        if not failed:
+            continue                       # 這題的拒答不是引用驗證造成的
+
+        abstained_n += 1
         hay = [c.parent_content for c in chunks] + \
               [c.child_content for c in chunks]
-        for c in pack.claims:
-            if c.verdict in (evidence.Verdict.EXACT, evidence.Verdict.NEAR):
-                continue
+        for c in failed:
             layer, sim = classify(c.quote, hay)
             tally[layer] += 1
             details.append({
                 "question": q[:70], "layer": layer, "similarity": round(sim, 3),
+                "verdict": c.verdict.value if hasattr(c.verdict, "value") else str(c.verdict),
                 "statement": c.statement[:90], "quote": c.quote[:120],
                 "claimed_source": c.source,
             })
-        print(f"  [{i:>2}] 拒答　{q[:52]}")
+        print(f"  [{i:>2}] {len(failed)}/{len(raw_claims)} 條驗不過　{q[:44]}")
 
     total = sum(tally.values())
     print("\n" + "═" * 78)
-    print(f"  拒答題數 {abstained_n}　驗不過的引用共 {total} 條")
+    print(f"  有引用驗證失敗的題數 {abstained_n}　驗不過的引用共 {total} 條")
     print("═" * 78)
+    if abstained_n and total == 0:
+        # 這個組合邏輯上不可能。第一版診斷就撞到（18 題 / 0 條），
+        # 原因是拿到的是 apply_gates 清理後的主張清單。
+        # 留著這個檢查，是為了讓同樣的錯不會再安靜地發生一次。
+        print("  ⚠️ 有題目失敗卻沒有任何失敗引用 —— 診斷流程本身有問題，"
+              "不要相信下面的分層結果。")
     for k in ["L0", "L1", "L2", "L3", "L4"]:
         name, meaning = LAYER_MEANING[k]
         pct = f"{tally[k]/total:.1%}" if total else "—"
