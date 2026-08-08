@@ -172,6 +172,50 @@ def test_confidence_gate() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+def test_retrieval_determinism() -> None:
+    """
+    檢索必須可重現。
+
+    這條測試來自一個被 50 題評測的 A/B 比較撞出來的問題：
+    同一個 query 連跑四次，召回的 chunk 組合有四種。
+
+    歸因過程（每一步都實測，不是猜的）：
+      · embedding 位元相同（逐維差 0.000e+00）→ 不是模型的問題
+      · 改 hnsw.iterative_scan = strict_order → **仍然不一致**
+      · 三個 ORDER BY 都不是全序，配上 LIMIT，
+        SQL 語意上回傳哪幾列本來就是未定義的 → 加 id 決勝鍵後全部一致
+
+    最大的元凶是稀疏那段：ts_rank 會產生大量相同分數，
+    `LIMIT 200` 取哪 200 筆完全任意。
+
+    為什麼這件事重要：後段 chunk 一變，覆蓋率判定就可能翻面，
+    信心分數在 0.90 與 0.40（覆蓋率閘門上限）之間跳。
+    而稽核問「當初根據哪幾份文件」時，重跑得給出同一份清單。
+    """
+    from flowmind import db, retrieval
+    section("檢索可重現性")
+
+    qs = ["信保基金的供應商融資，信用保證成數最高是幾成？",
+          "信保基金對於申貸戶未辦理公司登記或商業登記者，有哪些例外可以視同已登記？"]
+    for q in qs:
+        sigs = set()
+        for _ in range(3):
+            with db.tenant_session("SHARED") as conn:
+                ch = retrieval.hybrid_search(conn, q, top_k=8)
+            sigs.add(tuple((c.source, c.chunk_index) for c in ch))
+        check(f"同一 query 三次得到同一批 chunk：{q[:22]}…",
+              len(sigs) == 1, f"{len(sigs)} 種結果")
+
+    # 排序必須是全序 —— 這是可重現性的**結構性保證**，
+    # 不是「跑幾次剛好都一樣」。少了決勝鍵，上面的測試會變成擲骰子。
+    import inspect
+    src = inspect.getsource(retrieval.hybrid_search)
+    check("dense 排序有決勝鍵", "embedding <=> %s::vector, id" in src)
+    check("sparse 排序有決勝鍵", src.count("DESC,") >= 1 or "DESC,\n" in src)
+    check("最終 RRF 排序有決勝鍵", "ORDER BY rrf DESC, COALESCE(d.id, s.id)" in src)
+
+
+# ══════════════════════════════════════════════════════════════════════════
 def test_industry() -> None:
     """
     產業知識層。這一層的價值全繫於「數字是算出來的、且算對了」——
@@ -777,7 +821,8 @@ if __name__ == "__main__":
     print("═" * 70)
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate,
-               test_query_plan, test_industry, test_watchtower,
+               test_query_plan, test_retrieval_determinism,
+               test_industry, test_watchtower,
                test_claim_corroboration, test_hpes,
                test_counterfactual, test_crosscheck, test_router,
                test_scope_terms, test_table_label_index, test_guardrail,

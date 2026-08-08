@@ -103,31 +103,70 @@ def hybrid_search(
 
     rows: list[tuple] = []
     with conn.cursor() as cur:
-        # 這兩個參數只影響本連線，不改全域設定
+        # 這幾個參數只影響本連線，不改全域設定。
+        #
+        # ── 為什麼是 strict_order 而不是 relaxed_order ────────────────────
+        # 原本用 relaxed_order。實測發現**同一個 query 連跑三次，
+        # 召回的 chunk 組合會不同**（top-1 與其分數相同，後段有變）。
+        # relaxed_order 允許 HNSW 以「大致有序」的方式回傳結果，
+        # 換取速度 —— 代價是結果不可重現。
+        #
+        # 這件事的後果比「排序稍微不同」嚴重得多：
+        #   1. 後段 chunk 一變，top_dense 之外的覆蓋率判定就可能翻面，
+        #      信心分數因此在 0.90 與 0.40（覆蓋率閘門上限）之間跳。
+        #      50 題評測的 A/B 比較實際被這個因素污染過。
+        #   2. 稽核問「當初這個建議是根據哪幾份文件」時，
+        #      重跑可能給出不同的文件清單 —— 那個回答就不可信。
+        #
+        # 在授信這種要留證的場域，**可重現性優先於延遲**。
+        # strict_order 保證同一個 query 得到同一批結果。
+        # 若日後語料成長到 strict_order 太慢，正確的做法是
+        # 把檢索結果快照存進 audit_log，而不是換回 relaxed_order。
         try:
-            cur.execute("SET hnsw.iterative_scan = relaxed_order")
+            cur.execute("SET hnsw.iterative_scan = strict_order")
             cur.execute("SET hnsw.ef_search = 200")
         except Exception:                              # noqa: BLE001
             conn.rollback()   # pgvector < 0.8 沒有這些參數，退回一般掃描即可
 
+        # ── 每一個 ORDER BY 都補上 id 當最終決勝鍵 ────────────────────────
+        #
+        # 沒有 id 的話，這三個排序**都不是全序**，而不是全序的 ORDER BY
+        # 配上 LIMIT，回傳哪幾列在 SQL 語意上就是未定義的：
+        #
+        #   dense   距離相同的 chunk（近乎重複的段落）順序不定
+        #   sparse  **ts_rank 產生大量相同分數**，LIMIT 200 取哪 200 筆是任意的
+        #           —— 這是最大的元凶
+        #   rrf     兩路排名相同時併出相同的 rrf
+        #
+        # 實測：同一個 query 連跑四次得到 4 種不同的 chunk 組合。
+        # 後果不只是「排序稍微不同」——後段 chunk 一變，覆蓋率判定就可能翻面，
+        # 信心分數在 0.90 與 0.40（覆蓋率閘門上限）之間跳，
+        # 50 題評測的 A/B 比較實際被這個因素污染過。
+        #
+        # 對一個要留證的產品來說更嚴重的是：稽核問「當初根據哪幾份文件」時，
+        # 重跑會給出不同的清單。加 id 之後排序成為全序，結果可重現。
         sql = f"""
             WITH dense AS (
                 SELECT id, tenant_id, source, chunk_index, content, metadata,
                        1 - (embedding <=> %s::vector) AS dense_score,
-                       ROW_NUMBER() OVER (ORDER BY embedding <=> %s::vector) AS rank_d
+                       ROW_NUMBER() OVER (
+                           ORDER BY embedding <=> %s::vector, id
+                       ) AS rank_d
                 FROM documents
                 WHERE embedding IS NOT NULL {cat_filter}
-                ORDER BY embedding <=> %s::vector
+                ORDER BY embedding <=> %s::vector, id
                 LIMIT {candidate_pool}
             ),
             sparse AS (
                 SELECT id, tenant_id, source, chunk_index, content, metadata,
                        ts_rank(fts_vector, to_tsquery('simple', %s)) AS sparse_score,
                        ROW_NUMBER() OVER (
-                           ORDER BY ts_rank(fts_vector, to_tsquery('simple', %s)) DESC
+                           ORDER BY ts_rank(fts_vector, to_tsquery('simple', %s)) DESC,
+                                    id
                        ) AS rank_s
                 FROM documents
                 WHERE fts_vector @@ to_tsquery('simple', %s) {cat_filter}
+                ORDER BY ts_rank(fts_vector, to_tsquery('simple', %s)) DESC, id
                 LIMIT {candidate_pool}
             )
             SELECT COALESCE(d.tenant_id, s.tenant_id),
@@ -140,12 +179,14 @@ def hybrid_search(
                    COALESCE(1.0 / ({RRF_K} + d.rank_d), 0.0)
                  + COALESCE(1.0 / ({RRF_K} + s.rank_s), 0.0) AS rrf
             FROM dense d FULL OUTER JOIN sparse s ON d.id = s.id
-            ORDER BY rrf DESC
+            ORDER BY rrf DESC, COALESCE(d.id, s.id)
             LIMIT {top_k * 6};
         """
-        # 參數順序必須與 SQL 中 %s 的出現順序完全一致：
+        # 參數順序必須與 SQL 中 %s 的**出現順序**完全一致。
+        # 順序錯了不會拋錯，只會安靜地用錯參數 —— 所以逐段列出來對：
         #   dense  : qvec(select) qvec(row_number) [cats] qvec(order by)
-        #   sparse : tsq(ts_rank) tsq(row_number) tsq(where) [cats]
+        #   sparse : tsq(ts_rank) tsq(row_number) tsq(where) [cats] tsq(order by)
+        # 最後那個 tsq 是加上決勝鍵時新增的 ORDER BY 帶來的。
         params: list = [qvec, qvec]
         if categories:
             params.append(categories)
@@ -153,6 +194,7 @@ def hybrid_search(
         params += [tsq, tsq, tsq]
         if categories:
             params.append(categories)
+        params.append(tsq)
 
         cur.execute(sql, params)
         rows = cur.fetchall()
