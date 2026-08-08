@@ -150,6 +150,67 @@ def test_confidence_gate() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+def test_query_plan() -> None:
+    """
+    查詢理解層。最重要的測項不是「有沒有抓到實體」，
+    而是「**該不下推的過濾有沒有真的不下推**」——
+    一個下錯的硬過濾會靜默刪掉正確答案，使用者只看到「查無資料」。
+    """
+    from flowmind import query_plan as qp
+    section("查詢理解層（分解 / 實體連結 / 過濾）")
+
+    # 用假節點，不依賴資料庫，讓這個測試在沒有 DB 的環境也能跑
+    nodes = [
+        {"node_id": "d1", "node_type": "document",
+         "label": "信保基金-供應商融資信用保證要點.md"},
+        {"node_id": "t1", "node_type": "topic", "label": "中小企業認定"},
+        {"node_id": "p1", "node_type": "period", "label": "2025"},
+    ]
+
+    # ── 分解 ──────────────────────────────────────────────────────────
+    core, years, arts = qp.decompose("日本的保證成數是多少？")
+    check("法域詞從核心問題中被拆掉", "日本" not in core, core)
+    core2, years2, arts2 = qp.decompose("民國114年的認定標準第3條規定為何？")
+    check("民國年正確轉西元", years2 == [2025], years2)
+    check("條號被抽出", arts2 == ["第3條"], arts2)
+    check("條號從核心問題中被拆掉", "第3條" not in core2, core2)
+    # 全被拆光時要退回原問題 —— 空字串送進向量檢索的失敗很難查
+    core3, _, _ = qp.decompose("2025年")
+    check("範圍詞被拆光時退回原問題", core3 == "2025年", core3)
+
+    # ── 實體連結 ──────────────────────────────────────────────────────
+    ents = qp.link_entities("臺灣的中小企業認定標準為何？", nodes)
+    labels = {(e.node_type, e.label) for e in ents}
+    check("同義詞歸一到正規標籤（臺灣→台灣）",
+          ("jurisdiction", "台灣") in labels, labels)
+    check("同義詞連結會標記 via=alias",
+          any(e.via == "alias" for e in ents if e.node_type == "jurisdiction"))
+    check("主題節點被連上", ("topic", "中小企業認定") in labels, labels)
+
+    # ── 過濾政策（本模組的核心主張）────────────────────────────────────
+    p1 = qp.build_plan("日本的保證成數是多少？", nodes=nodes)
+    check("境外法域**不**下推硬過濾", "jurisdictions" not in p1.filters, p1.filters)
+    check("境外法域改以警示呈現",
+          any("境外法域" in a for a in p1.advisories))
+
+    p2 = qp.build_plan("民國114年的規定為何？", nodes=nodes)
+    check("年份**不**下推硬過濾", "years" not in p2.filters, p2.filters)
+    check("年份改以警示呈現", any("年份" in a for a in p2.advisories))
+
+    p3 = qp.build_plan("依信保基金-供應商融資信用保證要點.md，成數為何？",
+                       nodes=nodes)
+    check("問題明確點名文件時**才**下推硬過濾",
+          p3.filters.get("sources") == ["信保基金-供應商融資信用保證要點.md"],
+          p3.filters)
+
+    # 零 LLM：本模組不得有任何模型呼叫，否則它就會漂移、無法逐條複查
+    import inspect
+    src = inspect.getsource(qp)
+    check("查詢理解層零 LLM 呼叫",
+          "llm." not in src and "ollama" not in src.lower())
+
+
+# ══════════════════════════════════════════════════════════════════════════
 def test_claim_corroboration() -> None:
     """
     斷言層級佐證：問的是「有幾份獨立文件講出同一個數值」，
@@ -505,7 +566,7 @@ if __name__ == "__main__":
     print("═" * 70)
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate,
-               test_claim_corroboration, test_hpes,
+               test_query_plan, test_claim_corroboration, test_hpes,
                test_counterfactual, test_crosscheck, test_router,
                test_scope_terms, test_table_label_index, test_guardrail,
                test_graph_scope, test_auditor):
