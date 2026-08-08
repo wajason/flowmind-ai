@@ -321,6 +321,29 @@ def answer_question(tenant_id: str, question: str, top_k: int = 8,
             had_hallucination=had_hallucination)
         evidence.apply_gates(pack)
 
+        # ── 覆核代理人：跨 agent 一致性 ──────────────────────────────
+        # 前面每一層各自把關自己的產出，但沒有人檢查它們**彼此說的話**
+        # 是否一致。Advisor 引用合約說「帳期 90 天」（引用完全正確），
+        # 而 Extractor 從發票抽出「60 天」（抽取也正確）——
+        # 兩個都對，但放在同一份報告裡是矛盾的。
+        # 這是任何單一 agent 的自我檢查都抓不到的問題。
+        if not pack.abstained and pack.answer:
+            from flowmind import auditor
+            audit_rep = auditor.audit(pack.answer, tenant_id)
+            pack.confidence_breakdown["audit"] = audit_rep.as_dict()
+            if not audit_rep.releasable:
+                pack.abstained = True
+                pack.abstain_reason = (
+                    "覆核代理人偵測到跨來源矛盾，本回覆不予放行：\n\n"
+                    + "\n".join(f"· [{f.check_id}] {f.title}\n  {f.detail}"
+                                for f in audit_rep.contradictions)
+                    + "\n\nAuditor 不裁決誰對誰錯 —— 那是人的工作。"
+                      "它能做的是指出矛盾並擋下輸出。")
+                db.write_audit(conn, tenant_id=tenant_id, action="auditor_block",
+                               query_text=question,
+                               doc_sources=[f.check_id for f in audit_rep.contradictions],
+                               confidence=pack.confidence, abstained=True)
+
         # 輸出端最後一道防線：確認沒有洩漏系統提示或連線資訊。
         # 前面的輸入防護會擋掉大部分探測，但注入手法一直在變，
         # 輸出端再確認一次成本很低。

@@ -240,6 +240,50 @@ def test_router() -> None:
           metrics.route("無追索權承購的法律依據是什麼？"))
 
 
+def test_auditor() -> None:
+    """
+    覆核代理人：跨 agent 一致性。
+
+    這一層抓的是「每個 agent 各自都沒錯，但放在一起是矛盾的」——
+    任何單一 agent 的自我檢查都抓不到，因為每個都沒錯。
+    """
+    from flowmind import auditor as au
+    section("覆核代理人（跨來源一致性）")
+
+    check("解析「九成」", abs(au._pct_to_float("九成") - 0.9) < 1e-6)
+    check("解析「百分之九十」", abs(au._pct_to_float("百分之九十") - 0.9) < 1e-6)
+    check("解析「37.5%」", abs(au._pct_to_float("37.5 %") - 0.375) < 1e-6)
+    check("解析不出來時回 None", au._pct_to_float("很高") is None)
+
+    a = au.extract_assertions("保證成數最高九成，帳期 60 天，統編 22099131", "advisor")
+    kinds = {x.kind for x in a}
+    check("抽得出保證成數", "guarantee_ratio" in kinds, kinds)
+    check("抽得出帳期", "payment_terms" in kinds, kinds)
+    check("抽得出統一編號", "tax_id" in kinds, kinds)
+
+    # 同一份回覆出現兩種成數 → 矛盾
+    rep = au.audit("甲方案保證成數九成，乙方案保證成數八成。", "CASE-0001",
+                   extracted_invoices=[])
+    check("同一回覆出現兩種成數被標為矛盾",
+          any(f.check_id == "AUD-03" for f in rep.findings),
+          [f.check_id for f in rep.findings])
+    check("有矛盾時不予放行", not rep.releasable)
+
+    # 帳期與憑證不符
+    inv = [{"invoice_number": "A1", "payment_terms_days": 60,
+            "buyer_ban": "22099131", "seller_ban": "04595257",
+            "total_amount": 1000, "status": "PENDING",
+            "invoice_date": "2026-01-01", "due_date": "2026-03-02"}]
+    rep2 = au.audit("本案發票的帳期為 90 天。", "CASE-0001", extracted_invoices=inv)
+    check("帳期與憑證不符被抓到",
+          any(f.check_id == "AUD-01" for f in rep2.findings),
+          [f.check_id for f in rep2.findings])
+
+    rep3 = au.audit("本案發票的帳期為 60 天。", "CASE-0001", extracted_invoices=inv)
+    check("帳期相符時不誤報",
+          not any(f.check_id == "AUD-01" for f in rep3.findings))
+
+
 def test_graph_scope() -> None:
     """
     知識圖譜的「適用 vs 提及」區分。
@@ -418,7 +462,7 @@ if __name__ == "__main__":
                test_citation_negative, test_confidence_gate, test_hpes,
                test_counterfactual, test_crosscheck, test_router,
                test_scope_terms, test_table_label_index, test_guardrail,
-               test_graph_scope):
+               test_graph_scope, test_auditor):
         fn()
     print("\n" + "═" * 70)
     print(f"  通過 {PASS}　失敗 {FAIL}")
