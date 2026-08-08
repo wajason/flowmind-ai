@@ -318,7 +318,7 @@ def answer_question(tenant_id: str, question: str, top_k: int = 8,
         evidence.strip_ungrounded(pack)
         pack.confidence, pack.confidence_breakdown = evidence.compute_confidence(
             pack.claims, chunks, question=question,
-            had_hallucination=had_hallucination)
+            had_hallucination=had_hallucination, answer=pack.answer)
         evidence.apply_gates(pack)
 
         # ── 覆核代理人：跨 agent 一致性 ──────────────────────────────

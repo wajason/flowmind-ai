@@ -356,6 +356,73 @@ def missing_scope_terms(question: str, chunks: list[Chunk]) -> list[str]:
     return [t for t in terms if normalize_for_match(t) not in corpus]
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 段落層級的法域歸屬（惰性求值，不做預處理）
+# ══════════════════════════════════════════════════════════════════════════
+# 【問題】文件層的 applies_to 由發布機關決定（見 graph.py），零成本且可靠。
+# 但一份台灣白皮書裡**某一段**可能整段在講日本的制度 ——
+# 引用那一段來回答「台灣的規定」會是錯的，反之亦然。
+#
+# 【為什麼不逐 chunk 預先分類】
+# 7,619 個 chunk 逐一判斷法域，若用 LLM 要跑好幾小時、且結果不可重現；
+# 用規則預處理則要在入庫時就決定，之後改規則得整批重跑。
+# 更重要的是：**絕大多數查詢根本不需要這個判斷** ——
+# 問「台灣的保證成數」時，所有召回段落本來就都是台灣的。
+#
+# 【惰性求值】
+# 只在「問題明確指定了某個法域」時，才對**已召回的那幾段**做一次字串檢查。
+# 一次查詢只看 6~8 段，成本是微秒級。這是把成本從
+# 「入庫時 × 全部 chunk」搬到「查詢時 × 少數 chunk」，
+# 而後者的總量小了三個數量級。
+
+_JURIS_KEYWORDS = {
+    "台灣": ["中華民國", "臺灣", "台灣", "本國", "我國"],
+    "日本": ["日本"], "韓國": ["韓國", "南韓"], "新加坡": ["新加坡"],
+    "香港": ["香港"], "中國大陸": ["中國大陸", "大陸地區"],
+    "美國": ["美國"], "歐盟": ["歐盟", "歐洲聯盟"], "英國": ["英國"],
+    "德國": ["德國"], "法國": ["法國"],
+}
+
+
+def chunk_jurisdiction_conflict(question: str, chunks: list[Chunk]) -> list[dict]:
+    """
+    找出「問題問的是 A 國，但這段文字在講 B 國」的段落。
+
+    判定規則刻意簡單且可解釋：
+    某段若提到其他法域的次數 ≥ 2，且完全沒提到問題指定的法域，
+    就標記為「這段可能不是在講你問的那個國家」。
+
+    這是**警示**不是**過濾** —— 它不刪掉段落，而是讓引用驗證時
+    能標註「這條引用來自一段在講日本的文字」。
+    刪掉會誤傷（比較性段落常同時提到兩國），標註則沒有這個問題。
+    """
+    asked = [j for j, kws in _JURIS_KEYWORDS.items()
+             if any(k in question for k in kws)]
+    if not asked:
+        return []
+
+    out = []
+    for c in chunks:
+        text = c.parent_content
+        asked_hits = sum(text.count(k) for j in asked for k in _JURIS_KEYWORDS[j])
+        for other, kws in _JURIS_KEYWORDS.items():
+            if other in asked:
+                continue
+            other_hits = sum(text.count(k) for k in kws)
+            if other_hits >= 2 and asked_hits == 0:
+                out.append({
+                    "source": c.source, "chunk_index": c.chunk_index,
+                    "asked_jurisdiction": asked,
+                    "chunk_jurisdiction": other,
+                    "other_mentions": other_hits,
+                    "note": f"此段提及「{other}」{other_hits} 次、"
+                            f"完全未提及「{'/'.join(asked)}」，"
+                            f"可能是在講{other}的制度而非你問的對象",
+                })
+                break
+    return out
+
+
 # ── 覆蓋率硬閘門：加權平均擋不住的一類失敗 ────────────────────────────────
 # 信心是加權和，而 citation_integrity 佔 0.45。問題是**模型永遠找得到
 # 某段真實文字可以引用** —— 問「信保基金的內部評分卡權重為何」，
@@ -407,9 +474,121 @@ def hallucination_cap() -> float:
     return max(0.0, config.CONFIDENCE_ABSTAIN_THRESHOLD - GATE_MARGIN)
 
 
+# ── 佐證：從「幾份文件」升級為「幾份文件說了同一件事」 ────────────────────
+#
+# 原本的作法是 len(grounded_sources) / 3 —— 只數**來源份數**。
+# 這個度量有一個明確的缺陷：它把「三份文件都說保證成數九成」
+# 和「三份文件分別在講三件不相干的事」給了一樣的分數。
+# 前者是真正的交叉佐證，後者只是引用面比較廣。
+#
+# 改成**斷言層級**：把答案裡的可比對數值（保證成數／帳期／金額／統編）
+# 抽出來，去問「有幾份彼此獨立的文件，講出了**同一個數值**」。
+#
+#   支持度 volume      = min(1, 同意的獨立文件數 / CORROBORATION_FULL)
+#   一致性 consistency = 同意份數 / (同意份數 + 抵觸份數)
+#   單一斷言的佐證     = volume × consistency
+#   整體佐證           = 各斷言的平均
+#
+# 為什麼要乘上一致性：三份文件裡兩份說九成、一份說八成，
+# 這種**分歧**本身就是降低信心的理由，不該和三份一致同分。
+# 分歧也會被具體列出來（conflicts），因為使用者需要知道分歧在哪，
+# 而不是只看到一個變低的分數。
+#
+# 沒有可比對數值時（純定性回答）**退回**原本的來源份數度量，
+# 並在 breakdown 標明 mode="source_count" —— 這個退回是明示的，
+# 不是靜默的，否則沒有人看得出這個分數是怎麼來的。
+#
+# CORROBORATION_FULL = 3 沿用原設計，**未依評測結果調整**。
+# 這是刻意的：改度量的定義，同時又去調它的常數，
+# 就無法分辨改善是來自新定義還是來自調參。
+
+CORROBORATION_FULL = 3          # 幾份獨立文件一致即視為充分佐證
+
+# 數值比對的容忍度：依型別而定，不是一個通用的 epsilon。
+_ASSERTION_TOL = {
+    "guarantee_ratio": 1e-6,    # 0.9 vs 0.9，浮點誤差級
+    "payment_terms": 0,         # 天數必須完全相同
+    "amount": 0,                # 金額必須完全相同
+    "tax_id": 0,                # 統編是字串，完全相同
+}
+
+
+def _same_value(kind: str, a, b) -> bool:
+    """兩個斷言值是否算「同一件事」。型別不同一律不算，不做寬鬆轉型。"""
+    if isinstance(a, str) or isinstance(b, str):
+        return str(a) == str(b)
+    try:
+        return abs(float(a) - float(b)) <= _ASSERTION_TOL.get(kind, 0)
+    except (TypeError, ValueError):
+        return False
+
+
+def claim_corroboration(answer: str, chunks: list[Chunk]) -> tuple[float, dict]:
+    """
+    斷言層級佐證。回傳 (分數, 明細)。
+
+    明細會列出每個斷言由哪些文件支持、被哪些文件抵觸，
+    因此這個分數**可以被逐條複查**，而不是一個要人相信的數字。
+    """
+    from .auditor import extract_assertions   # 延後匯入，避免載入順序相依
+
+    answer_as = extract_assertions(answer or "", "answer")
+    if not answer_as:
+        return 0.0, {"mode": "none", "assertions": []}
+
+    # 每份來源文件抽一次；同一份文件重複講同一個值只算一次獨立來源
+    # 用 parent_content（注入 LLM 的完整脈絡）而不是 child_content ——
+    # 佐證要問的是「這份文件有沒有講過這個數值」，看得越完整越準。
+    # 這裡直接取屬性、不用 getattr 預設值：欄位若改名，應該當場 AttributeError，
+    # 而不是靜默退化成空字串、讓佐證永遠算出 0 卻沒有人發現。
+    per_source: dict[str, list] = {}
+    for ch in chunks:
+        if not ch.source:
+            continue
+        per_source.setdefault(ch.source, []).extend(
+            extract_assertions(ch.parent_content or ch.child_content, ch.source))
+
+    details, scores = [], []
+    seen: set[tuple[str, str]] = set()
+    for a in answer_as:
+        key = (a.kind, str(a.value))
+        if key in seen:              # 答案裡重複提同一個數值不重複計分
+            continue
+        seen.add(key)
+
+        agree, conflict = set(), set()
+        for src, cand in per_source.items():
+            same_kind = [c for c in cand if c.kind == a.kind]
+            if not same_kind:
+                continue
+            if any(_same_value(a.kind, c.value, a.value) for c in same_kind):
+                agree.add(src)
+            else:
+                conflict.add(src)
+
+        volume = min(1.0, len(agree) / CORROBORATION_FULL)
+        denom = len(agree) + len(conflict)
+        consistency = (len(agree) / denom) if denom else 0.0
+        s = volume * consistency
+        scores.append(s)
+        details.append({
+            "kind": a.kind, "value": a.value, "raw": a.raw,
+            "agreeing_sources": sorted(agree),
+            "conflicting_sources": sorted(conflict),
+            "volume": round(volume, 3),
+            "consistency": round(consistency, 3),
+            "score": round(s, 3),
+        })
+
+    score = sum(scores) / len(scores) if scores else 0.0
+    return score, {"mode": "claim_level", "assertions": details,
+                   "full_at_n_sources": CORROBORATION_FULL}
+
+
 def compute_confidence(claims: list[Claim], chunks: list[Chunk],
                        question: str = "",
-                       had_hallucination: bool = False) -> tuple[float, dict]:
+                       had_hallucination: bool = False,
+                       answer: str = "") -> tuple[float, dict]:
     """
     計算信心分數。
 
@@ -431,7 +610,17 @@ def compute_confidence(claims: list[Claim], chunks: list[Chunk],
         retrieval_strength = 0.0
 
     grounded_sources = {c.matched_source for c in claims if c.is_grounded and c.matched_source}
-    corroboration = min(1.0, len(grounded_sources) / 3.0)   # 3 份獨立來源即視為充分
+
+    # 佐證：優先用斷言層級（幾份文件說了同一個數值）；
+    # 答案裡沒有可比對數值時才退回來源份數，並在明細標明是哪一種模式。
+    # 沒帶 answer 時（單元測試、其他呼叫端）退回用主張本身的敘述串起來
+    corr_text = answer or " ".join(c.statement for c in claims)
+    corroboration, corr_detail = claim_corroboration(corr_text, chunks)
+    if corr_detail["mode"] != "claim_level":
+        corroboration = min(1.0, len(grounded_sources) / CORROBORATION_FULL)
+        corr_detail = {"mode": "source_count",
+                       "reason": "答案未含可比對的數值斷言，退回來源份數度量",
+                       "n_sources": len(grounded_sources)}
 
     sparse_health = (diag["sparse_contributing"] / diag["n"]) if diag["n"] else 0.0
 
@@ -480,6 +669,7 @@ def compute_confidence(claims: list[Claim], chunks: list[Chunk],
         "retrieval_strength": round(retrieval_strength, 3),
         "top_dense": round(diag.get("top_dense", 0.0), 4),
         "corroboration": round(corroboration, 3),
+        "corroboration_detail": corr_detail,
         "sparse_health": round(sparse_health, 3),
         "weights": {"citation": W_CITATION, "retrieval": W_RETRIEVAL,
                     "corroboration": W_CORROBORATION, "sparse": W_SPARSE_HEALTH},
@@ -549,7 +739,19 @@ def apply_gates(pack: EvidencePack) -> EvidencePack:
         if bd.get("retrieval_strength", 0) < 0.4 and not bd.get("coverage_gated"):
             missing.append("知識庫中沒有與此問題足夠相關的文件")
         if bd.get("corroboration", 0) < 0.34:
-            missing.append("僅有單一來源支持，缺乏交叉佐證")
+            # 佐證不足有兩種完全不同的成因，講清楚是哪一種：
+            #   (a) 只有一份文件提到 → 沒人幫忙背書
+            #   (b) 多份文件講的數值不一致 → 有人背書但彼此打架
+            # 這兩者對使用者的意義差很多，(b) 還要指出分歧在哪一份文件。
+            cd = bd.get("corroboration_detail") or {}
+            conflicting = sorted({s for a in cd.get("assertions", [])
+                                  for s in a.get("conflicting_sources", [])})
+            if conflicting:
+                missing.append(
+                    "不同文件對同一項數值的說法不一致（"
+                    + "、".join(conflicting[:3]) + "）")
+            else:
+                missing.append("僅有單一來源支持，缺乏交叉佐證")
         pack.abstain_reason = (
             f"信心分數 {pack.confidence:.2f} 低於門檻 "
             f"{config.CONFIDENCE_ABSTAIN_THRESHOLD:.2f}，系統選擇不回答。原因："

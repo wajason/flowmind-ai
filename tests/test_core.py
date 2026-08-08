@@ -150,6 +150,51 @@ def test_confidence_gate() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+def test_claim_corroboration() -> None:
+    """
+    斷言層級佐證：問的是「有幾份獨立文件講出同一個數值」，
+    而不是舊版的「引用了幾份文件」—— 後者把三份講三件事的文件
+    和三份互相印證的文件給了同分。
+    """
+    section("斷言層級佐證（多文獻一致性）")
+
+    def C(src: str, txt: str) -> Chunk:
+        return Chunk(source=src, chunk_index=0, tenant_id="SHARED",
+                     child_content=txt, parent_content=txt, category="",
+                     dense_score=0.70, sparse_score=0.10, rrf_score=0.03)
+
+    ans = "依規定，信用保證成數最高為九成。"
+    three = [C("信保要點.md", "保證成數最高九成"),
+             C("玉山.md", "本行配合保證成數九成"),
+             C("白皮書.md", "保證成數上限為百分之九十")]
+    one = [C("信保要點.md", "保證成數最高九成")]
+    split = [C("信保要點.md", "保證成數最高九成"),
+             C("玉山.md", "保證成數九成"),
+             C("舊版要點.md", "保證成數最高八成")]
+
+    s3, d3 = evidence.claim_corroboration(ans, three)
+    s1, _ = evidence.claim_corroboration(ans, one)
+    ss, ds = evidence.claim_corroboration(ans, split)
+
+    check("三份獨立文件講同一個數值 → 佐證滿分", s3 == 1.0, s3)
+    check("只有一份文件支持 → 佐證明顯較低", s1 < s3, f"{s1} vs {s3}")
+    check("有文件講出不同數值 → 一致性被扣分", ss < s3, f"{ss} vs {s3}")
+    check("分歧的來源被具體指名（不是只給個低分）",
+          ds["assertions"][0]["conflicting_sources"] == ["舊版要點.md"])
+    # 「九成」與「百分之九十」是同一件事，不同寫法不該被當成分歧
+    check("同義的數值寫法視為一致",
+          "白皮書.md" in d3["assertions"][0]["agreeing_sources"])
+
+    # 純定性回答沒有可比對的數值，退回來源份數 —— 這個退回必須是**明示**的
+    _, dq = evidence.claim_corroboration("本案授信條件尚屬合理。", three)
+    check("無數值斷言時明確標示退回模式", dq["mode"] == "none")
+    _, bdq = evidence.compute_confidence(
+        [_verify("信用保證成數最高九成。")], _chunks(), answer="本案條件合理。")
+    check("退回來源份數時 breakdown 有標明",
+          bdq["corroboration_detail"]["mode"] == "source_count")
+
+
+# ══════════════════════════════════════════════════════════════════════════
 def test_hpes() -> None:
     section("VeriFin HPES 計分")
     src = "總計 1,197,000 元　買方 宏昇機械"
@@ -459,7 +504,8 @@ if __name__ == "__main__":
     print("  FlowMind 核心邏輯回歸測試")
     print("═" * 70)
     for fn in (test_tax_id, test_cjk, test_citation_positive,
-               test_citation_negative, test_confidence_gate, test_hpes,
+               test_citation_negative, test_confidence_gate,
+               test_claim_corroboration, test_hpes,
                test_counterfactual, test_crosscheck, test_router,
                test_scope_terms, test_table_label_index, test_guardrail,
                test_graph_scope, test_auditor):
