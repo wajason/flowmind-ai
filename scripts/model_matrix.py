@@ -53,14 +53,29 @@ BENCH = config.DATA_DIR / "benchmarks" / "sroie.jsonl"
 
 # 候選模型與來源國。來源國如實標註，供部署決策參考。
 CANDIDATES = [
-    ("granite4.1:8b",      "IBM · 美國",      "論文中輸出一致性 100% 的系列"),
-    ("phi4-mini:3.8b",     "Microsoft · 美國", "小而快，測小模型的下限"),
-    ("mistral-nemo:12b",   "Mistral · 法國",   "歐洲來源，資料主權考量下的選項"),
-    ("llama3.1:8b",        "Meta · 美國",      "最廣泛使用的開源基線"),
-    ("olmo2:7b",           "AI2 · 美國",       "完全開放（含訓練資料）"),
-    ("gemma4:e4b",         "Google · 美國",    "先前的抽取模型"),
-    ("gpt-oss:20b",        "OpenAI · 美國",    "論文中一致性僅 12.5% 的大模型"),
-    ("qwen3.5:9b",         "Alibaba · 中國",   "先前選用；納入以如實比較效能代價"),
+    # ── 非中資（部署首選）────────────────────────────────────────────
+    ("gemma4:e4b",         "Google · 美國",    "9.6GB，先前的抽取模型"),
+    ("gemma4:26b",         "Google · 美國",    "17GB，測「大模型是否更穩定」"),
+    ("gpt-oss:20b",        "OpenAI · 美國",    "13GB。★論文中一致性僅 12.5% 的模型，"
+                                              "本評測嘗試複現該發現"),
+    ("llama3.2:latest",    "Meta · 美國",      "2GB，小模型下限"),
+    # ── 中資（納入對照，非部署選項）──────────────────────────────────
+    ("qwen3.5:9b",         "Alibaba · 中國",   "6.6GB，先前選用；納入以如實比較效能代價"),
+    ("qwen3.6:35b",        "Alibaba · 中國",   "23GB，大模型對照"),
+
+    # ── 以下為原訂候選，因網路問題無法下載，如實記錄未評測 ──────────────
+    # granite4.1:8b / granite3.3:8b（IBM）—— 論文中一致性 100% 的系列，最想測
+    # phi4-mini:3.8b（Microsoft）· mistral-nemo:12b（法國）· olmo2:7b（AI2）
+    # 全部因 Cloudflare R2 連線失敗而未能取得。**不列入結果、不做推測。**
+]
+
+# 原訂但未能下載的候選，如實揭露在報告中
+UNAVAILABLE = [
+    ("granite4.1:8b / granite3.3:8b", "IBM · 美國",
+     "★論文中輸出一致性 100% 的系列，最想測的對照組"),
+    ("phi4-mini:3.8b", "Microsoft · 美國", "小模型下限"),
+    ("mistral-nemo:12b", "Mistral · 法國", "歐洲來源，資料主權考量下的選項"),
+    ("olmo2:7b", "AI2 · 美國", "完全開放（含訓練資料）"),
 ]
 
 # ── 漂移測試用的固定 prompt（中文 B2B 發票，貼近真實任務）───────────
@@ -107,23 +122,86 @@ DRIFT_EXPECT = {
 # 中文品質：僅列「繁體中不會出現」的簡體字（見 textnorm 的說明）
 SIMPLIFIED_PROBE = textnorm._SIMPLIFIED_PROBE
 
-ZH_PROMPT = ("用三到四句話說明：中小企業辦理「無追索權應收帳款承購」，"
-             "相較「有追索權」，在會計處理與銀行授信上最關鍵的差別為何？"
-             "若不確定請直接說不確定。")
+# 繁中純度：**多題**而非單題。
+# 用 n=1 的樣本就把一個模型判定為「硬需求不達標」是不嚴謹的 ——
+# 簡體字是否出現與主題用詞高度相關（「貸款／帳期／發票」這類金融詞
+# 恰好落在簡繁差異密集區），單一題目可能剛好避開、也可能剛好命中。
+# 故取 4 個涵蓋不同金融子領域的題目合併計算，並保留逐題結果供檢視。
+ZH_PROMPTS = [
+    "用三到四句話說明：中小企業辦理「無追索權應收帳款承購」，"
+    "相較「有追索權」，在會計處理與銀行授信上最關鍵的差別為何？若不確定請直接說不確定。",
+
+    "用三到四句話說明：銀行審查中小企業的應收帳款融資時，"
+    "為什麼會特別在意買方（債務人）的信用而非賣方？若不確定請直接說不確定。",
+
+    "用三到四句話說明：什麼是「帳期」？供應商拉長帳期會對自身現金流造成什麼影響？"
+    "若不確定請直接說不確定。",
+
+    "用三到四句話說明：信用保證機制如何降低銀行承作中小企業貸款的風險？"
+    "若不確定請直接說不確定。",
+]
+
+
+def _ollama_text(model: str, prompt: str, *, schema=None, num_ctx: int = 8192,
+                 seed: int | None = 42, timeout: float = 900) -> str:
+    """
+    送一個 prompt 給 Ollama，取回純文字輸出（已去除 <think>）。
+
+    為什麼需要 /api/chat 的 fallback：
+      部分模型（實測：gpt-oss:20b）**只註冊了 chat template，不支援 /api/generate**，
+      直接回 400 "does not support generate"。
+      若不處理，一個完全可用的模型會被記成「評測失敗」——
+      那是評測工具的缺陷，不是模型的缺陷，不該汙染選型結論。
+    """
+    opts: dict = {"temperature": 0.0, "num_ctx": num_ctx}
+    if seed is not None:
+        opts["seed"] = seed
+    base: dict = {"model": model, "stream": False, "options": opts, "think": False}
+    if schema is not None:
+        base["format"] = schema
+
+    def _post(path: str, payload: dict):
+        p = dict(payload)
+        r = httpx.post(f"{config.OLLAMA_BASE_URL}{path}", json=p, timeout=timeout)
+        if r.status_code == 400 and "think" in p:          # 舊版 Ollama 不認得 think
+            p.pop("think")
+            r = httpx.post(f"{config.OLLAMA_BASE_URL}{path}", json=p, timeout=timeout)
+        return r
+
+    r = _post("/api/generate", {**base, "prompt": prompt})
+    if r.status_code == 400 and "does not support generate" in r.text:
+        r = _post("/api/chat", {**base, "messages": [{"role": "user", "content": prompt}]})
+        r.raise_for_status()
+        return llm.strip_thinking((r.json().get("message") or {}).get("content", ""))
+    r.raise_for_status()
+    return llm.strip_thinking(r.json().get("response", ""))
+
+
+def _zh_purity_probe(model: str) -> tuple[int, int, list[dict]]:
+    """
+    繁中純度：跑 ZH_PROMPTS 全部題目並合併計數。
+
+    回傳 (簡體字總數, 中文字總數, 逐題明細)。
+    逐題明細保留「實際出現了哪些簡體字」，讓「純度不足因此淘汰」這個
+    判定可以被逐字檢驗，而不是丟一個數字要人相信。
+    """
+    simp = cjk = 0
+    per_prompt: list[dict] = []
+    for qi, q in enumerate(ZH_PROMPTS, 1):
+        txt = _ollama_text(model, q, schema=None, num_ctx=4096, seed=None)
+        found = sorted({ch for ch in txt if ch in SIMPLIFIED_PROBE})
+        s = sum(1 for ch in txt if ch in SIMPLIFIED_PROBE)
+        c = sum(1 for ch in txt if "一" <= ch <= "鿿")
+        simp += s
+        cjk += c
+        per_prompt.append({"prompt_index": qi, "simplified": s, "cjk": c,
+                           "simplified_chars": found, "sample": txt[:180]})
+    return simp, cjk, per_prompt
 
 
 def _extract_once(model: str, prompt: str, schema=None):
     t0 = time.time()
-    payload = {"model": model, "prompt": prompt, "stream": False,
-               "options": {"temperature": 0.0, "num_ctx": 8192, "seed": 42},
-               "format": schema or "json", "think": False}
-    r = httpx.post(f"{config.OLLAMA_BASE_URL}/api/generate", json=payload, timeout=600)
-    if r.status_code == 400:
-        payload.pop("think")
-        r = httpx.post(f"{config.OLLAMA_BASE_URL}/api/generate", json=payload, timeout=600)
-    r.raise_for_status()
-    body = r.json()
-    raw = llm.strip_thinking(body.get("response", ""))
+    raw = _ollama_text(model, prompt, schema=schema or "json")
     try:
         obj = json.loads(raw)
     except json.JSONDecodeError:
@@ -225,20 +303,17 @@ def eval_model(model: str, origin: str, note: str,
     print(f"    [4/4] 繁體中文品質…", end=" ", flush=True)
     try:
         t0 = time.time()
-        r = httpx.post(f"{config.OLLAMA_BASE_URL}/api/generate",
-                       json={"model": model, "prompt": ZH_PROMPT, "stream": False,
-                             "options": {"temperature": 0.0, "num_ctx": 4096},
-                             "think": False}, timeout=600)
-        txt = llm.strip_thinking(r.json().get("response", "")) if r.status_code == 200 else ""
-        simp = sum(1 for ch in txt if ch in SIMPLIFIED_PROBE)
-        cjk = sum(1 for ch in txt if "一" <= ch <= "鿿")
+        simp, cjk, per_prompt = _zh_purity_probe(model)
         out["zh_simplified_chars"] = simp
         out["zh_cjk_chars"] = cjk
         out["zh_purity"] = round(1 - simp / cjk, 4) if cjk else None
-        out["zh_latency_s"] = round(time.time() - t0, 2)
-        out["zh_sample"] = txt[:180]
+        out["zh_prompts_n"] = len(ZH_PROMPTS)
+        out["zh_per_prompt"] = per_prompt
+        out["zh_latency_s"] = round((time.time() - t0) / len(ZH_PROMPTS), 2)
+        out["zh_sample"] = per_prompt[0]["sample"] if per_prompt else ""
         print(f"簡體字 {simp} 個 / 中文 {cjk} 字"
-              f"（純度 {out['zh_purity']:.2%}）" if cjk else "無中文輸出")
+              f"（純度 {out['zh_purity']:.2%}，{len(ZH_PROMPTS)} 題合計）"
+              if cjk else "無中文輸出")
     except Exception as e:                             # noqa: BLE001
         out["zh_error"] = str(e)[:120]
         print(f"❌ {e}")
@@ -285,6 +360,15 @@ def render(rows: list[dict]) -> str:
         "",
         "  【來源國】如實標註供部署決策參考。同時納入中資模型比較，",
         "    是為了說明選擇非中資是否付出效能代價 —— 不比較的推薦沒有說服力。",
+        "",
+        "  【未能評測的候選（如實揭露，不做推測）】",
+    ]
+    for name, origin, note in UNAVAILABLE:
+        L.append(f"    ✗ {name:<32}{origin:<16}{note}")
+    L += [
+        "      以上因 Ollama registry 的 Cloudflare R2 連線持續失敗而未能下載。",
+        "      **不列入結果、不以推測填補。** 網路恢復後應補測，",
+        "      尤其 IBM Granite —— 那是論文中一致性 100% 的系列，是最重要的對照組。",
         "═" * 118,
     ]
     return "\n".join(L)
