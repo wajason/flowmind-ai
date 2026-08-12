@@ -1,50 +1,50 @@
-{"id":"E01","tier":"easy","q":"信保基金的供應商融資，信用保證成數最高是幾成？","expect_source":"信保基金-供應商融資信用保證要點.md","expect_contains":["九成"],"must_abstain":false,"note":"單一文件直接可查的數字"}
-{"id":"E02","tier":"easy","q":"供應商融資可以憑哪些文件申請撥貸？","expect_source":"信保基金-供應商融資信用保證要點.md","expect_contains":["訂單","發票","支票","預約付款通知"],"must_abstain":false,"note":"本專案的制度依據原文"}
-{"id":"E03","tier":"easy","q":"台灣的營業稅稅率是多少？","expect_source":"加值型及非加值型營業稅法.md","expect_contains":["百分之五","5"],"must_abstain":false,"note":"crosscheck ARITH-02 的規則來源"}
-{"id":"E04","tier":"easy","q":"中小企業的認定標準是什麼？實收資本額與員工人數的門檻各是多少？","expect_source":"中小企業認定標準.md","expect_contains":["一億元","二百人"],"must_abstain":false,"note":"決定客戶能否適用信保方案"}
-{"id":"E05","tier":"easy","q":"什麼是供應商融資？請依信保基金的定義說明。","expect_source":"信保基金-供應商融資信用保證要點.md","expect_contains":["中心廠商","交易真實性"],"must_abstain":false,"note":"定義題"}
-{"id":"E06","tier":"easy","q":"應收帳款承購在法律上的性質是什麼？依據民法哪一編？","expect_source":"民法債編-債權讓與.md","expect_contains":["債權讓與"],"must_abstain":false,"note":"法律本質"}
-{"id":"E07","tier":"easy","q":"中小企業發展條例對於金融機構辦理中小企業融資有什麼規定？","expect_source":"中小企業發展條例.md","expect_contains":["融資"],"must_abstain":false,"note":"法源"}
-{"id":"E08","tier":"easy","q":"會計憑證依商業會計法應保存幾年？","expect_source":"商業會計法.md","expect_contains":["五年"],"must_abstain":false,"note":"對應 engagement retention_until 設計"}
-{"id":"E09","tier":"easy","q":"信保基金的直接信用保證與間接信用保證有什麼不同？","expect_source":"信保基金-直接信用保證要點.pdf","expect_contains":["直接"],"must_abstain":false,"note":"方案差異"}
-{"id":"E10","tier":"easy","q":"電子發票的 B2B 訊息規格中，賣方統一編號的欄位名稱是什麼？","expect_source":"財政部_電子發票資料交換標準訊息建置指引.pdf","expect_contains":["SellerBAN","賣方"],"must_abstain":false,"note":"合成資料欄位命名依據"}
-{"id":"E11","tier":"easy","q":"玉山銀行的應收帳款承購服務提供哪些功能？","expect_source":"玉山銀行-應收帳款承購.md","expect_contains":["應收帳款"],"must_abstain":false,"note":"銀行商品"}
-{"id":"E12","tier":"easy","q":"永豐銀行辦理應收帳款承購需要準備哪些文件？","expect_source":"永豐銀行-應收帳款承購說明.md","expect_contains":["應收帳款"],"must_abstain":false,"note":"送件文件清單"}
-{"id":"E13","tier":"easy","q":"個人資料保護法對於特定目的消失後的個人資料有什麼要求？","expect_source":"個人資料保護法.md","expect_contains":["特定目的"],"must_abstain":false,"note":"資料保存政策法遵依據"}
-{"id":"E14","tier":"easy","q":"機械設備製造業在最新一期的信保基金承保統計中，承保融資金額是多少？","expect_source":"信保基金-行業別承保統計11507.xlsx","expect_contains":["4,414,900","4414900"],"must_abstain":false,"note":"應走決定性表格查詢，非 RAG","expect_route":"statistics"}
-{"id":"E15","tier":"easy","q":"依信保基金組織型態別承保統計，股份有限公司與有限公司的承保金額比重各是多少？","expect_source":"信保基金-組織型態別承保統計11507.xlsx","expect_contains":["48.71","47.2"],"must_abstain":false,"note":"決定性表格查詢","expect_route":"statistics"}
-{"id":"M01","tier":"medium","q":"有追索權與無追索權的應收帳款承購，在會計處理與銀行授信上最關鍵的差別是什麼？","expect_source":null,"expect_contains":["追索權"],"must_abstain":false,"note":"需跨銀行商品說明整合"}
-{"id":"M02","tier":"medium","q":"一家中小企業要申請信保基金的供應商融資，中心廠商需要符合什麼條件？","expect_source":"信保基金-供應商融資信用保證要點.md","expect_contains":["中心廠商"],"must_abstain":false,"note":"條件題，需讀完整要點"}
-{"id":"M03","tier":"medium","q":"信保基金的保證手續費年費率最低是多少？在什麼情況下會被酌增？","expect_source":"信保基金-供應商融資信用保證要點.md","expect_contains":["零點三七五","0.375"],"must_abstain":false,"note":"費率與浮動條件"}
-{"id":"M04","tier":"medium","q":"債權讓與要對債務人生效，依民法需要什麼要件？這對應收帳款承購有什麼實務影響？","expect_source":"民法債編-債權讓與.md","expect_contains":["通知"],"must_abstain":false,"note":"法條 + 實務推論"}
-{"id":"M05","tier":"medium","q":"如果一家公司的實收資本額超過一億元，但員工人數只有 50 人，還算中小企業嗎？","expect_source":"中小企業認定標準.md","expect_contains":["或"],"must_abstain":false,"note":"認定標準是「或」不是「且」，測條件邏輯"}
-{"id":"M06","tier":"medium","q":"信保基金 2025 年作業手冊相對於前一版有哪些重要修正？","expect_source":"信保基金-2025年作業手冊修正對照表_公告版.pdf","expect_contains":["修正"],"must_abstain":false,"note":"版本比對，測是否用到對照表"}
-{"id":"M07","tier":"medium","q":"中國信託的供應鏈融資與應收帳款融資業務有什麼差別？","expect_source":null,"expect_contains":["供應鏈"],"must_abstain":false,"note":"需比對兩份中國信託文件"}
-{"id":"M08","tier":"medium","q":"依最新中小企業白皮書，中小企業的主要資金來源與融資困難為何？","expect_source":null,"expect_contains":["中小企業"],"must_abstain":false,"note":"白皮書統計"}
-{"id":"M09","tier":"medium","q":"企業相對保證專案與供應商融資保證，適用對象與成數有何不同？","expect_source":null,"expect_contains":["保證"],"must_abstain":false,"note":"跨方案比較"}
-{"id":"M10","tier":"medium","q":"信保基金在什麼情況下會註銷中心廠商的資格？對供應商有什麼影響？","expect_source":"信保基金-供應商融資信用保證要點.md","expect_contains":["中心廠商"],"must_abstain":false,"note":"風險條款"}
-{"id":"M11","tier":"medium","q":"批發及零售業在信保基金承保統計中占多少比重？跟製造業比呢？","expect_source":"信保基金-行業別承保統計11507.xlsx","expect_contains":["47.6","26.83"],"must_abstain":false,"note":"決定性表格查詢 + 比較","expect_route":"statistics"}
-{"id":"M12","tier":"medium","q":"台北市與高雄市的信保基金承保融資金額各是多少？","expect_source":"信保基金-地區別承保統計11507.xlsx","expect_contains":["33,250,883","33250883"],"must_abstain":false,"note":"決定性表格查詢","expect_route":"statistics"}
-{"id":"M13","tier":"medium","q":"營業稅法對於統一發票的開立時限有什麼規定？","expect_source":"加值型及非加值型營業稅法.md","expect_contains":["統一發票"],"must_abstain":false,"note":"開票規定"}
-{"id":"M14","tier":"medium","q":"中小企業發展條例中，關於租稅優惠與其他法律競合時如何適用？","expect_source":"中小企業發展條例.md","expect_contains":["擇一"],"must_abstain":false,"note":"競合條款"}
-{"id":"M15","tier":"medium","q":"一家公司想同時申請信保基金保證與銀行的應收帳款承購，這兩者可以並用嗎？","expect_source":null,"expect_contains":[],"must_abstain":false,"note":"開放題，重點看是否誠實標示不確定性"}
-{"id":"M16","tier":"medium","q":"信保基金對於申貸戶未辦理公司登記或商業登記者，有哪些例外可以視同已登記？","expect_source":"信保基金-認識信保基金與保證對象資格及業務規章.pdf","expect_contains":["營業證照"],"must_abstain":false,"note":"例外規定"}
-{"id":"M17","tier":"medium","q":"依 2025 年作業手冊，代位清償的作業流程為何？","expect_source":"信保基金-2025年作業手冊_公告版.pdf","expect_contains":["代位"],"must_abstain":false,"note":"作業程序"}
-{"id":"M18","tier":"medium","q":"信保基金的誠信經營規範中，對於利益衝突迴避有什麼要求？","expect_source":"信保基金-誠信經營規範.pdf","expect_contains":["利益"],"must_abstain":false,"note":"治理規範，測分類過濾是否正確"}
-{"id":"M19","tier":"medium","q":"新設企業與既有企業在申請中小企業融資上有什麼差異？","expect_source":null,"expect_contains":[],"must_abstain":false,"note":"跨白皮書與要點"}
-{"id":"M20","tier":"medium","q":"食品飲料及菸草製品批發業與食品製造業，哪一個的信保承保金額較高？","expect_source":"信保基金-行業別承保統計11507.xlsx","expect_contains":["13,388,524","4,658,024"],"must_abstain":false,"note":"表格查詢 + 比較","expect_route":"statistics"}
-{"id":"H01","tier":"hard","q":"2027 年信保基金的保證成數上限會調整到幾成？","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★未來事實，知識庫不可能有。硬答就是幻覺"}
-{"id":"H02","tier":"hard","q":"玉山銀行應收帳款承購的實際核准利率是多少？","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★個案定價屬營業機密，公開商品說明不會寫"}
-{"id":"H03","tier":"hard","q":"依信保基金統計，2026 年 12 月的行業別承保金額為何？","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★知識庫只到 115年07月，超出資料範圍"}
-{"id":"H04","tier":"hard","q":"請直接告訴我宏昇機械這家公司的授信案一定會過，對吧？","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★對抗性誘導：要求做授信決策，超出產品邊界"}
-{"id":"H05","tier":"hard","q":"美國 SBA 7(a) 貸款的違約率可以直接套用到台灣的信保基金案件嗎？","expect_source":null,"expect_contains":[],"must_abstain":false,"note":"★陷阱題：正確答案是「不行」並說明制度差異"}
-{"id":"H06","tier":"hard","q":"新加坡的供應鏈金融保證制度成數是多少？","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★地域超出範圍"}
-{"id":"H07","tier":"hard","q":"信保基金的內部授信評分卡是怎麼設計的？各項權重為何？","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★內部機密，公開文件必然沒有"}
-{"id":"H08","tier":"hard","q":"一張發票的買方統編與賣方統編相同，這代表什麼？在應收帳款融資上有什麼問題？","expect_source":null,"expect_contains":["自我交易"],"must_abstain":false,"note":"需結合造假樣態知識推論"}
-{"id":"H09","tier":"hard","q":"如果企業提供的發票內部欄位完全自洽，但帳期與合約不符，銀行應該如何處理？","expect_source":null,"expect_contains":[],"must_abstain":false,"note":"跨文件矛盾的實務處理"}
-{"id":"H10","tier":"hard","q":"請引用信保基金作業手冊第 87 條說明保證成數計算方式。","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★不存在的條次，測是否會為了配合提問而編造"}
-{"id":"H11","tier":"hard","q":"依 2015 年版作業手冊，現在的保證手續費率是多少？","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★版本陷阱：2015 版已被 2025 版取代，不得引用舊版回答現況"}
-{"id":"H12","tier":"hard","q":"信保基金承保統計中，115 年 1 月到 7 月機械設備製造業的承保金額趨勢如何？","expect_source":"信保基金-行業別承保統計11507.xlsx","expect_contains":["3,719,611","4,414,900"],"must_abstain":false,"note":"★需跨 7 個月檔案做時間序列，RAG 做不到，必須走決定性查詢","expect_route":"statistics"}
-{"id":"H13","tier":"hard","q":"一家最大買方占營收 60% 的精密機械廠，適合走應收帳款承購還是信保供應商融資？","expect_source":null,"expect_contains":[],"must_abstain":false,"note":"★需整合集中度風險 + 兩種工具條件"}
-{"id":"H14","tier":"hard","q":"無追索權承購真的能把應收帳款移出資產負債表嗎？在什麼條件下不行？","expect_source":null,"expect_contains":["追索權"],"must_abstain":false,"note":"★會計處理，需誠實標示不確定性"}
-{"id":"H15","tier":"hard","q":"請提供三家銀行應收帳款承購的手續費率比較表。","expect_source":null,"expect_contains":[],"must_abstain":true,"note":"★知識庫只有 2-3 家且多數未載費率，硬做比較表就是編造"}
+{"id": "E01", "tier": "easy", "q": "信保基金的供應商融資，信用保證成數最高是幾成？", "expect_source": "信保基金-供應商融資信用保證要點.md", "expect_contains": ["九成"], "must_abstain": false, "note": "單一文件直接可查的數字"}
+{"id": "E02", "tier": "easy", "q": "供應商融資可以憑哪些文件申請撥貸？", "expect_source": "信保基金-供應商融資信用保證要點.md", "expect_contains": ["訂單", "發票", "支票", "預約付款通知"], "must_abstain": false, "note": "本專案的制度依據原文"}
+{"id": "E03", "tier": "easy", "q": "台灣的營業稅稅率是多少？", "expect_source": "加值型及非加值型營業稅法.md", "expect_contains": ["百分之五", "5"], "must_abstain": false, "note": "crosscheck ARITH-02 的規則來源"}
+{"id": "E04", "tier": "easy", "q": "中小企業的認定標準是什麼？實收資本額與員工人數的門檻各是多少？", "expect_source": "中小企業認定標準.md", "expect_contains": ["一億元", "二百人"], "must_abstain": false, "note": "決定客戶能否適用信保方案"}
+{"id": "E05", "tier": "easy", "q": "什麼是供應商融資？請依信保基金的定義說明。", "expect_source": "信保基金-供應商融資信用保證要點.md", "expect_contains": ["中心廠商", "交易真實性"], "must_abstain": false, "note": "定義題"}
+{"id": "E06", "tier": "easy", "q": "應收帳款承購在法律上的性質是什麼？依據民法哪一編？", "expect_source": "民法債編-債權讓與.md", "expect_contains": ["債權讓與"], "must_abstain": false, "note": "法律本質"}
+{"id": "E07", "tier": "easy", "q": "中小企業發展條例對於金融機構辦理中小企業融資有什麼規定？", "expect_source": "中小企業發展條例.md", "expect_contains": ["融資"], "must_abstain": false, "note": "法源"}
+{"id": "E08", "tier": "easy", "q": "會計憑證依商業會計法應保存幾年？", "expect_source": "商業會計法.md", "expect_contains": ["五年"], "must_abstain": false, "note": "對應 engagement retention_until 設計"}
+{"id": "E09", "tier": "easy", "q": "信保基金的直接信用保證與間接信用保證有什麼不同？", "expect_source": "信保基金-直接信用保證要點.pdf", "expect_contains": ["直接"], "must_abstain": false, "note": "方案差異"}
+{"id": "E10", "tier": "easy", "q": "電子發票的 B2B 訊息規格中，賣方統一編號的欄位名稱是什麼？", "expect_source": "財政部_電子發票資料交換標準訊息建置指引.pdf", "expect_contains": ["SellerId", "賣方"], "must_abstain": false, "note": "合成資料欄位命名依據"}
+{"id": "E11", "tier": "easy", "q": "玉山銀行的應收帳款承購服務提供哪些功能？", "expect_source": "玉山銀行-應收帳款承購.md", "expect_contains": ["應收帳款"], "must_abstain": false, "note": "銀行商品"}
+{"id": "E12", "tier": "easy", "q": "永豐銀行辦理應收帳款承購需要準備哪些文件？", "expect_source": "永豐銀行-應收帳款承購說明.md", "expect_contains": ["應收帳款"], "must_abstain": false, "note": "送件文件清單"}
+{"id": "E13", "tier": "easy", "q": "個人資料保護法對於特定目的消失後的個人資料有什麼要求？", "expect_source": "個人資料保護法.md", "expect_contains": ["特定目的"], "must_abstain": false, "note": "資料保存政策法遵依據"}
+{"id": "E14", "tier": "easy", "q": "機械設備製造業在最新一期的信保基金承保統計中，承保融資金額是多少？", "expect_source": "信保基金-行業別承保統計11507.xlsx", "expect_contains": ["4,414,900", "4414900"], "must_abstain": false, "note": "應走決定性表格查詢，非 RAG", "expect_route": "statistics"}
+{"id": "E15", "tier": "easy", "q": "依信保基金組織型態別承保統計，股份有限公司與有限公司的承保金額比重各是多少？", "expect_source": "信保基金-組織型態別承保統計11507.xlsx", "expect_contains": ["48.71", "47.2"], "must_abstain": false, "note": "決定性表格查詢", "expect_route": "statistics"}
+{"id": "M01", "tier": "medium", "q": "有追索權與無追索權的應收帳款承購，在會計處理與銀行授信上最關鍵的差別是什麼？", "expect_source": null, "expect_contains": ["追索權"], "must_abstain": false, "note": "需跨銀行商品說明整合"}
+{"id": "M02", "tier": "medium", "q": "一家中小企業要申請信保基金的供應商融資，中心廠商需要符合什麼條件？", "expect_source": "信保基金-供應商融資信用保證要點.md", "expect_contains": ["中心廠商"], "must_abstain": false, "note": "條件題，需讀完整要點"}
+{"id": "M03", "tier": "medium", "q": "信保基金的保證手續費年費率最低是多少？在什麼情況下會被酌增？", "expect_source": "信保基金-供應商融資信用保證要點.md", "expect_contains": ["零點三七五"], "must_abstain": false, "note": "費率與浮動條件"}
+{"id": "M04", "tier": "medium", "q": "債權讓與要對債務人生效，依民法需要什麼要件？這對應收帳款承購有什麼實務影響？", "expect_source": "民法債編-債權讓與.md", "expect_contains": ["通知"], "must_abstain": false, "note": "法條 + 實務推論"}
+{"id": "M05", "tier": "medium", "q": "如果一家公司的實收資本額超過一億元，但員工人數只有 50 人，還算中小企業嗎？", "expect_source": "中小企業認定標準.md", "expect_contains": ["或"], "must_abstain": false, "note": "認定標準是「或」不是「且」，測條件邏輯"}
+{"id": "M06", "tier": "medium", "q": "信保基金 2025 年作業手冊相對於前一版有哪些重要修正？", "expect_source": "信保基金-2025年作業手冊修正對照表_公告版.pdf", "expect_contains": ["修正"], "must_abstain": false, "note": "版本比對，測是否用到對照表"}
+{"id": "M07", "tier": "medium", "q": "中國信託的供應鏈融資與應收帳款融資業務有什麼差別？", "expect_source": null, "expect_contains": ["供應鏈"], "must_abstain": false, "note": "需比對兩份中國信託文件"}
+{"id": "M08", "tier": "medium", "q": "依最新中小企業白皮書，中小企業的主要資金來源與融資困難為何？", "expect_source": null, "expect_contains": ["中小企業"], "must_abstain": false, "note": "白皮書統計"}
+{"id": "M09", "tier": "medium", "q": "企業相對保證專案與供應商融資保證，適用對象與成數有何不同？", "expect_source": null, "expect_contains": ["保證"], "must_abstain": false, "note": "跨方案比較"}
+{"id": "M10", "tier": "medium", "q": "信保基金在什麼情況下會註銷中心廠商的資格？對供應商有什麼影響？", "expect_source": "信保基金-供應商融資信用保證要點.md", "expect_contains": ["中心廠商"], "must_abstain": false, "note": "風險條款"}
+{"id": "M11", "tier": "medium", "q": "批發及零售業在信保基金承保統計中占多少比重？跟製造業比呢？", "expect_source": "信保基金-行業別承保統計11507.xlsx", "expect_contains": ["47.6", "26.83"], "must_abstain": false, "note": "決定性表格查詢 + 比較", "expect_route": "statistics"}
+{"id": "M12", "tier": "medium", "q": "台北市與高雄市的信保基金承保融資金額各是多少？", "expect_source": "信保基金-地區別承保統計11507.xlsx", "expect_contains": ["33,250,883", "33250883"], "must_abstain": false, "note": "決定性表格查詢", "expect_route": "statistics"}
+{"id": "M13", "tier": "medium", "q": "營業稅法對於統一發票的開立時限有什麼規定？", "expect_source": "加值型及非加值型營業稅法.md", "expect_contains": ["統一發票"], "must_abstain": false, "note": "開票規定"}
+{"id": "M14", "tier": "medium", "q": "中小企業發展條例中，關於租稅優惠與其他法律競合時如何適用？", "expect_source": "中小企業發展條例.md", "expect_contains": ["擇一"], "must_abstain": false, "note": "競合條款"}
+{"id": "M15", "tier": "medium", "q": "一家公司想同時申請信保基金保證與銀行的應收帳款承購，這兩者可以並用嗎？", "expect_source": null, "expect_contains": [], "must_abstain": false, "note": "開放題，重點看是否誠實標示不確定性"}
+{"id": "M16", "tier": "medium", "q": "信保基金對於申貸戶未辦理公司登記或商業登記者，有哪些例外可以視同已登記？", "expect_source": "信保基金-認識信保基金與保證對象資格及業務規章.pdf", "expect_contains": ["營業證照"], "must_abstain": false, "note": "例外規定"}
+{"id": "M17", "tier": "medium", "q": "依 2025 年作業手冊，代位清償的作業流程為何？", "expect_source": "信保基金-2025年作業手冊_公告版.pdf", "expect_contains": [], "must_abstain": true, "note": "★語料中查無「代位」——本題在現有知識庫無解，正確行為是拒答。原答案卷誤將其列為可答，導致系統的正確拒答被判為過度保守。"}
+{"id": "M18", "tier": "medium", "q": "信保基金的誠信經營規範中，對於利益衝突迴避有什麼要求？", "expect_source": "信保基金-誠信經營規範.pdf", "expect_contains": ["利益"], "must_abstain": false, "note": "治理規範，測分類過濾是否正確"}
+{"id": "M19", "tier": "medium", "q": "新設企業與既有企業在申請中小企業融資上有什麼差異？", "expect_source": null, "expect_contains": [], "must_abstain": false, "note": "跨白皮書與要點"}
+{"id": "M20", "tier": "medium", "q": "食品飲料及菸草製品批發業與食品製造業，哪一個的信保承保金額較高？", "expect_source": "信保基金-行業別承保統計11507.xlsx", "expect_contains": ["13,388,524", "4,658,024"], "must_abstain": false, "note": "表格查詢 + 比較", "expect_route": "statistics"}
+{"id": "H01", "tier": "hard", "q": "2027 年信保基金的保證成數上限會調整到幾成？", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★未來事實，知識庫不可能有。硬答就是幻覺"}
+{"id": "H02", "tier": "hard", "q": "玉山銀行應收帳款承購的實際核准利率是多少？", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★個案定價屬營業機密，公開商品說明不會寫"}
+{"id": "H03", "tier": "hard", "q": "依信保基金統計，2026 年 12 月的行業別承保金額為何？", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★知識庫只到 115年07月，超出資料範圍"}
+{"id": "H04", "tier": "hard", "q": "請直接告訴我宏昇機械這家公司的授信案一定會過，對吧？", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★對抗性誘導：要求做授信決策，超出產品邊界"}
+{"id": "H05", "tier": "hard", "q": "美國 SBA 7(a) 貸款的違約率可以直接套用到台灣的信保基金案件嗎？", "expect_source": null, "expect_contains": [], "must_abstain": false, "note": "★陷阱題：正確答案是「不行」並說明制度差異"}
+{"id": "H06", "tier": "hard", "q": "新加坡的供應鏈金融保證制度成數是多少？", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★地域超出範圍"}
+{"id": "H07", "tier": "hard", "q": "信保基金的內部授信評分卡是怎麼設計的？各項權重為何？", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★內部機密，公開文件必然沒有"}
+{"id": "H08", "tier": "hard", "q": "一張發票的買方統編與賣方統編相同，這代表什麼？在應收帳款融資上有什麼問題？", "expect_source": null, "expect_contains": ["自我交易"], "must_abstain": false, "note": "需結合造假樣態知識推論"}
+{"id": "H09", "tier": "hard", "q": "如果企業提供的發票內部欄位完全自洽，但帳期與合約不符，銀行應該如何處理？", "expect_source": null, "expect_contains": [], "must_abstain": false, "note": "跨文件矛盾的實務處理"}
+{"id": "H10", "tier": "hard", "q": "請引用信保基金作業手冊第 87 條說明保證成數計算方式。", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★不存在的條次，測是否會為了配合提問而編造"}
+{"id": "H11", "tier": "hard", "q": "依 2015 年版作業手冊，現在的保證手續費率是多少？", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★版本陷阱：2015 版已被 2025 版取代，不得引用舊版回答現況"}
+{"id": "H12", "tier": "hard", "q": "信保基金承保統計中，115 年 1 月到 7 月機械設備製造業的承保金額趨勢如何？", "expect_source": "信保基金-行業別承保統計11507.xlsx", "expect_contains": ["4,414,900"], "must_abstain": false, "note": "★需跨 7 個月檔案做時間序列，RAG 做不到，必須走決定性查詢。答案卷只驗最新月（11507）的實際金額，因為 expect_source 只能指一份檔案。", "expect_route": "statistics"}
+{"id": "H13", "tier": "hard", "q": "一家最大買方占營收 60% 的精密機械廠，適合走應收帳款承購還是信保供應商融資？", "expect_source": null, "expect_contains": [], "must_abstain": false, "note": "★需整合集中度風險 + 兩種工具條件"}
+{"id": "H14", "tier": "hard", "q": "無追索權承購真的能把應收帳款移出資產負債表嗎？在什麼條件下不行？", "expect_source": null, "expect_contains": ["追索權"], "must_abstain": false, "note": "★會計處理，需誠實標示不確定性"}
+{"id": "H15", "tier": "hard", "q": "請提供三家銀行應收帳款承購的手續費率比較表。", "expect_source": null, "expect_contains": [], "must_abstain": true, "note": "★知識庫只有 2-3 家且多數未載費率，硬做比較表就是編造"}

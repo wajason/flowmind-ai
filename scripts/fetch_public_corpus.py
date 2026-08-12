@@ -49,7 +49,16 @@ SOURCES: list[dict] = [
      "why": "SME 融資、信保基金撥款的法源依據"},
     {"cat": "法規", "kind": "html",
      "name": "中小企業認定標準",
-     "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=J0140002",
+     # ⚠️ 這個 pcode 曾經寫成 J0140002，那是「中小企業發展基金收支保管及
+     # 運用辦法」—— 檔名對、內容完全是另一部法規，而且**沒有任何錯誤訊息**。
+     #
+     # 症狀：問「中小企業認定標準的門檻是多少」永遠拒答，因為那份文件裡
+     # 真的沒有答案。我們一度把那次拒答歸咎於模型不夠好，其實是語料錯了。
+     #
+     # 教訓：**抓完要驗內容，不能只驗「有沒有抓到檔案」。**
+     # expect_contains 就是為此而加：抓完立刻確認關鍵字真的在裡面。
+     "url": "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=J0140003",
+     "expect_contains": ["一億元", "二百人"],
      "why": "界定客戶是否符合中小企業資格，決定能否適用信保方案"},
     {"cat": "法規", "kind": "html",
      "name": "商業會計法",
@@ -173,6 +182,22 @@ def fetch(client: httpx.Client, src: dict) -> dict:
             if len(md) < 400:
                 raise ValueError(f"抽出的正文只有 {len(md)} 字元，"
                                  f"可能是 JavaScript 動態載入的頁面，需要人工下載")
+            # ── 內容檢查：抓到檔案 ≠ 抓對東西 ──────────────────────────
+            #
+            # 實際踩過的坑：中小企業認定標準的 pcode 寫錯，抓回來的是
+            # 另一部法規。檔名對、大小正常、狀態顯示成功 ——
+            # **完全沒有任何錯誤訊息**，直到有人問了那份法規的內容才發現。
+            #
+            # 所以來源可以宣告 expect_contains，抓完立刻驗。
+            # 對不上就當作抓取失敗，不要寫進語料庫 ——
+            # 一份內容錯的文件比缺少那份文件危險得多。
+            missing = [k for k in (src.get("expect_contains") or [])
+                       if k not in md]
+            if missing:
+                raise ValueError(
+                    f"抓到的內容缺少預期關鍵字 {missing} —— "
+                    f"可能是 URL 指向了錯誤的文件（檔名對但內容不對）")
+
             path = OUT_DIR / f"{slug(src['name'])}.md"
             path.write_text(
                 f"# {src['name']}\n\n"
