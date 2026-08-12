@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="520"
+     viewBox="0 0 1000 520" font-family="system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif">
+  <rect width="1000" height="520" fill="#fcfcfb"/>
+  <text x="40" y="40" font-size="26" font-weight="700" fill="#0f766e">
+    「有引用」不等於「有根據」</text>
+
+  <!-- 左：市面做法 -->
+  <rect x="40" y="62" width="430" height="400" rx="10" fill="#fdf3f3" stroke="#d03b3b55" stroke-width="1.5"/>
+  <text x="60" y="94" font-size="18" font-weight="700" fill="#d03b3b">
+    市面上的 RAG 產品</text>
+  <text x="60" y="126" font-size="14.5" fill="#0b0b0b">請 LLM 在句尾寫上來源檔名</text>
+
+  <rect x="60" y="142" width="390" height="92" rx="8" fill="#fff" stroke="#d03b3b33" stroke-width="1.5"/>
+  <text x="74" y="170" font-size="14" fill="#0b0b0b">保證成數最高九成。</text>
+  <text x="74" y="196" font-size="13.5" fill="#d03b3b" font-family="ui-monospace, monospace">
+    [來源: 信保要點.pdf]</text>
+  <text x="74" y="220" font-size="12.5" fill="#898781">↑ 這一串也是模型生成的 token</text>
+
+  <text x="60" y="266" font-size="15" font-weight="600" fill="#d03b3b">問題在哪</text>
+  <!-- SVG 不吃 markdown，粗體要用 tspan。
+       第一版直接寫 **完全沒讀過**，結果星號原樣印在圖上。 -->
+  <text x="60" y="292" font-size="14" fill="#52514e">模型可以在<tspan
+    font-weight="700" fill="#d03b3b">完全沒讀過</tspan>那份文件</text>
+  <text x="60" y="314" font-size="14" fill="#52514e">的情況下，寫出格式完美的引用。</text>
+  <text x="60" y="348" font-size="14" fill="#52514e">從畫面上，使用者分辨不出</text>
+  <text x="60" y="370" font-size="14.5" fill="#d03b3b" font-weight="600">
+    「有引用」和「有根據」的差別。</text>
+
+  <rect x="60" y="392" width="390" height="52" rx="8" fill="#fff" stroke="#d03b3b33" stroke-width="1.5"/>
+  <text x="74" y="414" font-size="13.5" fill="#52514e">要驗證，只能靠人</text>
+  <text x="74" y="434" font-size="13.5" fill="#52514e">一份一份翻回去對。</text>
+
+  <!-- 右：我們的做法 -->
+  <rect x="530" y="62" width="430" height="400" rx="10" fill="#f1f8f4" stroke="#0ca30c55" stroke-width="1.5"/>
+  <text x="550" y="94" font-size="18" font-weight="700" fill="#0ca30c">
+    FlowMind</text>
+  <text x="550" y="126" font-size="14.5" fill="#0b0b0b">每個主張必須附一段逐字摘錄</text>
+
+  <rect x="550" y="142" width="390" height="92" rx="8" fill="#fff" stroke="#0ca30c33" stroke-width="1.5"/>
+  <text x="564" y="170" font-size="14" fill="#0b0b0b">保證成數最高九成。</text>
+  <text x="564" y="194" font-size="12.5" fill="#52514e" font-family="ui-monospace, monospace">
+    引用「信用保證成數最高九成。」</text>
+  <text x="564" y="216" font-size="12.5" fill="#0ca30c" font-weight="600">
+    ✓ exact　回原文逐字比對通過</text>
+
+  <text x="550" y="266" font-size="15" font-weight="600" fill="#0ca30c">關鍵差別</text>
+  <text x="550" y="292" font-size="14" fill="#52514e">程式回到實際檢索到的文本</text>
+  <text x="550" y="314" font-size="14" fill="#52514e">做字串比對，</text>
+  <text x="550" y="336" font-size="14.5" fill="#d03b3b" font-weight="600">
+    對不上的直接從答案中移除。</text>
+
+  <rect x="550" y="356" width="390" height="88" rx="8" fill="#fff" stroke="#0ca30c33" stroke-width="1.5"/>
+  <text x="564" y="382" font-size="14" font-weight="700" fill="#0f766e">
+    這條路徑上</text>
+  <text x="564" y="406" font-size="14" font-weight="700" fill="#0f766e">
+    沒有任何一步經過語言模型</text>
+  <text x="564" y="430" font-size="13" fill="#52514e">
+    → 不可能被「講得更有說服力」騙過</text>
+
+  <text x="500.0" y="506" text-anchor="middle" font-size="13.5" fill="#898781">
+    模型唯一能提高分數的方法，就是真的去讀檢索到的文件</text>
+</svg>

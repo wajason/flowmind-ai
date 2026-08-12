@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="520"
+     viewBox="0 0 1000 520" font-family="system-ui, -apple-system, 'Segoe UI', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif">
+  <rect width="1000" height="520" fill="#fcfcfb"/>
+  <text x="96" y="40" font-size="26" font-weight="700" fill="#0f766e">
+    為什麼「亂猜」在數學上不划算</text>
+  <text x="96" y="63" font-size="14.5" fill="#52514e">
+    HPES：答對 +1　留白 0　答錯 −2　—— 損益平衡點是算出來的，不是我們訂的</text>
+
+  <line x1="96" x2="810" y1="442.0" y2="442.0" stroke="#e1e0d9" stroke-width="1"/><text x="84" y="447.0" text-anchor="end" font-size="13" fill="#898781">−2</text><line x1="96" x2="810" y1="320.0" y2="320.0" stroke="#e1e0d9" stroke-width="1"/><text x="84" y="325.0" text-anchor="end" font-size="13" fill="#898781">−1</text><line x1="96" x2="810" y1="198.0" y2="198.0" stroke="#e1e0d9" stroke-width="1"/><text x="84" y="203.0" text-anchor="end" font-size="13" fill="#898781">0</text><line x1="96" x2="810" y1="76.0" y2="76.0" stroke="#e1e0d9" stroke-width="1"/><text x="84" y="81.0" text-anchor="end" font-size="13" fill="#898781">+1</text>
+
+  <!-- 留白：期望分數恆為 0 -->
+  <line x1="96" x2="810" y1="198.0" y2="198.0"
+        stroke="#2a78d6" stroke-width="3"/>
+  <!-- 猜：p·1 + (1−p)·(−λ) -->
+  <path d="M96.0,442.0 L103.1,438.3 L110.3,434.7 L117.4,431.0 L124.6,427.4 L131.7,423.7 L138.8,420.0 L146.0,416.4 L153.1,412.7 L160.3,409.1 L167.4,405.4 L174.5,401.7 L181.7,398.1 L188.8,394.4 L196.0,390.8 L203.1,387.1 L210.2,383.4 L217.4,379.8 L224.5,376.1 L231.7,372.5 L238.8,368.8 L245.9,365.1 L253.1,361.5 L260.2,357.8 L267.4,354.2 L274.5,350.5 L281.6,346.8 L288.8,343.2 L295.9,339.5 L303.1,335.9 L310.2,332.2 L317.3,328.5 L324.5,324.9 L331.6,321.2 L338.8,317.6 L345.9,313.9 L353.0,310.2 L360.2,306.6 L367.3,302.9 L374.5,299.3 L381.6,295.6 L388.7,291.9 L395.9,288.3 L403.0,284.6 L410.2,281.0 L417.3,277.3 L424.4,273.6 L431.6,270.0 L438.7,266.3 L445.9,262.7 L453.0,259.0 L460.1,255.3 L467.3,251.7 L474.4,248.0 L481.6,244.4 L488.7,240.7 L495.8,237.0 L503.0,233.4 L510.1,229.7 L517.3,226.1 L524.4,222.4 L531.5,218.7 L538.7,215.1 L545.8,211.4 L553.0,207.8 L560.1,204.1 L567.2,200.4 L574.4,196.8 L581.5,193.1 L588.7,189.5 L595.8,185.8 L602.9,182.1 L610.1,178.5 L617.2,174.8 L624.4,171.2 L631.5,167.5 L638.6,163.8 L645.8,160.2 L652.9,156.5 L660.1,152.9 L667.2,149.2 L674.3,145.5 L681.5,141.9 L688.6,138.2 L695.8,134.6 L702.9,130.9 L710.0,127.2 L717.2,123.6 L724.3,119.9 L731.5,116.3 L738.6,112.6 L745.7,108.9 L752.9,105.3 L760.0,101.6 L767.2,98.0 L774.3,94.3 L781.4,90.6 L788.6,87.0 L795.7,83.3 L802.9,79.7 L810.0,76.0" fill="none" stroke="#eb6834" stroke-width="3"/>
+
+  <!-- 交點 -->
+  <line x1="572.0" x2="572.0" y1="76" y2="442"
+        stroke="#d03b3b" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <circle cx="572.0" cy="198.0" r="7" fill="#d03b3b"
+          stroke="#fcfcfb" stroke-width="2.5"/>
+  <text x="572.0" y="468.0" text-anchor="middle" font-size="15"
+        font-weight="700" fill="#d03b3b">66.7%</text>
+  <!-- 標籤放在繪圖區「內」的頂端，不要放在 y1 之上 ——
+       那裡是副標題的位置，兩者會疊在一起（第一版就疊了）。 -->
+  <rect x="488.0" y="84" width="168" height="26" rx="6"
+        fill="#fcfcfb" opacity="0.92"/>
+  <text x="572.0" y="102.0" text-anchor="middle" font-size="13.5"
+        font-weight="600" fill="#d03b3b">損益平衡 λ/(1+λ)</text>
+
+  <!-- 區域標註 -->
+  <text x="556.0" y="338.3" text-anchor="end" font-size="15"
+        fill="#eb6834" font-weight="600">把握度不足時</text>
+  <text x="556.0" y="374.9" text-anchor="end" font-size="14"
+        fill="#52514e">猜 → 期望分數為負</text>
+  <text x="588.0" y="122.4" font-size="15" fill="#eb6834"
+        font-weight="600">把握度夠高時</text>
+  <text x="588.0" y="149.2" font-size="14" fill="#52514e">
+    猜才開始划算</text>
+
+  <text x="96.0" y="468.0" text-anchor="middle" font-size="13" fill="#898781">0%</text><text x="274.5" y="468.0" text-anchor="middle" font-size="13" fill="#898781">25%</text><text x="453.0" y="468.0" text-anchor="middle" font-size="13" fill="#898781">50%</text><text x="810.0" y="468.0" text-anchor="middle" font-size="13" fill="#898781">100%</text>
+  <text x="453.0" y="498" text-anchor="middle" font-size="14"
+        fill="#52514e">模型對這個答案的真實把握度</text>
+
+  <!-- 圖例 -->
+  <rect x="832" y="82" width="14" height="14" rx="3" fill="#2a78d6"/>
+  <text x="852" y="94" font-size="14" fill="#0b0b0b">留白</text>
+  <text x="852" y="113" font-size="12.5" fill="#898781">恆為 0</text>
+  <rect x="832" y="132" width="14" height="14" rx="3" fill="#eb6834"/>
+  <text x="852" y="144" font-size="14" fill="#0b0b0b">猜</text>
+  <text x="852" y="163" font-size="12.5" fill="#898781">隨把握度變化</text>
+
+  <text x="832" y="396" font-size="13" fill="#52514e" font-weight="600">
+    這條線是數學事實</text>
+  <text x="832" y="416" font-size="12.5" fill="#898781">不是可以調的門檻</text>
+  <text x="832" y="434" font-size="12.5" fill="#898781">→ 指標不可 gameable</text>
+</svg>
