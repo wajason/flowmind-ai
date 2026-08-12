@@ -419,6 +419,124 @@ def d_shell_company(inv, con, led, rng, used) -> Optional[Defect]:
                   "需商工登記負責人關聯或實地訪查")
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# Tier 6：壓力測試樣態
+#
+# 前面 22 種是「典型的造假長什麼樣」。這一組不同 ——
+# 它們是**刻意設計來鑽既有檢查漏洞的**：剛好卡在門檻上、
+# 剛好符合每一條單項規則、剛好利用單位或時序的模糊地帶。
+#
+# 為什麼要自己攻擊自己：
+# 一套只用「典型樣態」驗證過的檢查引擎，證明的是「它會抓已知的東西」。
+# 但造假的人會去找邊界。**題目愈刁鑽，「它說沒問題」才愈有份量。**
+# ══════════════════════════════════════════════════════════════════════════
+
+def d_boundary_tax_rate(inv, con, led, rng, used) -> Optional[Defect]:
+    """
+    稅額造假，但**剛好落在四捨五入的容差內**。
+
+    ARITH-02 檢查 稅額 ≈ 銷售額 × 5%，允許一元以內的進位誤差
+    （因為真實發票的進位規則本來就有分歧）。
+    這個樣態把稅額改成剛好差 1 元 —— 在容差邊界上。
+
+    這一題**應該抓不到，而且抓不到是對的**：
+    若把容差收緊到零，會把大量合法發票誤判為造假。
+    它存在的意義是量出「我們的容差有多寬」，並讓這件事被寫下來。
+    """
+    t = _pick(inv, rng, used)
+    if not t:
+        return None
+    tax = int(t.get("tax_amount") or 0)
+    if tax <= 1:
+        return None
+    t["tax_amount"] = tax - 1
+    t["total_amount"] = int(t.get("sales_amount") or 0) + tax - 1
+    return Defect("D23", 6, "稅額差 1 元（卡在容差邊界）", None,
+                  t["invoice_number"],
+                  "稅額比正確值少 1 元，落在進位容差內。"
+                  "**預期抓不到，且這是正確的** —— 收緊容差會誤傷大量合法發票。"
+                  "本樣態的用途是量出容差寬度，不是要求系統抓到它。")
+
+
+def d_invoice_before_contract(inv, con, led, rng, used) -> Optional[Defect]:
+    """
+    時序矛盾：發票開立日**早於**合約簽署日。
+
+    每一個欄位單獨看都完全正常 —— 日期格式對、不是未來日期、
+    帳期與到期日一致。只有把發票與合約放在一起看才會發現：
+    這批貨在合約還沒簽的時候就出了。
+
+    這是跨文件檢查才抓得到的類型，與 D14（帳期不符）同一族但更隱蔽。
+    """
+    if not con:
+        return None
+    t = _pick(inv, rng, used)
+    if not t:
+        return None
+    ban = t.get("buyer_ban")
+    ct = next((c for c in con if c.get("buyer_ban") == ban), None)
+    if not ct or not ct.get("effective_date"):
+        return None
+    from datetime import date as _date, timedelta as _td
+    try:
+        eff = _date.fromisoformat(str(ct["effective_date"])[:10])
+    except ValueError:
+        return None
+    new_issue = eff - _td(days=rng.randint(20, 60))
+    terms = int(t.get("payment_terms_days") or 30)
+    t["invoice_date"] = new_issue.isoformat()
+    t["due_date"] = (new_issue + _td(days=terms)).isoformat()
+    return Defect("D24", 6, "發票開立日早於合約簽署日", "DATE",
+                  t["invoice_number"],
+                  f"發票 {new_issue} 早於合約生效日 {eff}。"
+                  "單張發票內部完全自洽，**只有跨文件比對才發現得了**。")
+
+
+def d_split_to_evade(inv, con, led, rng, used) -> Optional[Defect]:
+    """
+    拆單：把一張大額發票拆成兩張小額，各自避開「大額」的注目。
+
+    兩張發票的號碼不同、日期差幾天、金額不同 ——
+    DUP-02（同買方同金額同日期）抓不到，因為刻意讓金額與日期都不同。
+    要抓到必須看「同一買方短期內的異常密集開票」。
+    """
+    # 拆單只有在金額夠大時才有動機，所以挑**最大的一張**而不是隨機挑。
+    # 隨機挑會讓這個樣態時有時無 —— 一個時而注入不了的測試樣態，
+    # 等於沒有測到，而且失敗時看起來像「系統沒抓到」。
+    cands = sorted((x for x in inv if x.get("invoice_number") not in used),
+                   key=lambda x: -(int(x.get("total_amount") or 0)))
+    t = cands[0] if cands else None
+    if not t:
+        return None
+    used.add(t.get("invoice_number"))
+    total = int(t.get("total_amount") or 0)
+    if total < 200_000:
+        return None
+    from datetime import date as _date, timedelta as _td
+    try:
+        d0 = _date.fromisoformat(str(t["invoice_date"])[:10])
+    except (ValueError, KeyError):
+        return None
+    part_a = int(total * 0.55)
+    part_b = total - part_a
+    for amt, off in ((part_a, 0), (part_b, rng.randint(2, 5))):
+        sales = int(round(amt / 1.05))
+        tax = amt - sales
+        d = d0 + _td(days=off)
+        terms = int(t.get("payment_terms_days") or 30)
+        new = dict(t)
+        new.update(invoice_number=f"SP{rng.randint(10_000_000, 99_999_999)}",
+                   invoice_date=d.isoformat(),
+                   due_date=(d + _td(days=terms)).isoformat(),
+                   sales_amount=sales, tax_amount=tax, total_amount=amt)
+        inv.append(new)
+    inv.remove(t)
+    return Defect("D25", 6, "大額拆單規避", None, "SP*",
+                  f"一張 {total:,} 元的發票被拆成兩張（金額與日期都不同）。"
+                  "DUP-02 抓不到，因為它比對的是『同金額同日期』。"
+                  "要抓到需要『同買方短期異常密集開票』這類統計檢查。")
+
+
 ALL_DEFECTS: list[tuple[str, int, Callable]] = [
     ("D01", 1, d_invalid_ban), ("D02", 1, d_arith_mismatch),
     ("D03", 1, d_wrong_tax_rate), ("D04", 1, d_future_date),
@@ -432,7 +550,24 @@ ALL_DEFECTS: list[tuple[str, int, Callable]] = [
     ("D18", 4, d_round_numbers), ("D19", 4, d_benford_violation),
     ("D20", 4, d_weekend_burst),
     ("D21", 5, d_perfect_forgery), ("D22", 5, d_shell_company),
+    # Tier 6：刻意鑽漏洞的壓力測試樣態
+    ("D23", 6, d_boundary_tax_rate), ("D24", 6, d_invoice_before_contract),
+    ("D25", 6, d_split_to_evade),
 ]
+
+# 已知抓不到的樣態。列出來而不是藏起來 ——
+# 一份只列出「我們抓得到什麼」的報告，等於沒有揭露能力邊界。
+KNOWN_UNDETECTABLE = {
+    "D21": "完全自洽的偽造發票：需物流單／報關單等外部佐證",
+    "D22": "人頭公司買方：需商工登記負責人關聯或實地訪查",
+    "D23": "稅額差 1 元：落在進位容差內，收緊容差會誤傷大量合法發票",
+    # D25 實測會觸發 BANK-01，但那是**附帶抓到**不是設計抓到：
+    # 拆單後原本那張發票的收款紀錄對不上流水，於是勾稽檢查亮了。
+    # 如果那批貨還沒收款，這條線索就不存在。
+    # 把「碰巧抓到」寫成「抓得到」，是最容易自欺的一種記錄方式。
+    "D25": "大額拆單：現況靠 BANK-01 附帶抓到（僅在已收款時成立）；"
+           "要穩定抓到需要『同買方短期異常密集開票』的統計檢查，目前未實作",
+}
 
 # 統計性樣態（Tier 4）會大量改動資料，與其他樣態同時注入會互相干擾，
 # 所以預設分開評測。

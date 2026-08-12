@@ -197,6 +197,38 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
             "TERM-02", "發票帳期 vs 合約帳期", Severity.INFO, True,
             "本案未提供買賣合約，無法比對合約帳期。"
             "銀行受理應收帳款承購時通常會要求合約或訂單，建議補件。"))
+
+    # ── TERM-03：發票開立日不得早於合約生效日 ──────────────────────────
+    #
+    # 這條檢查是**壓力測試逼出來的**。
+    # fraud_injector 的 D24 樣態（把發票日期改到合約簽署之前）注入後，
+    # 26 條檢查沒有任何一條被觸發 —— 每個欄位單獨看都完全正常：
+    # 日期格式對、不是未來日期、到期日 = 開立日 + 帳期。
+    # 只有把發票與合約放在一起看才會發現「這批貨在合約還沒簽時就出了」。
+    #
+    # 這正是產品的核心主張（跨文件比對才抓得到）少掉的一塊，
+    # 而它是被自己的壓力測試找出來的，不是被客戶找出來的。
+    early = []
+    for inv in invoices:
+        idate = _d(inv.get("invoice_date"))
+        c = by_buyer.get(normalize_tax_id(inv.get("buyer_ban")))
+        if not (idate and c):
+            continue
+        eff = _d(c.get("effective_date")) or _d(c.get("start_date"))
+        if eff and idate < eff:
+            early.append(f"{inv.get('invoice_number')}"
+                         f"(發票{idate}/合約生效{eff})")
+    if contracts:
+        # 嚴重度是 WARNING 而不是 CRITICAL，理由必須寫清楚：
+        # 真實世界的合約會續約，早於**本份**合約的發票，
+        # 可能是在前一份合約下開立的，而我們手上沒有那份。
+        # 把「需要補件說明」判成「造假」，會讓使用者不信任所有警示。
+        findings.append(Finding(
+            "TERM-03", "發票開立日 vs 合約生效日", Severity.WARNING, not early,
+            "所有發票的開立日都在合約生效之後。" if not early else
+            f"{len(early)} 張發票早於合約生效日，需補前一份合約或訂單佐證："
+            + "、".join(early[:5]),
+            refs=early[:20]))
     return findings
 
 

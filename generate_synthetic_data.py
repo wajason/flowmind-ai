@@ -217,7 +217,20 @@ class SyntheticSMEGenerator:
         """
         out = []
         for i, c in enumerate(self.customers[:4]):
-            start = self.start_date + timedelta(days=self.rng.randint(0, 60))
+            # 合約生效日固定為資料期間的起點，**不再隨機往後推**。
+            #
+            # 原本寫成 start_date + rand(0,60)，於是有些客戶的頭幾張發票
+            # 落在合約生效之前 —— 在真實世界那代表「貨在合約簽訂前就出了」，
+            # 是交易真實性存疑的訊號。
+            #
+            # 這個瑕疵是被 TERM-03 抓出來的：它在**乾淨資料**上就誤報，
+            # 而誤報的原因不是檢查寫錯，是合成資料本身不自洽。
+            # 合成資料的價值全繫於「除了刻意注入的缺陷，其餘都是乾淨的」——
+            # 一個連自己都不自洽的對照組，會讓所有以它為基準的結論失效。
+            #
+            # 用起點而非隨機日期，也更貼近實務：年度基本買賣合約
+            # 通常在往來關係開始時就簽訂，之後的訂單都在它底下走。
+            start = self.start_date
             out.append({
                 "doc_type": "SALES_CONTRACT",
                 "contract_number": f"CT-{start.year}-{i+1:03d}",
