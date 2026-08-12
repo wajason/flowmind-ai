@@ -49,7 +49,7 @@
 2. **關鍵條件是「佐證交易真實性」** — 舉證責任在申請方
 3. **費率會因送保品質浮動** — **證明能力越強，資金成本越低**
 
-缺的從來不是制度，是**「怎麼有效率地證明交易是真的」**。FlowMind 做的就是這一段。
+缺的從來不是制度，是「**怎麼有效率地證明交易是真的**」。FlowMind 做的就是這一段。
 
 ---
 
@@ -70,11 +70,11 @@
 
 ```mermaid
 flowchart TB
-    P1["痛點 A：財報不可靠<br/>銀行只好打折看待<br/>→ 體質好的公司也借不到合理額度"]
-    P2["痛點 B：解法已知但驗證靠人工<br/>看交易不看財報（transaction-based lending）<br/>→ 但憑證核對是人工、無工具、無留痕"]
-    P3["痛點 C：這也是造假風險最高的環節<br/>自我交易 · 重複請款 · 人頭買方 · 帳期美化"]
+    P1["痛點 A：財報不可靠<br/>銀行只好打折看待<br/>→ <br/>體質好的公司<br/>也借不到合理額度"]
+    P2["痛點 B：解法已知但驗證靠人工<br/>看交易不看財報（transaction-based lending）<br/>→<br/>但憑證核對是人工<br/>、無工具、無留痕"]
+    P3["痛點 C：這也是造假風險最高的環節<br/>自我交易 · 重複請款 ·<br/>人頭買方 · 帳期美化"]
     P1 --> P2 --> P3
-    P3 --> S["★ FlowMind<br/>把「憑證彼此對得起來」<br/>變成可程式驗證、可稽核、可重算"]
+    P3 --> S["★ FlowMind<br/>把「憑證彼此對得起來」<br/>變成可程式驗證<br/>、可稽核、可重算"]
     style S fill:#0f766e,color:#fff
     style P3 fill:#b91c1c,color:#fff
 ```
@@ -326,7 +326,7 @@ python -m flowmind.cli engagements
 ### 5.5 評測與測試
 
 ```powershell
-# 回歸測試（39 項，數秒，不需資料庫與 LLM）
+# 回歸測試（154 項，數秒，不需資料庫與 LLM）
 python tests\test_core.py
 
 # 外部 benchmark
@@ -568,7 +568,7 @@ python rag_query.py --verify-isolation CASE-0001 CASE-9999
 | 認證鏈（authn） | 四情境全過：授權/未授權/偽造權杖/撤銷即時生效 |
 | 稽核雜湊鏈 | 完整未斷鏈 |
 | **端到端可重現性** | 安靜條件 **9/9 完全一致**；顯存競爭下**不一致**（見下） |
-| 回歸測試 | **139 / 139** |
+| 回歸測試 | **154 / 154** |
 | 知識圖譜 | **128 節點**（83 文件 · 16 產業 · 11 期間 · 9 主題 · 9 法域） |
 | 知識庫規模 | 83 份文件 / **7,619** chunks |
 
@@ -886,7 +886,7 @@ flowmind_AI/
 │   ├── fetch_benchmarks.py      SROIE / FUNSD / CORD
 │   ├── run_verifin.py           評測執行器
 │   └── eval_models.py           模型選型實測
-├── tests/test_core.py           39 項回歸測試（無外部依賴）
+├── tests/test_core.py           154 項回歸測試（無外部依賴）
 ├── sql/init/                    RLS policy 與 schema
 ├── docs/
 │   ├── SDD.md                   軟體設計規格書
