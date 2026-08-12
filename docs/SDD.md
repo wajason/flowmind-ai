@@ -605,7 +605,7 @@ flowchart TB
 | AURC | **0.241** | 越低越好 |
 | 嚴格 JSON 失敗率 | **0.0%** | grammar-constrained decoding |
 | 回歸測試 | **170 / 170 通過** | 含負向測試組 |
-| 知識庫規模 | 83 份文件 / **7,616** chunks | SHARED |
+| 知識庫規模 | 84 份文件 / **7,619** chunks | SHARED |
 
 ### 8.3 已知不足（誠實揭露）
 

@@ -1,0 +1,26 @@
+{
+  "fetched_at": "2026-08-12T21:24:41",
+  "as_of": "2024-03-22",
+  "stale": true,
+  "stale_days_threshold": 90,
+  "rates": {
+    "source": "中央銀行　央行貼放利率",
+    "url": "https://www.cbc.gov.tw/tw/lp-370-1.html",
+    "items": [
+      {
+        "name": "重貼現率",
+        "value_pct": 2.0
+      },
+      {
+        "name": "擔保放款融通利率",
+        "value_pct": 2.375
+      },
+      {
+        "name": "短期融通利率",
+        "value_pct": 4.25
+      }
+    ],
+    "error": null,
+    "as_of": "2024-03-22"
+  }
+}
