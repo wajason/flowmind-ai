@@ -969,21 +969,46 @@ def metrics_route(q: str):
 
 
 # ══════════════════════════════════════════════════════════════════════════
+# 測試分兩組。**這個區分是後來才加的，而且是被迫的** ——
+#
+# 這個檔案原本宣稱「不需要資料庫、不需要 LLM」，那句話一度是真的。
+# 但隨著檢索可重現性、儀表板、產業層、PDF 報告等測試加進來，
+# 它已經**不再成立**，而文件裡那句話還留著。
+#
+# 處理方式不是把那些測試刪掉（它們保護的是真實的缺陷），
+# 也不是繼續讓文件說謊，而是**把前提講清楚並讓它可執行**：
+#
+#   CORE_TESTS         純邏輯，無外部依賴，數秒跑完 —— CI 每次 commit 都跑
+#   INTEGRATION_TESTS  需要 PostgreSQL（部分還需要已建好的知識庫）
+#
+# `--core-only` 讓 CI 與「還沒建好資料庫的接手者」有一條一定跑得起來的路徑。
+# 一個「要先開 Docker 才能跑」的測試，實務上不會有人跑。
+CORE_TESTS = (
+    test_tax_id, test_cjk, test_citation_positive, test_citation_negative,
+    test_confidence_gate, test_claim_corroboration, test_hpes,
+    test_counterfactual, test_crosscheck, test_router, test_scope_terms,
+    test_guardrail, test_auditor,
+)
+INTEGRATION_TESTS = (
+    test_query_plan,             # 需要 kg_nodes
+    test_dashboard,              # 需要 fin_* 與 documents
+    test_report_pdf,             # 需要 engagements
+    test_retrieval_determinism,  # 需要 documents + 向量
+    test_industry,               # 需要 kg_nodes（產業節點）
+    test_watchtower,             # 需要 fin_invoices
+    test_table_label_index,      # 需要統計表索引
+    test_graph_scope,            # 需要知識圖譜
+)
+
 if __name__ == "__main__":
+    core_only = "--core-only" in sys.argv
     print("═" * 70)
-    print("  FlowMind 核心邏輯回歸測試")
+    print("  FlowMind 核心邏輯回歸測試" + ("　（僅核心，不需資料庫）" if core_only else ""))
     print("═" * 70)
-    for fn in (test_tax_id, test_cjk, test_citation_positive,
-               test_citation_negative, test_confidence_gate,
-               test_query_plan, test_dashboard, test_report_pdf,
-               test_retrieval_determinism,
-               test_industry, test_watchtower,
-               test_claim_corroboration, test_hpes,
-               test_counterfactual, test_crosscheck, test_router,
-               test_scope_terms, test_table_label_index, test_guardrail,
-               test_graph_scope, test_auditor):
+    for fn in CORE_TESTS if core_only else (CORE_TESTS + INTEGRATION_TESTS):
         fn()
     print("\n" + "═" * 70)
-    print(f"  通過 {PASS}　失敗 {FAIL}")
+    print(f"  通過 {PASS}　失敗 {FAIL}"
+          + (f"　（略過 {len(INTEGRATION_TESTS)} 組需要資料庫的測試）" if core_only else ""))
     print("═" * 70)
     sys.exit(1 if FAIL else 0)
