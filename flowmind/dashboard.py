@@ -225,6 +225,151 @@ def api_cashflow(tenant: str) -> JSONResponse:
     })
 
 
+@app.get("/api/simulate")
+def api_simulate(tenant: str, amount: float = 0, days: int = 30) -> JSONResponse:
+    """
+    區塊 ⑤：情境模擬 —— 「如果現在多一筆應付款會怎樣」
+
+    【為什麼是這個設計，而不是一個「模擬引擎」】
+
+    這裡**沒有任何新的財務邏輯**。現金流推算
+    （`compute_cash_flow_projection`）在資料產生器裡已經存在很久，
+    只是一直被綁在命令列參數 `--stress` 上，只有工程師會用。
+
+    這個端點做的事是把它搬到畫面上，讓授信人員可以現場輸入一個數字。
+    重用既有邏輯而不是重寫，有一個關鍵好處：
+    **模擬結果與正式報告用的是同一套算法**。
+    若模擬另外寫一套，兩邊有一天會給出不同答案，而那時沒有人知道該信哪個。
+
+    回傳基準線與模擬線兩條曲線，以及缺口日期與金額。
+    """
+    import sys                                          # noqa: PLC0415
+    from pathlib import Path as _P                      # noqa: PLC0415
+    sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
+    from generate_synthetic_data import (               # noqa: PLC0415
+        compute_cash_flow_projection)
+
+    data = metrics.load_engagement_files(tenant)
+    recv, pay = data.get("invoices") or [], data.get("payables") or []
+    if not recv:
+        return JSONResponse({"error": f"{tenant} 沒有應收帳款資料"},
+                            status_code=404)
+
+    ledger = data.get("ledger") or []
+    balance = 0.0
+    for row in reversed(ledger):
+        if row.get("balance") not in (None, ""):
+            balance = _num(row["balance"])
+            break
+
+    base = compute_cash_flow_projection(recv, pay, int(balance))
+
+    sim = None
+    if amount and amount > 0:
+        extra = dict(
+            doc_type="AP_BILL", bill_number="SIM-WHATIF",
+            issue_date=date.today().isoformat(),
+            supplier_name="（模擬）新增應付款", supplier_ban="",
+            amount=float(amount), payment_terms_days=int(days),
+            due_date=(date.today() + timedelta(days=int(days))).isoformat(),
+            status="PENDING",
+            source_note="情境模擬，非實際單據")
+        sim = compute_cash_flow_projection(recv, list(pay) + [extra],
+                                           int(balance))
+
+    def _curve(proj: dict) -> list[dict]:
+        # 欄位名是 projected_balance（不是 running_balance）——
+        # 名稱猜錯的話整條曲線會全是 null，而畫面上只會看到一片空白，
+        # 不會有任何錯誤訊息。
+        return [{"date": e["date"], "balance": e.get("projected_balance"),
+                 "amount": e["amount"], "type": e["type"],
+                 "counterparty": e.get("counterparty", "")}
+                for e in (proj.get("timeline") or [])]
+
+    def _summarise(proj: dict) -> dict:
+        """
+        除了「第一個缺口」，也回報**整段期間的最低餘額**。
+
+        只看第一個缺口在比較情境時會誤導：若基準線本來就有缺口，
+        那個日期與金額不會因為新增一筆應付款而改變 ——
+        於是加 3,000 萬與加 6,000 萬看起來一模一樣。
+        最低餘額才反映得出「這筆錢讓情況惡化多少」。
+        """
+        curve = _curve(proj)
+        bals = [c["balance"] for c in curve if c["balance"] is not None]
+        trough = min(bals) if bals else balance
+        trough_at = next((c["date"] for c in curve
+                          if c["balance"] == trough), None)
+        return {"curve": curve,
+                "gap_detected": proj.get("gap_detected"),
+                "gap_date": proj.get("gap_date"),
+                "gap_amount": proj.get("gap_amount"),
+                "trough_balance": round(trough),
+                "trough_date": trough_at}
+
+    out = {
+        "tenant": tenant, "opening_balance": round(balance),
+        "input": {"amount": amount, "days": days},
+        "baseline": _summarise(base),
+        "note": "本模擬重用 compute_cash_flow_projection() —— "
+                "與正式報告用的是同一套算法，不是另寫一份。",
+    }
+    if sim:
+        out["simulated"] = _summarise(sim)
+        b_t, s_t = out["baseline"]["trough_balance"], out["simulated"]["trough_balance"]
+        out["delta"] = {
+            "trough_drop": b_t - s_t,
+            "turns_negative": b_t >= 0 > s_t,
+            "verdict": ("這筆應付款會讓現金部位由正轉負" if b_t >= 0 > s_t
+                        else f"最低餘額再下探 {b_t - s_t:,.0f} 元"
+                        if b_t != s_t else "對最低餘額沒有影響"),
+        }
+        # 只在**模擬後**真的會轉負時才給融資建議。
+        # 基準線本來就有缺口的話，那是既有問題，不該算在這筆模擬頭上。
+        if s_t < 0:
+            out["financing"] = _financing_options(abs(s_t))
+    return JSONResponse(out)
+
+
+def _financing_options(gap: float) -> list[dict]:
+    """
+    融資方案並排比較。
+
+    **每一個數字都來自知識庫裡的公開文件，不是我們推估的。**
+    保證成數九成、年費率最低百分之零點三七五，都寫在信保基金的要點裡；
+    要點原文可用 `python -m flowmind.tables` 或直接查語料驗證。
+
+    刻意**不給利率**：銀行的實際核准利率不在任何公開文件裡，
+    給一個推估的利率會讓整張比較表變成看起來很專業的猜測 ——
+    那正是這個產品在反對的東西。
+    """
+    return [
+        {
+            "name": "信保基金 供應商融資信用保證",
+            "coverage": "保證成數最高九成",
+            "fee": "保證手續費年費率最低 0.375%（得視送保逾期情形酌增）",
+            "amount_hint": f"以缺口 {gap:,.0f} 元計，"
+                           f"九成保證約可支撐 {gap * 0.9:,.0f} 元融資",
+            "requires": "中心廠商須經基金認可；需訂單／發票／支票等佐證交易真實性",
+            "speed": "須經金融機構送保，非當日撥款",
+            "source": "信保基金-供應商融資信用保證要點.md",
+            "caveat": "本表僅列公開文件載明的條件，**不含銀行實際核准利率**——"
+                      "那不在任何公開文件裡。",
+        },
+        {
+            "name": "應收帳款承購（Factoring）",
+            "coverage": "依買方信用核給額度，無追索權可移轉呆帳風險",
+            "fee": "承購管理費 + 資金成本（各行不同，公開文件未載明費率）",
+            "amount_hint": f"需有金額達 {gap:,.0f} 元以上的合格應收帳款可轉讓",
+            "requires": "債權讓與須依民法通知債務人始生效力；買方需為合格對象",
+            "speed": "額度核給後可較快動撥",
+            "source": "玉山銀行-應收帳款承購.md／應收帳款暨融資業務（中國信託）.md",
+            "caveat": "各行條件不同，**本系統不合併成單一答案** —— "
+                      "三份商品說明各有側重，應分別查閱。",
+        },
+    ]
+
+
 @app.get("/api/confidence")
 def api_confidence(q: Optional[str] = None,
                    tenant: str = "SHARED") -> JSONResponse:

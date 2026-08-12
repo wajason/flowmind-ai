@@ -19,6 +19,22 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+# ── 強制 UTF-8 輸出 ────────────────────────────────────────────────────────
+#
+# Windows 的 Python 預設用系統 ANSI 代碼頁（繁中環境是 cp950／英文是 cp1252）
+# 寫 stdout。這個檔案的輸出全是中文與框線字元，在那種環境下**第一行就炸**：
+#     UnicodeEncodeError: 'charmap' codec can't encode characters
+#
+# 這個 bug 是 GitHub Actions 的 Windows job 抓到的 —— Linux job 全過。
+# 本機看不到是因為 PowerShell 的主控台剛好是 UTF-8；
+# 換一台預設代碼頁不同的 Windows，測試就跑不起來。
+#
+# 對一個宣稱「Windows 與 Linux 都能跑」的專案來說，
+# **測試自己跑不起來是最難堪的一種不可攜**。
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from flowmind import config, crosscheck, evidence, textnorm, verifin   # noqa: E402

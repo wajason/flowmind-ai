@@ -82,6 +82,11 @@ h2 { font-size: 13px; margin: 0 0 4px; letter-spacing: .3px; text-transform: non
 .chart-lbl { font-size: 11.5px; color: var(--ink-2); font-weight: 600;
              margin: 10px 0 2px; }
 .chart-lbl span { font-weight: 400; color: var(--ink-muted); }
+.verdict { padding: 10px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 600;
+           margin-bottom: 12px; border: 1px solid transparent; }
+.verdict.ok { background: rgba(12,163,12,.10); color: #0a7a0a; border-color: rgba(12,163,12,.28); }
+.verdict.bad { background: rgba(208,59,59,.10); color: var(--critical); border-color: rgba(208,59,59,.28); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) .verdict.ok { color: #3fbf3f; } }
 
 /* 交叉驗證卡片 */
 .cards { display: grid; gap: 9px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
@@ -170,6 +175,19 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     <h2>③ 現金流時間軸</h2>
     <div class="sub" id="cash-sub">依未收應收的到期日累加</div>
     <div id="cash"><div class="empty">載入中…</div></div>
+  </section>
+
+  <section class="wide" id="sec-sim">
+    <h2>④ 情境模擬：如果現在多一筆應付款</h2>
+    <div class="sub">重用與正式報告<b>同一套</b>現金流算法（<code>compute_cash_flow_projection</code>）——
+      不是另寫一份，否則兩邊有一天會給出不同答案</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
+      <label>金額 <input id="sim-amt" type="number" value="10000000" step="1000000" style="width:150px"></label>
+      <label>幾天後到期 <input id="sim-days" type="number" value="20" min="1" max="180" style="width:80px"></label>
+      <button id="sim-run">模擬</button>
+      <span class="tag" id="sim-hint"></span>
+    </div>
+    <div id="sim"><div class="empty">輸入金額後按「模擬」。</div></div>
   </section>
 
   <section class="wide" id="sec-conf">
@@ -444,9 +462,79 @@ async function ask() {
   }
 }
 
+async function simulate() {
+  const el = $('#sim');
+  const amt = +$('#sim-amt').value || 0, days = +$('#sim-days').value || 30;
+  el.innerHTML = '<div class="empty">計算中…</div>';
+  try {
+    const d = await get(`/api/simulate/?tenant=${$('#tenant').value}`.replace('/?', '?')
+      + `&amount=${amt}&days=${days}`);
+    $('#sim-hint').textContent = d.note;
+    const b = d.baseline, s = d.simulated;
+    if (!s) { el.innerHTML = '<div class="empty">請輸入大於 0 的金額。</div>'; return; }
+
+    // 兩條曲線疊在同一張圖 —— 這裡共用尺度是**正確的**，
+    // 因為兩者是同一個量（餘額），比較的就是差距。
+    const all = b.curve.concat(s.curve).map(c => c.balance).filter(v => v != null);
+    const W = 900, H = 200, P = {t: 14, r: 16, b: 26, l: 96};
+    const lo = Math.min(0, ...all), hi = Math.max(...all, 0);
+    const dates = [...new Set(b.curve.concat(s.curve).map(c => c.date))].sort();
+    const X = dt => P.l + dates.indexOf(dt) * (W - P.l - P.r) / Math.max(dates.length - 1, 1);
+    const Y = v => P.t + (H - P.t - P.b) * (1 - (v - lo) / ((hi - lo) || 1));
+    const path = cv => cv.filter(c => c.balance != null)
+      .map((c, i) => `${i ? 'L' : 'M'}${X(c.date).toFixed(1)},${Y(c.balance).toFixed(1)}`).join('');
+
+    el.innerHTML = `
+      <div class="verdict ${d.delta.turns_negative || s.trough_balance < 0 ? 'bad' : 'ok'}">
+        ${d.delta.turns_negative ? '⚠️ ' : ''}${esc(d.delta.verdict)}
+      </div>
+      <div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
+           role="img" aria-label="現金流情境比較">
+        <line x1="${P.l}" x2="${W - P.r}" y1="${Y(0)}" y2="${Y(0)}"
+              stroke="var(--critical)" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <text x="${P.l - 8}" y="${Y(0) + 4}" text-anchor="end"
+              fill="var(--critical)" font-size="11">0</text>
+        <text x="${P.l - 8}" y="${Y(hi) + 4}" text-anchor="end"
+              fill="var(--ink-muted)" font-size="11">${fmt(hi)}</text>
+        <text x="${P.l - 8}" y="${Y(lo) + 4}" text-anchor="end"
+              fill="var(--ink-muted)" font-size="11">${fmt(lo)}</text>
+        <path d="${path(b.curve)}" fill="none" stroke="var(--ink-muted)"
+              stroke-width="2" stroke-dasharray="5 4"/>
+        <path d="${path(s.curve)}" fill="none" stroke="var(--s2)" stroke-width="2.5"/>
+        ${s.curve.filter(c => c.balance != null).map(c =>
+          `<circle cx="${X(c.date)}" cy="${Y(c.balance)}" r="4" fill="var(--s2)"
+             stroke="var(--surface-1)" stroke-width="2"><title>${c.date}　${fmt(c.balance)}
+　${esc(c.counterparty)}</title></circle>`).join('')}
+        <text x="${P.l}" y="${H - 6}" fill="var(--ink-muted)" font-size="10">${dates[0]}</text>
+        <text x="${W - P.r}" y="${H - 6}" fill="var(--ink-muted)" font-size="10"
+              text-anchor="end">${dates.at(-1)}</text>
+      </svg></div>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--ink-muted)"></i>原本（最低 ${fmt(b.trough_balance)}　${b.trough_date || ''}）</span>
+        <span><i class="sw" style="background:var(--s2)"></i>加上這筆之後（最低 ${fmt(s.trough_balance)}　${s.trough_date || ''}）</span>
+        <span><i class="sw" style="background:var(--critical)"></i>零線</span>
+      </div>
+      ${d.financing ? `
+        <div class="chart-lbl" style="margin-top:16px">缺口出現 → 融資方案比較</div>
+        <div class="cards">${d.financing.map(f => `
+          <div class="card open" style="cursor:default">
+            <div class="top"><span class="nm">${esc(f.name)}</span></div>
+            <div class="det" style="display:block">
+              <div><b>額度</b>　${md(f.coverage)}</div>
+              <div><b>費用</b>　${md(f.fee)}</div>
+              <div><b>金額估算</b>　${md(f.amount_hint)}</div>
+              <div><b>條件</b>　${md(f.requires)}</div>
+              <div><b>時效</b>　${md(f.speed)}</div>
+              <div class="tag">出處：${esc(f.source)}</div>
+              <div style="color:var(--ink-muted);margin-top:4px">${md(f.caveat)}</div>
+            </div></div>`).join('')}</div>` : ''}`;
+  } catch (e) { el.innerHTML = `<div class="err">模擬失敗：${esc(e.message)}</div>`; }
+}
+
 async function loadAll() {
   const t = $('#tenant').value;
   await Promise.all([loadOverview(t), loadCross(t), loadCash(t)]);
+  $('#sim').innerHTML = '<div class="empty">輸入金額後按「模擬」。</div>';
 }
 
 (async () => {
@@ -457,6 +545,9 @@ async function loadAll() {
   $('#reload').onclick = loadAll;
   $('#ask').onclick = ask;
   $('#q').onkeydown = e => { if (e.key === 'Enter') ask(); };
+  $('#sim-run').onclick = simulate;
+  $('#sim-amt').onkeydown = e => { if (e.key === 'Enter') simulate(); };
+  $('#sim-days').onkeydown = e => { if (e.key === 'Enter') simulate(); };
   $('#clear').onclick = () => {
     history.length = 0;
     $('#conf').innerHTML = '<div class="empty">已清空。輸入問題重新開始。</div>';

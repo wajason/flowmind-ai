@@ -16,3 +16,29 @@ FlowMind AI — Verifiable Credit Evidence Layer for Supply Chain Finance
 """
 
 __version__ = "0.4.0"
+
+# ── 強制 UTF-8 輸出（單點修正，涵蓋所有 import flowmind 的腳本）──────────
+#
+# Windows 的 Python 預設用系統 ANSI 代碼頁寫 stdout
+# （繁中環境 cp950、英文環境 cp1252）。本專案的輸出全是中文與框線字元，
+# 在那種環境下第一個 print 就會炸：
+#     UnicodeEncodeError: 'charmap' codec can't encode characters
+#
+# 這是 GitHub Actions 的 Windows job 抓到的 —— Linux job 全部通過。
+# 本機看不到，是因為開發用的 PowerShell 主控台剛好是 UTF-8。
+#
+# 修在這裡而不是逐一改 24 支腳本：它們全都 `import flowmind`，
+# 一個地方修好，全部跟著好；日後新增的腳本也自動涵蓋。
+# 對一個宣稱「Windows 與 Linux 都能跑」的專案來說，
+# **工具自己跑不起來是最難堪的一種不可攜。**
+def _force_utf8_stdio() -> None:
+    import sys                                          # noqa: PLC0415
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:                           # noqa: BLE001
+                pass                                    # 已重導向到檔案等情況
+
+
+_force_utf8_stdio()
