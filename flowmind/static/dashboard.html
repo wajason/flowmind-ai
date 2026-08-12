@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlowMind AI — 授信戰情室</title>
+<style>
+/* ── 色彩全部取自已驗證的參考調色盤 ────────────────────────────────
+   狀態色（good/warning/critical）是保留色，永遠不當作序列色使用，
+   而且一律搭配圖示與文字 —— 色盲使用者不能只靠顏色分辨紅綠燈。 */
+:root {
+  color-scheme: light;
+  --surface-1: #fcfcfb;  --plane: #f9f9f7;
+  --ink-1: #0b0b0b;      --ink-2: #52514e;   --ink-muted: #898781;
+  --grid: #e1e0d9;       --axis: #c3c2b7;    --ring: rgba(11,11,11,.10);
+  --good: #0ca30c;  --warning: #fab219;  --serious: #ec835a;  --critical: #d03b3b;
+  --s1: #2a78d6;  --s2: #eb6834;  --s3: #1baf7a;
+  --seq-200: #9ec5f4; --seq-450: #2a78d6; --seq-600: #184f95;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --plane: #0d0d0d;
+    --ink-1: #ffffff;     --ink-2: #c3c2b7;  --ink-muted: #898781;
+    --grid: #2c2c2a;      --axis: #383835;   --ring: rgba(255,255,255,.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+    --seq-200: #184f95; --seq-450: #3987e5; --seq-600: #9ec5f4;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--plane); color: var(--ink-1);
+  font: 14px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", sans-serif;
+}
+header {
+  background: var(--surface-1); border-bottom: 1px solid var(--ring);
+  padding: 14px 22px; display: flex; align-items: center; gap: 16px;
+  flex-wrap: wrap; position: sticky; top: 0; z-index: 10;
+}
+h1 { font-size: 17px; margin: 0; letter-spacing: .2px; }
+h1 small { color: var(--ink-muted); font-weight: 400; font-size: 12px; margin-left: 8px; }
+select, button, input {
+  font: inherit; padding: 6px 10px; border-radius: 6px;
+  border: 1px solid var(--axis); background: var(--surface-1); color: var(--ink-1);
+}
+button { cursor: pointer; }
+button:hover { background: var(--plane); }
+main { padding: 18px 22px 48px; display: grid; gap: 18px;
+       grid-template-columns: repeat(auto-fit, minmax(430px, 1fr)); }
+section {
+  background: var(--surface-1); border: 1px solid var(--ring);
+  border-radius: 10px; padding: 16px 18px; min-width: 0;
+}
+section.wide { grid-column: 1 / -1; }
+h2 { font-size: 13px; margin: 0 0 4px; letter-spacing: .3px; text-transform: none; }
+.sub { color: var(--ink-muted); font-size: 11.5px; margin-bottom: 12px; }
+
+/* 紅黃綠燈：色 + 圖示 + 文字，三重編碼 */
+.light { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.lamp { width: 44px; height: 44px; border-radius: 50%; flex: none;
+        display: grid; place-items: center; font-size: 22px; color: #fff; }
+.lamp.good { background: var(--good); }
+.lamp.warning { background: var(--warning); color: #0b0b0b; }
+.lamp.critical { background: var(--critical); }
+.lamp-txt b { font-size: 16px; }
+.lamp-txt div { color: var(--ink-2); font-size: 12px; }
+
+.alert { border-left: 3px solid var(--axis); padding: 7px 0 7px 11px; margin: 9px 0; }
+.alert.critical { border-color: var(--critical); }
+.alert.warning  { border-color: var(--warning); }
+.alert.info     { border-color: var(--s1); }
+.alert b { font-size: 12.5px; }
+.alert p { margin: 3px 0 0; color: var(--ink-2); font-size: 12px; }
+.tag { font-size: 10.5px; color: var(--ink-muted); font-family: ui-monospace, monospace; }
+.ev { font-size: 11px; color: var(--ink-muted); font-family: ui-monospace, monospace;
+      margin-top: 4px; white-space: nowrap; overflow-x: auto; }
+
+/* 交叉驗證卡片 */
+.cards { display: grid; gap: 9px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.card { border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
+.card:hover { background: var(--plane); }
+.card .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card .nm { font-weight: 600; font-size: 12.5px; }
+.pill { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+        border: 1px solid transparent; }
+.pill.good { background: rgba(12,163,12,.13); color: var(--good); border-color: rgba(12,163,12,.3); }
+.pill.warning { background: rgba(250,178,25,.16); color: #8a5c00; border-color: rgba(250,178,25,.4); }
+.pill.critical { background: rgba(208,59,59,.13); color: var(--critical); border-color: rgba(208,59,59,.3); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) .pill.warning { color: var(--warning); } }
+.card .det { display: none; margin-top: 8px; font-size: 11.5px; color: var(--ink-2); }
+.card.open .det { display: block; }
+.card .det div { padding: 4px 0; border-top: 1px solid var(--grid); }
+
+.hero { font-size: 30px; font-weight: 650; letter-spacing: -.5px; }
+.hero small { font-size: 12px; font-weight: 400; color: var(--ink-muted); margin-left: 6px; }
+
+/* 信心分數堆疊條 */
+.stack { display: flex; height: 26px; border-radius: 5px; overflow: hidden; margin: 10px 0 6px;
+         background: var(--grid); }
+.stack i { display: block; height: 100%; border-right: 2px solid var(--surface-1); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
+th { color: var(--ink-muted); font-weight: 500; font-size: 11px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll { overflow-x: auto; }
+.empty { color: var(--ink-muted); font-size: 12.5px; padding: 14px 0; }
+.err { color: var(--critical); font-size: 12.5px; }
+.foot { grid-column: 1/-1; color: var(--ink-muted); font-size: 11.5px; text-align: center;
+        padding-top: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>FlowMind AI　授信戰情室<small>供應鏈融資可驗證證據層</small></h1>
+  <label>委任案
+    <select id="tenant"></select>
+  </label>
+  <button id="reload">重新整理</button>
+  <span id="asof" class="tag"></span>
+</header>
+
+<main>
+  <section id="sec-overview">
+    <h2>① 委任案總覽</h2>
+    <div class="sub">警示由 <code>watchtower</code> 以決定性 SQL 產生並寫入 <code>fin_alerts</code>，本頁只呈現、不重算</div>
+    <div id="overview"><div class="empty">載入中…</div></div>
+  </section>
+
+  <section id="sec-cross">
+    <h2>② 交叉驗證</h2>
+    <div class="sub">26 條決定性檢查，零 LLM　·　點卡片展開逐條結果</div>
+    <div id="cross"><div class="empty">載入中…</div></div>
+  </section>
+
+  <section class="wide" id="sec-cash">
+    <h2>③ 現金流時間軸</h2>
+    <div class="sub" id="cash-sub">依未收應收的到期日累加</div>
+    <div id="cash"><div class="empty">載入中…</div></div>
+  </section>
+
+  <section class="wide" id="sec-conf">
+    <h2>④ 信心分數的組成</h2>
+    <div class="sub">信心不是模型自己說的 —— 由四項可量測訊號依<b>公開權重</b>算出，任何人都能重算</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <input id="q" style="flex:1;min-width:280px" placeholder="輸入問題，例如：信保基金供應商融資的保證成數最高幾成？">
+      <button id="ask">送出</button>
+    </div>
+    <div id="conf"><div class="empty">先輸入一個問題。</div></div>
+  </section>
+
+  <div class="foot">每個數字都可用終端機指令重現　·　本頁不含任何外部資源</div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmt = n => (n ?? 0).toLocaleString('zh-TW', {maximumFractionDigits: 0});
+const pct = n => (n == null ? '—' : (n * 100).toFixed(1) + '%');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function get(u) {
+  const r = await fetch(u);
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+  return r.json();
+}
+
+const LAMP = {good: ['✓', '目前無需處理的警示'], warning: ['!', '有需要注意的項目'],
+              critical: ['✕', '有重大項目需立即處理']};
+
+async function loadOverview(t) {
+  const el = $('#overview');
+  try {
+    const d = await get(`/api/overview/${t}`);
+    const [icon, txt] = LAMP[d.light];
+    el.innerHTML = `
+      <div class="light">
+        <div class="lamp ${d.light}">${icon}</div>
+        <div class="lamp-txt"><b>${txt}</b>
+          <div>嚴重 ${d.counts.critical}　注意 ${d.counts.warning}　提示 ${d.counts.info}</div>
+        </div>
+      </div>` +
+      (d.alerts.length ? d.alerts.map(a => `
+        <div class="alert ${a.severity}">
+          <b>${esc(a.title)}</b> <span class="tag">${a.rule_id}</span>
+          <p>${esc(a.detail)}</p>
+          ${a.evidence_n ? `<div class="ev">證據 ${a.evidence_n} 筆：` +
+            a.evidence.map(e => esc(Object.entries(e).slice(0, 3)
+              .map(([k, v]) => k + '=' + v).join('　'))).join(' ｜ ') + '</div>' : ''}
+        </div>`).join('')
+        : '<div class="empty">本次掃描未發現需要注意的事項。</div>');
+  } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
+}
+
+async function loadCross(t) {
+  const el = $('#cross');
+  try {
+    const d = await get(`/api/crosscheck/${t}`);
+    $('#asof').textContent = `基準日 ${d.as_of}　文件 ${esc(d.documents_examined)}`;
+    el.innerHTML = `
+      <div class="hero">${(d.integrity_score).toFixed(1)}%<small>完整性分數</small></div>
+      <div class="sub" style="margin-bottom:12px">
+        重大缺失 <b>${d.critical_failures}</b> 項　·　送件建議：
+        <b style="color:${d.submission_ready ? 'var(--good)' : 'var(--critical)'}">
+          ${d.submission_ready ? '✓ 可送件' : '✕ 建議先補正'}</b></div>
+      <div class="cards">` + d.groups.map(g => `
+        <div class="card" onclick="this.classList.toggle('open')">
+          <div class="top"><span class="nm">${esc(g.name)}</span>
+            <span class="pill ${g.status}">${g.passed}/${g.total} 通過</span></div>
+          <div class="det">${g.items.map(i => `
+            <div>${i.passed ? '✓' : (i.severity === 'critical' ? '✕' : '!')}
+              <b>${esc(i.title)}</b> <span class="tag">${i.id}</span><br>${esc(i.detail)}</div>`).join('')}
+          </div></div>`).join('') + '</div>';
+  } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
+}
+
+async function loadCash(t) {
+  const el = $('#cash');
+  try {
+    const d = await get(`/api/cashflow/${t}`);
+    $('#cash-sub').textContent = d.note;
+    if (!d.points.length) { el.innerHTML = '<div class="empty">目前沒有未收帳款。</div>'; return; }
+
+    const W = 900, H = 220, P = {t: 14, r: 16, b: 30, l: 74};
+    const xs = d.points.map((_, i) => i);
+    const ys = d.points.map(p => p.balance);
+    const lo = Math.min(0, ...ys), hi = Math.max(...ys, d.opening_balance);
+    const X = i => P.l + (xs.length < 2 ? 0 : i * (W - P.l - P.r) / (xs.length - 1));
+    const Y = v => P.t + (H - P.t - P.b) * (1 - (v - lo) / ((hi - lo) || 1));
+    const line = d.points.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p.balance).toFixed(1)}`).join('');
+    const zeroY = Y(0);
+    const bw = Math.max(3, (W - P.l - P.r) / Math.max(xs.length, 1) * .5);
+
+    el.innerHTML = `
+      <div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
+           role="img" aria-label="現金流時間軸">
+        <line x1="${P.l}" x2="${W - P.r}" y1="${zeroY}" y2="${zeroY}"
+              stroke="var(--critical)" stroke-width="1" stroke-dasharray="4 3"/>
+        ${d.points.map((p, i) => {
+          const h = Math.max(1, (H - P.t - P.b) * (p.inflow / (hi - lo || 1)));
+          return `<rect x="${(X(i) - bw / 2).toFixed(1)}" y="${(zeroY - h).toFixed(1)}"
+                    width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="3"
+                    fill="var(--seq-200)"><title>${p.date}　入帳 ${fmt(p.inflow)}（${p.invoices} 張）</title></rect>`;
+        }).join('')}
+        <path d="${line}" fill="none" stroke="var(--s1)" stroke-width="2"
+              stroke-linejoin="round" stroke-linecap="round"/>
+        ${d.points.map((p, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y(p.balance).toFixed(1)}"
+             r="4" fill="var(--s1)" stroke="var(--surface-1)" stroke-width="2">
+             <title>${p.date}　推估餘額 ${fmt(p.balance)}</title></circle>`).join('')}
+        <text x="4" y="${Y(hi) + 4}" fill="var(--ink-muted)" font-size="11">${fmt(hi)}</text>
+        <text x="4" y="${zeroY + 4}" fill="var(--critical)" font-size="11">0</text>
+        <text x="${P.l}" y="${H - 8}" fill="var(--ink-muted)" font-size="11">${d.points[0].date}</text>
+        <text x="${W - P.r}" y="${H - 8}" fill="var(--ink-muted)" font-size="11"
+              text-anchor="end">${d.points.at(-1).date}</text>
+      </svg></div>
+      <div class="legend" style="margin-top:6px">
+        <span><i class="sw" style="background:var(--s1)"></i>推估餘額</span>
+        <span><i class="sw" style="background:var(--seq-200)"></i>當日應收入帳</span>
+        <span><i class="sw" style="background:var(--critical)"></i>零線</span>
+        <span>期初餘額 ${fmt(d.opening_balance)}　·　日均支出 ${fmt(d.avg_daily_outflow)}</span>
+      </div>
+      <div class="scroll" style="margin-top:10px"><table>
+        <tr><th>到期日</th><th class="num">應收入帳</th><th class="num">張數</th><th class="num">推估餘額</th></tr>
+        ${d.points.slice(0, 8).map(p => `<tr><td>${p.date}</td>
+          <td class="num">${fmt(p.inflow)}</td><td class="num">${p.invoices}</td>
+          <td class="num">${fmt(p.balance)}</td></tr>`).join('')}
+      </table></div>`;
+  } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
+}
+
+const CW = ['--s1', '--s2', '--s3', '--seq-600'];
+async function ask() {
+  const q = $('#q').value.trim(); if (!q) return;
+  const el = $('#conf'); el.innerHTML = '<div class="empty">計算中…（首次會等模型載入）</div>';
+  try {
+    const d = await get(`/api/confidence?q=${encodeURIComponent(q)}&tenant=${$('#tenant').value}`);
+    const ks = Object.keys(d.weights);
+    const parts = ks.map((k, i) => ({k, w: d.weights[k], v: d.components[k] ?? 0,
+                                     c: `var(${CW[i]})`}));
+    const contrib = parts.map(p => p.w * p.v);
+    const total = contrib.reduce((a, b) => a + b, 0) || 1;
+    el.innerHTML = `
+      <div class="hero" style="color:${d.abstained ? 'var(--critical)' : 'var(--good)'}">
+        ${d.confidence.toFixed(3)}<small>信心分數（拒答門檻 ${d.threshold}）</small></div>
+      <div class="stack">${parts.map((p, i) =>
+        `<i style="width:${(contrib[i] / total * 100).toFixed(1)}%;background:${p.c}"
+            title="${p.k}：權重 ${p.w} × 實測 ${pct(p.v)}"></i>`).join('')}</div>
+      <div class="legend">${parts.map((p, i) =>
+        `<span><i class="sw" style="background:${p.c}"></i>${p.k}
+          <b>${pct(p.v)}</b> × 權重 ${p.w}</span>`).join('')}</div>
+      <div style="margin-top:12px;padding:10px 12px;border-radius:8px;
+                  background:var(--plane);border:1px solid var(--ring)">
+        ${d.abstained
+          ? `<b style="color:var(--critical)">系統選擇不回答</b><p style="margin:5px 0 0;color:var(--ink-2);font-size:12px">${esc(d.abstain_reason)}</p>`
+          : `<b>回答</b><p style="margin:5px 0 0;font-size:12.5px">${esc(d.answer)}</p>`}
+      </div>
+      ${d.claims.length ? `<div class="scroll" style="margin-top:10px"><table>
+        <tr><th>主張</th><th>逐字引用</th><th>來源</th><th>驗證</th></tr>
+        ${d.claims.map(c => `<tr><td>${esc(c.statement)}</td>
+          <td style="color:var(--ink-2)">${esc(c.quote)}</td>
+          <td class="tag">${esc(c.source)}</td>
+          <td><span class="pill ${c.verdict === 'exact' || c.verdict === 'near' ? 'good' : 'critical'}">${c.verdict}</span></td>
+        </tr>`).join('')}</table></div>` : ''}
+      ${d.removed.length ? `<div class="sub" style="margin-top:8px">已移除未通過驗證的敘述 ${d.removed.length} 條</div>` : ''}`;
+  } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
+}
+
+async function loadAll() {
+  const t = $('#tenant').value;
+  await Promise.all([loadOverview(t), loadCross(t), loadCash(t)]);
+}
+
+(async () => {
+  const es = await get('/api/engagements');
+  $('#tenant').innerHTML = es.map(e =>
+    `<option value="${e.tenant_id}">${esc(e.tenant_id)}　${esc(e.client_name || '')}</option>`).join('');
+  $('#tenant').onchange = loadAll;
+  $('#reload').onclick = loadAll;
+  $('#ask').onclick = ask;
+  $('#q').onkeydown = e => { if (e.key === 'Enter') ask(); };
+  await loadAll();
+})();
+</script>
+</body>
+</html>

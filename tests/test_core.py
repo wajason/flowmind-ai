@@ -220,6 +220,63 @@ def test_confidence_gate() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+def test_dashboard() -> None:
+    """
+    儀表板 API。
+
+    最重要的測項是「**儀表板不做任何金融運算**」——
+    它是呈現層，不是第二套邏輯。若它自己算一次集中度、終端機算另一次，
+    兩邊有一天會不一致，而使用者無從判斷該信哪個。
+    """
+    section("儀表板（呈現層，零重算）")
+    try:
+        from fastapi.testclient import TestClient
+        from flowmind import dashboard
+    except ImportError as e:                               # noqa: BLE001
+        check(f"儀表板相依套件可載入（{e}）", False)
+        return
+
+    c = TestClient(dashboard.app)
+
+    r = c.get("/api/engagements")
+    check("委任案清單可讀取", r.status_code == 200 and isinstance(r.json(), list))
+
+    r = c.get("/api/overview/CASE-9999")
+    d = r.json()
+    check("總覽回傳紅黃綠燈狀態",
+          r.status_code == 200 and d["light"] in ("good", "warning", "critical"),
+          d.get("light"))
+    check("每條警示都帶得出證據筆數",
+          all("evidence_n" in a for a in d["alerts"]))
+
+    r = c.get("/api/crosscheck/CASE-9999")
+    d = r.json()
+    check("交叉驗證分組回傳",
+          r.status_code == 200 and len(d["groups"]) >= 4, len(d.get("groups", [])))
+    # 「未分類」群組存在代表有新檢查沒被歸類 —— 它會出現在畫面上被看見，
+    # 而不是被靜默塞進錯的分類。
+    unlabeled = [g for g in d["groups"] if "未分類" in g["name"]]
+    check("所有檢查都已歸類（無未分類群組）", not unlabeled,
+          unlabeled[0]["items"] if unlabeled else None)
+
+    r = c.get("/api/cashflow/CASE-9999")
+    d = r.json()
+    check("現金流時間軸回傳資料點", r.status_code == 200 and len(d["points"]) > 0)
+    check("明確標示支出是歷史平均而非預測", "非預測" in d.get("note", ""), d.get("note"))
+
+    r = c.get("/api/confidence")
+    d = r.json()
+    check("信心權重可查詢且加總為 1",
+          abs(sum(d["weights"].values()) - 1.0) < 1e-6, d["weights"])
+
+    # 呈現層不得變成第二套邏輯
+    import inspect
+    src = inspect.getsource(dashboard)
+    check("儀表板不自行實作檢查規則（只呼叫既有引擎）",
+          "def check_" not in src and "def m_" not in src)
+
+
+# ══════════════════════════════════════════════════════════════════════════
 def test_retrieval_determinism() -> None:
     """
     檢索必須可重現。
@@ -869,7 +926,7 @@ if __name__ == "__main__":
     print("═" * 70)
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate,
-               test_query_plan, test_retrieval_determinism,
+               test_query_plan, test_dashboard, test_retrieval_determinism,
                test_industry, test_watchtower,
                test_claim_corroboration, test_hpes,
                test_counterfactual, test_crosscheck, test_router,

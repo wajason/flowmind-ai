@@ -225,37 +225,51 @@ python -c "from flowmind import watchtower; print(watchtower.render(watchtower.s
 
 ## 5. 環境設定與執行方式
 
-開發與測試環境：**Windows 11 · RTX 4060 Laptop（8GB VRAM）· 32GB RAM**
-所有元件都能在 Windows 原生執行，唯一用 Docker 的是 PostgreSQL。
+本專案在 **Linux 與 Windows 都能跑**。以下兩套指令等價，
+選一套照做即可；後續章節的指令以 Linux 為主，
+Windows 使用者把 `python` 換成 `.venv\Scripts\python.exe`、
+路徑分隔改成 `\` 即可。
+
+| | Linux / macOS | Windows |
+|---|---|---|
+| Shell | bash / zsh | PowerShell |
+| 虛擬環境啟動 | `source .venv/bin/activate` | `.venv\Scripts\Activate.ps1` |
+| 路徑分隔 | `/` | `\` |
+| Docker | Docker Engine | Docker Desktop |
 
 ### 5.1 前置需求
 
-| 元件 | 版本 | 安裝方式 |
+| 元件 | 版本 | 為什麼需要 |
 |---|---|---|
-| Python | 3.11 | 用 `uv` 管理，不動系統既有 Python/conda |
-| Docker Desktop | 任意近期版本 | 只跑 PostgreSQL + pgvector |
-| Ollama | Windows 原生版 | https://ollama.com/download |
-| Git + GitHub CLI | 任意 | 協作用，見 §11 |
+| Python | 3.11 | 用 `uv` 管理，不動系統既有 Python |
+| Docker + Compose | 任意近期版本 | 只跑 PostgreSQL + pgvector |
+| Ollama | 任意近期版本 | 本地推論；金融場域不外送資料 |
+| Git | 任意 | — |
 
-```powershell
-# 安裝 uv（若尚未安裝）
-winget install --id=astral-sh.uv -e
-```
+**硬體**：本專案的效能數字量測自 8GB VRAM 的環境。
+`gemma4:26b`（17GB）在 8GB 顯存上會有 CPU/GPU 分流，
+冷啟動約 124 秒、熱啟動約 9 秒。
+16GB 以上顯存可完全載入，速度明顯較快。
+**顯存不足不影響正確性，只影響速度** —— 所有正確性測試都不依賴 GPU。
 
 ### 5.2 一次性建置
 
-```powershell
-# ① 取得程式碼
-git clone https://github.com/<your-org>/flowmind_AI.git D:\flowmind_AI
-cd D:\flowmind_AI
+<details open>
+<summary><b>Linux / macOS</b></summary>
 
-# ② 建立虛擬環境（放在 D 槽，與系統 Python 完全隔離）
-uv venv D:\flowmind_AI\.venv --python 3.11
-D:\flowmind_AI\.venv\Scripts\activate
+```bash
+# ① 取得程式碼（放哪裡都可以，以下用 ~/flowmind-ai 為例）
+git clone https://github.com/wajason/flowmind-ai.git ~/flowmind-ai
+cd ~/flowmind-ai
+
+# ② 建立虛擬環境（uv：https://docs.astral.sh/uv/）
+curl -LsSf https://astral.sh/uv/install.sh | sh      # 若尚未安裝 uv
+uv venv .venv --python 3.11
+source .venv/bin/activate
 uv pip install -r requirements.txt
 
 # ③ 下載模型（約 18GB，一次即可）
-ollama pull gemma4:26b      # 抽取 + 顧問（17GB，見下方顯存說明）
+ollama pull gemma4:26b      # 抽取 + 顧問
 ollama pull bge-m3          # Embedding（1024 維）
 
 # ④ 啟動向量資料庫（host port 5433，刻意避開系統既有的 5432）
@@ -263,11 +277,47 @@ docker compose up -d
 docker compose ps           # 應顯示 healthy
 
 # ⑤ 設定環境變數
-copy .env.example .env
+cp .env.example .env
 
 # ⑥ 環境自檢 —— 缺什麼它會直接告訴你
 python -m flowmind.cli doctor
 ```
+
+</details>
+
+<details>
+<summary><b>Windows（PowerShell）</b></summary>
+
+```powershell
+# ① 取得程式碼
+git clone https://github.com/wajason/flowmind-ai.git flowmind-ai
+cd flowmind-ai
+
+# ② 建立虛擬環境
+winget install --id=astral-sh.uv -e                  # 若尚未安裝 uv
+uv venv .venv --python 3.11
+.\.venv\Scripts\Activate.ps1
+uv pip install -r requirements.txt
+
+# ③ 下載模型（約 18GB，一次即可）
+ollama pull gemma4:26b
+ollama pull bge-m3
+
+# ④ 啟動向量資料庫
+docker compose up -d
+docker compose ps
+
+# ⑤ 設定環境變數
+Copy-Item .env.example .env
+
+# ⑥ 環境自檢
+python -m flowmind.cli doctor
+```
+
+> **PowerShell 執行原則**：若 `Activate.ps1` 被擋，執行一次
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`。
+
+</details>
 
 `doctor` 全綠的樣子：
 
@@ -326,7 +376,7 @@ python -m flowmind.cli engagements
 ### 5.5 評測與測試
 
 ```powershell
-# 回歸測試（154 項，數秒，不需資料庫與 LLM）
+# 回歸測試（163 項，數秒，不需資料庫與 LLM）
 python tests\test_core.py
 
 # 外部 benchmark
@@ -568,7 +618,7 @@ python rag_query.py --verify-isolation CASE-0001 CASE-9999
 | 認證鏈（authn） | 四情境全過：授權/未授權/偽造權杖/撤銷即時生效 |
 | 稽核雜湊鏈 | 完整未斷鏈 |
 | **端到端可重現性** | 安靜條件 **9/9 完全一致**；顯存競爭下**不一致**（見下） |
-| 回歸測試 | **154 / 154** |
+| 回歸測試 | **163 / 163** |
 | 知識圖譜 | **128 節點**（83 文件 · 16 產業 · 11 期間 · 9 主題 · 9 法域） |
 | 知識庫規模 | 83 份文件 / **7,619** chunks |
 
@@ -770,16 +820,16 @@ gitGraph
 
 ### 11.2 第一次加入專案
 
-```powershell
-git clone https://github.com/<your-org>/flowmind_AI.git D:\flowmind_AI
-cd D:\flowmind_AI
+```bash
+git clone https://github.com/wajason/flowmind-ai.git
+cd flowmind-ai
 uv venv .venv --python 3.11
-.venv\Scripts\activate
+source .venv/bin/activate            # Windows: .\.venv\Scripts\Activate.ps1
 uv pip install -r requirements.txt
-copy .env.example .env
+cp .env.example .env                 # Windows: Copy-Item .env.example .env
 docker compose up -d
 python -m flowmind.cli doctor        # 確認環境就緒
-python tests\test_core.py            # 確認 39/39 通過再開始改
+python tests/test_core.py            # 確認全部通過再開始改
 ```
 
 ### 11.3 日常開發循環
@@ -886,7 +936,7 @@ flowmind_AI/
 │   ├── fetch_benchmarks.py      SROIE / FUNSD / CORD
 │   ├── run_verifin.py           評測執行器
 │   └── eval_models.py           模型選型實測
-├── tests/test_core.py           154 項回歸測試（無外部依賴）
+├── tests/test_core.py           163 項回歸測試（無外部依賴）
 ├── sql/init/                    RLS policy 與 schema
 ├── docs/
 │   ├── SDD.md                   軟體設計規格書
