@@ -251,11 +251,33 @@ def api_confidence(q: Optional[str] = None,
     with contextlib.redirect_stdout(io.StringIO()):
         pack = rag_query.answer_question(tenant, q)
     bd = pack.confidence_breakdown
+    # ── 決定性答案 vs RAG 答案，畫面必須分開 ──────────────────────────
+    #
+    # 「最大買方占營收多少」走決定性運算（直接把發票加總相除），
+    # 根本不經過檢索與引用驗證，那四個權重對它完全不適用。
+    # 但先前兩種答案套同一個顯示樣板，於是畫面出現
+    # 「信心 1.000，但四個組成全是 0.0%」—— 看起來像系統故障。
+    #
+    # 分數沒有算錯，是**介面沒有區分兩條路徑**。
+    # 一個讓人以為壞掉的正確答案，在示範場合等同於壞掉。
+    # rag_query 在走決定性路徑時已經把 breakdown 設成 {"deterministic": True, …}，
+    # 直接用那個旗標，不要用「信心 1.0 且引用為空」之類的啟發式去猜 ——
+    # 猜出來的判斷會在邊界情況上出錯，而且錯的時候沒人知道為什麼。
+    is_det = bool(bd.get("deterministic"))
+
     return JSONResponse({
         "asked": q,
-        "weights": weights,
+        "answer_kind": "deterministic" if is_det else "rag",
+        "answer_kind_label": "決定性運算（零 LLM）" if is_det else "檢索增強生成（RAG）",
+        "kind_note": (
+            "本題由程式直接彙總本案憑證計算得出，未經語言模型判斷，"
+            "因此不適用引用驗證與檢索強度那組權重 —— 那四項顯示 0 是正常的。"
+            if is_det else
+            "本題需要理解文件內容，走檢索 + 受約束生成 + 引用逐字驗證，"
+            "信心由下列四項可量測訊號依公開權重算出。"),
+        "weights": {} if is_det else weights,
         "threshold": config.CONFIDENCE_ABSTAIN_THRESHOLD,
-        "components": {
+        "components": {} if is_det else {
             "引用完整度": bd.get("citation_integrity"),
             "檢索強度": bd.get("retrieval_strength"),
             "多文獻佐證": bd.get("corroboration"),

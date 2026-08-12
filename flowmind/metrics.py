@@ -208,22 +208,77 @@ def m_cashflow(data: dict) -> Optional[Metric]:
         sources=["cash_flow_projection.json"])
 
 
-def m_integrity(data: dict) -> Optional[Metric]:
+# 檢查編號前綴 → 使用者會怎麼稱呼它。
+# 這張表存在的理由是一個真實的失敗：使用者在儀表板上看到
+# 「跨文件勾稽 3/4 通過」，接著問「跨文件勾稽有一個沒通過是什麼地方」，
+# 系統卻**跑去知識庫查法規**，當然找不到 —— 答案就在同一頁上。
+# 問答層與 crosscheck 引擎是兩條沒接上的線，而接上它們只需要路由認得這些詞。
+CHECK_ALIASES: dict[str, list[str]] = {
+    "TAXID": ["統編", "統一編號", "檢核碼", "憑證真偽"],
+    "FRAUD": ["自我交易", "造假", "憑證真偽"],
+    "ARITH": ["金額", "加總", "算術", "稅率", "稅額"],
+    "AMT": ["金額", "算術"],
+    "DUP": ["重複", "重複請款", "發票號碼"],
+    "SEQ": ["連號", "重複請款"],
+    "TERM": ["帳期", "到期日", "跨文件", "勾稽", "合約"],
+    "CONTRACT": ["合約", "跨文件", "勾稽"],
+    "BANK": ["銀行", "流水", "對帳", "勾稽", "跨文件"],
+    "LEDGER": ["流水", "勾稽", "跨文件"],
+    "RELATED": ["關係人", "跨文件"],
+    "DATE": ["日期", "時序", "鑑識"],
+    "FORENSIC": ["班佛", "鑑識", "整數", "假日"],
+    "RISK": ["集中度", "逾期", "呆帳", "授信風險"],
+}
+
+
+def m_integrity(data: dict, question: str = "") -> Optional[Metric]:
+    """
+    憑證交叉驗證。
+
+    帶 `question` 是為了回答「**哪一項**沒通過」這種追問 ——
+    使用者在儀表板看到某個分類 3/4 通過，下一句必然是問那一項是什麼。
+    若只能回「整體有 3 項未通過」，等於要他自己再去畫面上找。
+    """
     inv = data["invoices"]
     if not inv:
         return None
     rep = crosscheck.run_all(inv, data["contracts"], data["ledger"])
     failed = [f for f in rep["findings"] if not f["passed"]]
-    lines = [f"  {'🔴' if f['severity']=='critical' else '🟡'} [{f['check_id']}] "
-             f"{f['title']}：{f['detail']}" for f in failed]
+
+    # 問題若指向特定檢查（編號或分類名），把那幾項提到最前面並展開
+    q = re.sub(r"\s+", "", question)
+    focus_ids = {cid for cid in CHECK_ALIASES if cid.lower() in q.lower()}
+    for cid, words in CHECK_ALIASES.items():
+        if any(w in q for w in words):
+            focus_ids.add(cid)
+    focused = [f for f in rep["findings"]
+               if any(f["check_id"].startswith(c) for c in focus_ids)] \
+        if focus_ids else []
+
+    def _line(f: dict) -> str:
+        icon = "✅" if f["passed"] else ("🔴" if f["severity"] == "critical" else "🟡")
+        return f"  {icon} [{f['check_id']}] {f['title']}：{f['detail']}"
+
+    parts = [f"共執行 {len(rep['findings'])} 項決定性檢查，"
+             f"完整性分數 {rep['integrity_score']:.1%}，"
+             f"重大缺失 {rep['critical_failures']} 項。",
+             f"送件建議：{'✅ 可送件' if rep['submission_ready'] else '⛔ 建議先補正重大缺失'}"]
+
+    if focused:
+        parts.append(f"\n【你問的這幾項】（{'、'.join(sorted(focus_ids))}）")
+        parts += [_line(f) for f in focused]
+
+    other = [f for f in failed if f not in focused]
+    if other:
+        parts.append("\n【其他未通過項目】" if focused else "\n未通過項目：")
+        parts += [_line(f) for f in other]
+    elif not focused and not failed:
+        parts.append("\n所有檢查項目皆通過。")
+
     return Metric(
         key="integrity",
         title="憑證交叉驗證",
-        text=(f"共執行 {len(rep['findings'])} 項決定性檢查，"
-              f"完整性分數 {rep['integrity_score']:.1%}，"
-              f"重大缺失 {rep['critical_failures']} 項。\n"
-              f"送件建議：{'✅ 可送件' if rep['submission_ready'] else '⛔ 建議先補正重大缺失'}\n\n"
-              + ("未通過項目：\n" + "\n".join(lines) if failed else "所有檢查項目皆通過。")),
+        text="\n".join(parts),
         value=rep,
         method="見 flowmind/crosscheck.py；每一項皆為純算術判定，可由第三方以相同規則重算",
         sources=["receivables.json", "contracts.json", "bank_ledger.csv"])
@@ -355,9 +410,26 @@ ROUTES: list[tuple[str, list[str]]] = [
                        "收款狀況", "壞帳"]),
     ("cashflow",      ["現金流", "現金缺口", "缺口", "夠不夠", "週轉", "資金需求",
                        "會不會缺錢", "何時缺"]),
+    # 這一組刻意寫得比其他路由寬。理由是一個真實的失敗：
+    # 使用者在儀表板看到「跨文件勾稽 3/4 通過」，接著問
+    # 「跨文件勾稽有一個沒通過是什麼地方」，系統卻跑去查法規文件 ——
+    # **答案就在同一頁上，只是問答層不認得那些詞。**
+    #
+    # 寬一點的代價是偶爾把 RAG 題誤判成檢查題；
+    # 但那個代價遠小於「畫面上看得到、問卻問不到」給人的印象：
+    # 那會讓人覺得整套系統是拼裝的。
     ("integrity",     ["交叉驗證", "驗證", "造假", "可以送件", "能不能送件",
                        "有沒有問題", "憑證", "統編", "重複請款", "自我交易",
-                       "送件前", "檢核"]),
+                       "送件前", "檢核",
+                       # ── 儀表板上看得到的分類名 ──
+                       "跨文件", "勾稽", "憑證真偽", "金額算術", "鑑識會計",
+                       "授信風險", "檢查結果", "檢查項目",
+                       # ── 追問某一項的說法 ──
+                       "沒通過", "未通過", "沒過", "失敗的", "哪一項", "哪一條",
+                       "哪個地方", "為什麼失敗", "什麼問題", "紅燈", "警示",
+                       # ── 直接報檢查編號 ──
+                       "TAXID", "ARITH", "FRAUD", "DUP", "TERM", "BANK",
+                       "RISK", "CONTRACT", "LEDGER", "FORENSIC", "SEQ"]),
     ("summary",       ["總覽", "應收總額", "開票金額", "多少張發票", "營收多少",
                        "整體狀況", "基本資料"]),
 ]

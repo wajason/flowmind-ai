@@ -74,13 +74,29 @@ class Fact:
             else str(self.value)
 
 
-def _run_tests() -> tuple[int, int]:
-    r = subprocess.run([sys.executable, "tests/test_core.py"],
-                       capture_output=True, text=True, encoding="utf-8",
+def _run_tests(core_only: bool = False) -> tuple[int, int]:
+    """
+    跑回歸測試取得真實項數。
+
+    `core_only` 必須與呼叫端的 --skip-db 連動。
+    **這裡曾經漏掉，而且是在 CI 上才炸的**：CI 沒有資料庫，
+    卻讓它跑全部 170 項，DB 連線失敗的錯誤訊息當然不符合
+    「通過 X　失敗 Y」的格式，於是報 RuntimeError 說「測試輸出無法解析」——
+    一個完全誤導人的錯誤訊息，因為真正的問題是測試根本沒跑完。
+    """
+    cmd = [sys.executable, "tests/test_core.py"]
+    if core_only:
+        cmd.append("--core-only")
+    r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
                        cwd=str(ROOT), timeout=1800)
     m = re.search(r"通過\s*(\d+)\s*　?失敗\s*(\d+)", r.stdout or "")
     if not m:
-        raise RuntimeError("測試輸出無法解析 —— 無法取得真實項數")
+        # 把測試自己的輸出帶出來，否則使用者只看到「無法解析」，
+        # 完全不知道測試到底發生什麼事。
+        tail = ((r.stdout or "") + (r.stderr or ""))[-600:]
+        raise RuntimeError(
+            f"測試輸出無法解析（rc={r.returncode}）—— 無法取得真實項數。\n"
+            f"測試的實際輸出（末 600 字）：\n{tail}")
     return int(m.group(1)), int(m.group(2))
 
 
@@ -112,9 +128,23 @@ def _json_get(path: str, *keys):
 def collect_facts(skip_db: bool = False) -> list[Fact]:
     facts: list[Fact] = []
 
-    n_pass, n_fail = _run_tests()
+    # --skip-db 代表「這個環境沒有資料庫」，測試也必須跟著只跑核心那組。
+    n_pass, n_fail = _run_tests(core_only=skip_db)
     if n_fail:
         raise SystemExit(f"❌ 有 {n_fail} 項測試失敗 —— 先修測試再談文件一致性")
+
+    if skip_db:
+        # ⚠️ 這裡**不能**把 core-only 的項數當成「文件該寫的數字」。
+        #
+        # 文件寫的是完整測試項數（170），core-only 只有 98。
+        # 若拿 98 去比對，這支工具會把文件裡**正確**的 170 改成 98 ——
+        # 一個「維護一致性」的工具反而製造了不一致，
+        # 而且是在 CI 上自動發生、沒有人會即時發現。
+        #
+        # 沒有資料庫就是取不到完整項數，那就誠實地不驗這一項。
+        print(f"  ⚠️ --skip-db：核心測試 {n_pass} 項通過，"
+              f"但完整項數需要資料庫才能取得，**本次略過測試項數的比對**。")
+        return facts
     # ── 樣式設計原則 ───────────────────────────────────────────────────
     #
     # 假陽性比漏抓危險：這支腳本有 --fix，會**直接改檔案**。

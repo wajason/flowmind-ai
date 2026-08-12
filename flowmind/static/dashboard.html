@@ -107,6 +107,27 @@ th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid
 th { color: var(--ink-muted); font-weight: 500; font-size: 11px; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .scroll { overflow-x: auto; }
+/* 對話歷程 */
+.turn { border-top: 1px solid var(--grid); padding: 14px 0 4px; }
+.turn:first-child { border-top: 0; padding-top: 2px; }
+.q-line { font-weight: 600; font-size: 13.5px; margin-bottom: 6px; }
+.kind { display: inline-block; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;
+        margin-bottom: 6px; border: 1px solid transparent; }
+.kind.det { background: rgba(27,175,122,.14); color: #0a7a5a; border-color: rgba(27,175,122,.35); }
+.kind.rag { background: rgba(124,58,237,.12); color: #6d3fd4; border-color: rgba(124,58,237,.3); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) .kind.det { color: #4fd1a5; }
+  :root:not([data-theme=light]) .kind.rag { color: #b9a6f5; } }
+.ans { margin-top: 10px; padding: 12px 14px; border-radius: 8px;
+       background: var(--plane); border: 1px solid var(--ring); }
+.ans-h { font-weight: 650; font-size: 13px; margin: 10px 0 4px; color: var(--ink-1); }
+.ans-h:first-child { margin-top: 0; }
+.ans-p { margin: 5px 0; font-size: 12.8px; line-height: 1.7; }
+.ans-li { margin: 3px 0 3px 14px; font-size: 12.8px; line-height: 1.7;
+          position: relative; }
+.ans-li::before { content: "·"; position: absolute; left: -12px; color: var(--ink-muted); }
+.ans code { background: var(--surface-1); padding: 1px 4px; border-radius: 3px;
+            font-size: .9em; }
+#conf { max-height: 68vh; overflow-y: auto; }
 .empty { color: var(--ink-muted); font-size: 12.5px; padding: 14px 0; }
 .err { color: var(--critical); font-size: 12.5px; }
 .foot { grid-column: 1/-1; color: var(--ink-muted); font-size: 11.5px; text-align: center;
@@ -146,11 +167,19 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   <section class="wide" id="sec-conf">
     <h2>④ 信心分數的組成</h2>
     <div class="sub">信心不是模型自己說的 —— 由四項可量測訊號依<b>公開權重</b>算出，任何人都能重算</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <input id="q" style="flex:1;min-width:280px" placeholder="輸入問題，例如：信保基金供應商融資的保證成數最高幾成？">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <input id="q" style="flex:1;min-width:300px" placeholder="輸入問題後按 Enter，可以接著追問">
       <button id="ask">送出</button>
+      <button id="clear" title="清空對話歷程">清空</button>
     </div>
-    <div id="conf"><div class="empty">先輸入一個問題。</div></div>
+    <div class="sub" style="margin-bottom:10px">
+      試試：
+      <a href="#" class="ex">跨文件勾稽有一個沒通過是什麼地方？</a>　·
+      <a href="#" class="ex">最大買方占營收多少？逾期狀況如何？</a>　·
+      <a href="#" class="ex">信保基金供應商融資的保證成數最高幾成？</a>　·
+      <a href="#" class="ex">日本的保證成數是多少？</a>
+    </div>
+    <div id="conf"><div class="empty">先輸入一個問題，之後可以接著追問。</div></div>
   </section>
 
   <div class="foot">每個數字都可用終端機指令重現　·　本頁不含任何外部資源</div>
@@ -273,40 +302,86 @@ async function loadCash(t) {
 }
 
 const CW = ['--s1', '--s2', '--s3', '--seq-600'];
-async function ask() {
-  const q = $('#q').value.trim(); if (!q) return;
-  const el = $('#conf'); el.innerHTML = '<div class="empty">計算中…（首次會等模型載入）</div>';
-  try {
-    const d = await get(`/api/confidence?q=${encodeURIComponent(q)}&tenant=${$('#tenant').value}`);
-    const ks = Object.keys(d.weights);
-    const parts = ks.map((k, i) => ({k, w: d.weights[k], v: d.components[k] ?? 0,
-                                     c: `var(${CW[i]})`}));
-    const contrib = parts.map(p => p.w * p.v);
-    const total = contrib.reduce((a, b) => a + b, 0) || 1;
-    el.innerHTML = `
-      <div class="hero" style="color:${d.abstained ? 'var(--critical)' : 'var(--good)'}">
-        ${d.confidence.toFixed(3)}<small>信心分數（拒答門檻 ${d.threshold}）</small></div>
+
+// 把答案裡的 markdown 標題／清單／粗體轉成可讀的 HTML。
+// 先前直接把整段塞進 <p>，於是 ### 與 * 原樣印出來，長長一坨很難看。
+function renderAnswer(t) {
+  const out = [];
+  for (let raw of String(t || '').split('\n')) {
+    const line = raw.trim();
+    if (!line) { continue; }
+    const inline = s => esc(s)
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/`(.+?)`/g, '<code>$1</code>');
+    let m;
+    if ((m = line.match(/^#{1,6}\s+(.*)$/)))
+      out.push(`<div class="ans-h">${inline(m[1])}</div>`);
+    else if ((m = line.match(/^[-*]\s+(.*)$/)))
+      out.push(`<div class="ans-li">${inline(m[1])}</div>`);
+    else if ((m = line.match(/^(\d+)[.)]\s+(.*)$/)))
+      out.push(`<div class="ans-li"><b>${m[1]}.</b> ${inline(m[2])}</div>`);
+    else out.push(`<p class="ans-p">${inline(line)}</p>`);
+  }
+  return out.join('') || '<p class="ans-p">（無內容）</p>';
+}
+
+// 對話歷程：實務上使用者看到一個結果後一定會追問，
+// 一站式問答等於每次都要重打前情。歷程留在畫面上，可以往回對照。
+const history = [];
+
+function renderTurn(d) {
+  const det = d.answer_kind === 'deterministic';
+  const parts = det ? [] : Object.keys(d.weights).map((k, i) => ({
+    k, w: d.weights[k], v: d.components[k] ?? 0, c: `var(${CW[i]})`}));
+  const contrib = parts.map(p => p.w * p.v);
+  const total = contrib.reduce((a, b) => a + b, 0) || 1;
+
+  return `<div class="turn">
+    <div class="q-line">Q　${esc(d.asked)}</div>
+    <div class="kind ${det ? 'det' : 'rag'}">${esc(d.answer_kind_label)}</div>
+    <div class="hero" style="color:${d.abstained ? 'var(--critical)' : 'var(--good)'}">
+      ${d.confidence.toFixed(3)}<small>信心分數（拒答門檻 ${d.threshold}）</small></div>
+    <div class="sub">${esc(d.kind_note)}</div>
+    ${det ? '' : `
       <div class="stack">${parts.map((p, i) =>
         `<i style="width:${(contrib[i] / total * 100).toFixed(1)}%;background:${p.c}"
             title="${p.k}：權重 ${p.w} × 實測 ${pct(p.v)}"></i>`).join('')}</div>
-      <div class="legend">${parts.map((p, i) =>
+      <div class="legend">${parts.map(p =>
         `<span><i class="sw" style="background:${p.c}"></i>${p.k}
-          <b>${pct(p.v)}</b> × 權重 ${p.w}</span>`).join('')}</div>
-      <div style="margin-top:12px;padding:10px 12px;border-radius:8px;
-                  background:var(--plane);border:1px solid var(--ring)">
-        ${d.abstained
-          ? `<b style="color:var(--critical)">系統選擇不回答</b><p style="margin:5px 0 0;color:var(--ink-2);font-size:12px">${esc(d.abstain_reason)}</p>`
-          : `<b>回答</b><p style="margin:5px 0 0;font-size:12.5px">${esc(d.answer)}</p>`}
-      </div>
-      ${d.claims.length ? `<div class="scroll" style="margin-top:10px"><table>
-        <tr><th>主張</th><th>逐字引用</th><th>來源</th><th>驗證</th></tr>
-        ${d.claims.map(c => `<tr><td>${esc(c.statement)}</td>
-          <td style="color:var(--ink-2)">${esc(c.quote)}</td>
-          <td class="tag">${esc(c.source)}</td>
-          <td><span class="pill ${c.verdict === 'exact' || c.verdict === 'near' ? 'good' : 'critical'}">${c.verdict}</span></td>
-        </tr>`).join('')}</table></div>` : ''}
-      ${d.removed.length ? `<div class="sub" style="margin-top:8px">已移除未通過驗證的敘述 ${d.removed.length} 條</div>` : ''}`;
-  } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
+          <b>${pct(p.v)}</b> × 權重 ${p.w}</span>`).join('')}</div>`}
+    <div class="ans">
+      ${d.abstained
+        ? `<b style="color:var(--critical)">⛔ 系統選擇不回答</b>
+           <p class="ans-p">${esc(d.abstain_reason)}</p>`
+        : renderAnswer(d.answer)}
+    </div>
+    ${d.claims.length ? `<div class="scroll"><table>
+      <tr><th>主張</th><th>逐字引用</th><th>來源</th><th>驗證</th></tr>
+      ${d.claims.map(c => `<tr><td>${esc(c.statement)}</td>
+        <td style="color:var(--ink-2)">${esc(c.quote)}</td>
+        <td class="tag">${esc(c.source)}</td>
+        <td><span class="pill ${['exact', 'near'].includes(c.verdict) ? 'good' : 'critical'}">${c.verdict}</span></td>
+      </tr>`).join('')}</table></div>` : ''}
+    ${d.removed.length ? `<div class="sub">已移除未通過驗證的敘述 ${d.removed.length} 條</div>` : ''}
+  </div>`;
+}
+
+async function ask() {
+  const q = $('#q').value.trim(); if (!q) return;
+  const el = $('#conf');
+  $('#q').value = '';
+  el.innerHTML = history.map(renderTurn).join('')
+    + '<div class="empty">計算中…（首次會等模型載入，約 2 分鐘）</div>';
+  el.scrollTop = el.scrollHeight;
+  try {
+    const d = await get(`/api/confidence?q=${encodeURIComponent(q)}&tenant=${$('#tenant').value}`);
+    history.push(d);
+    el.innerHTML = history.map(renderTurn).join('');
+    el.scrollTop = el.scrollHeight;
+  } catch (e) {
+    el.innerHTML = history.map(renderTurn).join('')
+      + `<div class="err">讀取失敗：${esc(e.message)}</div>`;
+  }
 }
 
 async function loadAll() {
@@ -322,6 +397,13 @@ async function loadAll() {
   $('#reload').onclick = loadAll;
   $('#ask').onclick = ask;
   $('#q').onkeydown = e => { if (e.key === 'Enter') ask(); };
+  $('#clear').onclick = () => {
+    history.length = 0;
+    $('#conf').innerHTML = '<div class="empty">已清空。輸入問題重新開始。</div>';
+  };
+  document.querySelectorAll('.ex').forEach(a => a.onclick = e => {
+    e.preventDefault(); $('#q').value = a.textContent.trim(); ask();
+  });
   await loadAll();
 })();
 </script>

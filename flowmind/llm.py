@@ -46,7 +46,47 @@ def resolve_model(role: str = "advisor", override: Optional[str] = None) -> str:
 
 
 def strip_thinking(text: str) -> str:
-    return _THINK.sub("", text or "").strip()
+    return decode_byte_fallback(_THINK.sub("", text or "").strip())
+
+
+# ── byte-fallback token 還原 ──────────────────────────────────────────────
+#
+# llama.cpp / Ollama 的分詞器在多位元組字被切在 token 邊界時，
+# 會吐出「位元組後備 token」，字面上長這樣：<0xE8><0xB3><0x92>
+# 那正好是「賒」的 UTF-8 三個位元組（E8 B3 92）。
+#
+# 【這個 bug 是使用者在畫面上看到才發現的】
+# 語料檔案與資料庫裡都是正確的「賒」字，完全沒有污染 ——
+# **污染是模型產生的，不是語料壞掉**。
+# 一開始的假設（HTML→MD 轉換壞了）指向錯的方向，查證後才確定來源。
+#
+# 危險之處在於它不會拋錯：那串 <0x..> 就是普通字元，
+# 一路通過 JSON 解析、通過引用驗證（它出現在敘述文字而非引用裡）、
+# 通過信心計分，最後原封不動印在使用者眼前。
+_BYTE_FALLBACK = re.compile(r"(?:<0x[0-9A-Fa-f]{2}>)+")
+
+
+def decode_byte_fallback(text: str) -> str:
+    """把連續的 <0xNN> 還原成原本的字元。無法解碼的原樣保留。"""
+    if not text or "<0x" not in text:
+        return text or ""
+
+    def _sub(m: re.Match) -> str:
+        raw = bytes(int(h, 16) for h in
+                    re.findall(r"<0x([0-9A-Fa-f]{2})>", m.group(0)))
+        try:
+            return raw.decode("utf-8")
+        except UnicodeDecodeError:
+            # 解不出來就保留原樣 —— 硬猜一個字比留著明顯的亂碼危險，
+            # 因為亂碼看得出有問題，猜錯的字看不出來。
+            return m.group(0)
+
+    return _BYTE_FALLBACK.sub(_sub, text)
+
+
+def undecoded_byte_tokens(text: str) -> list[str]:
+    """回傳仍未解碼的 <0xNN> 片段。空清單代表乾淨。"""
+    return [m.group(0) for m in _BYTE_FALLBACK.finditer(text or "")]
 
 
 # ── 1. 自由文字：走 LiteLLM ────────────────────────────────────────────────
