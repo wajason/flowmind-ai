@@ -165,66 +165,93 @@ ledger posting 與 binding risk features，所有輸出都要求 human sign-off�
 ```mermaid
 flowchart TB
     subgraph IN["輸入層"]
-        I1[發票 PDF/XML]
-        I2[合約 DOCX]
-        I3[銀行流水 CSV]
-        I4[統計表 XLSX]
-        I5[法規 / 商品說明]
+        I1[發票 · 合約 · 銀行流水]
+        I2[法規 · 商品說明 · 統計表]
+        I3["市場資料<br/>央行利率（自帶過期判定）"]
     end
 
-    subgraph PARSE["① 文件解析層　data_update_finance.py"]
-        P1[父子切塊<br/>Parent 2500 / Child 400]
-        P2["中文 bigram 稀疏索引<br/>（非 to_tsvector english）"]
-        P3[統計表摘要化<br/>不逐列入庫]
+    subgraph PARSE["① 解析與入庫"]
+        P1["data_update_finance.py<br/>父子切塊 · 中文 bigram 索引"]
+        P2["financials.py<br/>財務明細 → fin_* 表（RLS）"]
     end
 
-    subgraph DET["② 決定性層（零 LLM）"]
-        C1["crosscheck.py<br/>統編檢核碼 · 加總 · 稅率<br/>自我交易 · 重複請款<br/>帳期勾稽 · 流水對帳"]
-        C2["metrics.py<br/>集中度 · 帳齡 · 呆帳<br/>現金流缺口"]
+    subgraph PLAN["② 查詢理解層（零 LLM）"]
+        Q1["query_plan.py<br/>問題分解 · 實體連結"]
+        Q2["中繼資料過濾<br/>刻意保守：只有兩種下推"]
     end
 
-    subgraph RET["③ 檢索層　retrieval.py"]
-        R1[Dense: pgvector HNSW]
-        R2[Sparse: CJK bigram BM25]
-        R3[RRF 融合 + 多樣性過濾]
-        R4[Small-to-Big 脈絡注入]
+    subgraph DET["③ 決定性層（零 LLM）"]
+        C1["crosscheck.py　27 項<br/>統編 · 加總 · 自我交易<br/>跨文件勾稽 · 班佛定律"]
+        C2["metrics.py<br/>集中度 · 帳齡 · 現金缺口"]
+        C3["industry.py<br/>產業側寫（統計推導）"]
     end
 
-    subgraph LLM["④ 機率性核心"]
-        L1["llm.extract_json<br/>grammar-constrained"]
-        L2[Ollama / LiteLLM]
+    subgraph RET["④ 檢索層"]
+        R1["Dense + CJK bigram BM25<br/>RRF 融合"]
+        R2["排序全序（決勝鍵）<br/>→ 結果可重現"]
+        R3["graph.py 知識圖譜<br/>applies_to 由發布機關決定"]
     end
 
-    subgraph EV["⑤ 證據層　evidence.py"]
+    subgraph LLM["⑤ 機率性核心"]
+        L1["llm.py<br/>受約束 JSON 解碼"]
+        L2["byte-fallback 還原"]
+    end
+
+    subgraph EV["⑥ 證據層"]
         E1[引用逐字驗證]
-        E2[決定性信心分數]
-        E3[拒答閘門]
-        E4[人工複核旗標]
+        E2[斷言層級佐證]
+        E3["信心分數 · 拒答閘門"]
+        E4["auditor.py 跨 agent 覆核"]
+    end
+
+    subgraph OUTL["⑦ 輸出層"]
+        O1["dashboard.py<br/>單頁戰情室 + 情境模擬"]
+        O2["report.py<br/>Bank-ready PDF"]
+        O3["watchtower.py<br/>主動監控（無人問也會動）"]
     end
 
     subgraph DB["PostgreSQL 17 + pgvector · Row-Level Security"]
         DB1[("documents")]
-        DB2[("engagements")]
-        DB3[("audit_log 雜湊鏈")]
+        DB2[("fin_invoices / contracts / ledger")]
+        DB3[("fin_alerts")]
+        DB4[("audit_log 雜湊鏈")]
     end
 
     IN --> PARSE --> DB
-    IN --> DET
-    Q[使用者提問] --> ROUTE{"決定性路由<br/>metrics.route()"}
+    Q[使用者提問] --> PLAN --> ROUTE{"決定性路由<br/>metrics.route()"}
     ROUTE -->|可以用算的| DET
     ROUTE -->|需要理解文義| RET
     RET --> DB
     RET --> LLM --> EV
-    DET --> OUT[Evidence / Confidence<br/>Source / Reason 證據包]
-    EV --> OUT
-    OUT --> AUD[稽核軌跡]
-    AUD --> DB3
+    DET --> OUTL
+    EV --> OUTL
+    DB --> O3
+    OUTL --> AUD[稽核軌跡] --> DB4
 
     style DET fill:#0f766e,color:#fff
+    style PLAN fill:#0f766e,color:#fff
     style EV fill:#0f766e,color:#fff
+    style OUTL fill:#0f766e,color:#fff
     style LLM fill:#7c3aed,color:#fff
     style ROUTE fill:#b45309,color:#fff
 ```
+
+**四個綠色層級全部零 LLM，而且各自有測試讀自己的原始碼驗證這件事。**
+輸出層是後來補的 —— 在它出現之前，這套系統的所有能力都只存在於
+終端機輸出裡。對工程師沒問題，但**銀行的授信主管不會看終端機**，
+一個「輸出無法被使用的人看懂」的系統，在對方眼中等於不存在。
+
+### 3.1.1 輸出層的一條硬規則：呈現層不做任何運算
+
+儀表板與 PDF 報告都**只取資料、排版、上色**，所有數字來自既有模組。
+理由是**同一個問題不能有兩個答案** —— 若儀表板自己算一次集中度、
+終端機算另一次，兩邊有一天會不一致，而使用者無從判斷該信哪個。
+
+這條規則由測試強制：`dashboard.py` 與 `report.py` 的原始碼
+不得出現 `def check_` 或 `def m_`。
+
+同樣的原則延伸到情境模擬：它直接呼叫 `compute_cash_flow_projection()`，
+不另寫一份 —— 模擬與正式報告必須用同一套算法。
 
 ### 3.2 決定性路由：一個從失敗學到的設計
 
