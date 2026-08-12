@@ -220,6 +220,55 @@ def test_confidence_gate() -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
+def test_report_pdf() -> None:
+    """
+    Bank-ready PDF 報告。
+
+    最重要的測項是**中文真的畫得出來**。
+    ReportLab 的內建字型畫不出中文，會輸出一份滿是黑方塊的 PDF ——
+    那種檔案「看起來像成功了」，會一路通過流程直到有人真的打開它。
+    所以這裡不只檢查「有沒有產出檔案」，而是把文字抽回來數中文字。
+    """
+    section("Bank-ready PDF 報告")
+    try:
+        from flowmind import report
+        from pypdf import PdfReader
+    except ImportError as e:                               # noqa: BLE001
+        check(f"PDF 相依套件可載入（{e}）", False)
+        return
+
+    import re
+    import tempfile
+    from pathlib import Path as _P
+
+    with tempfile.TemporaryDirectory() as td:
+        out = _P(td) / "r.pdf"
+        try:
+            report.build("CASE-9999", out)
+        except RuntimeError as e:
+            check(f"找得到中文字型（{e}）", False)
+            return
+        check("PDF 產生成功且非空檔", out.exists() and out.stat().st_size > 20000)
+
+        rd = PdfReader(str(out))
+        text = "\n".join(p.extract_text() or "" for p in rd.pages)
+        cjk = len(re.findall(r"[一-鿿]", text))
+        check("中文確實畫得出來（非黑方塊）", cjk > 300, f"{cjk} 個中文字")
+        check("報告含逐項檢查結果", "決定性檢查逐項結果" in text)
+        # 產品邊界必須印在報告上，不能只寫在 README
+        check("報告印出產品邊界（不構成授信決策）",
+              "不構成授信決策" in text)
+        check("報告附可重現指令", "flowmind.cli crosscheck" in text)
+        check("報告分頁且有頁碼", len(rd.pages) >= 2 and "第 1 頁" in text)
+
+    # 報告不得自行計算：與畫面、終端機必須是同一組數字
+    import inspect
+    src = inspect.getsource(report)
+    check("報告不自行實作檢查規則（只呼叫既有引擎）",
+          "def check_" not in src and "def m_" not in src)
+
+
+# ══════════════════════════════════════════════════════════════════════════
 def test_dashboard() -> None:
     """
     儀表板 API。
@@ -926,7 +975,8 @@ if __name__ == "__main__":
     print("═" * 70)
     for fn in (test_tax_id, test_cjk, test_citation_positive,
                test_citation_negative, test_confidence_gate,
-               test_query_plan, test_dashboard, test_retrieval_determinism,
+               test_query_plan, test_dashboard, test_report_pdf,
+               test_retrieval_determinism,
                test_industry, test_watchtower,
                test_claim_corroboration, test_hpes,
                test_counterfactual, test_crosscheck, test_router,

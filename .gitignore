@@ -58,3 +58,6 @@ docs/*.log
 .obsidian/
 .vscode/
 .idea/
+
+# PDF 報告產出目錄（每次執行都會變，且含委任案名稱）
+out/

@@ -7,7 +7,7 @@
 
 2026 台北金融科技獎｜金融創新獎—校園組
 
-[![tests](https://img.shields.io/badge/tests-39%2F39-brightgreen)]()
+[![tests](https://img.shields.io/badge/tests-163%2F163-brightgreen)]()
 [![python](https://img.shields.io/badge/python-3.11-blue)]()
 [![db](https://img.shields.io/badge/PostgreSQL-17%20%2B%20pgvector%200.8-336791)]()
 [![llm](https://img.shields.io/badge/LLM-本地%20Ollama%20·%20資料不出本機-7c3aed)]()
@@ -194,7 +194,7 @@ flowchart TB
 ```
 
 **設計原則：凡是有明確規則可以算的，就不要讓語言模型去猜。**
-17 個核心模組中**只有 1 個呼叫 LLM**（`llm.py`）。這個比例本身就是架構主張。
+24 個核心模組中**只有 1 個呼叫 LLM**（`llm.py`）。這個比例本身就是架構主張。
 
 綠色的四個層級全部零 LLM，而且各自有測試強制驗證這件事
 （測試會讀模組原始碼，確認裡面沒有任何模型呼叫）——
@@ -376,7 +376,7 @@ python -m flowmind.cli engagements
 ### 5.5 評測與測試
 
 ```powershell
-# 回歸測試（163 項，數秒，不需資料庫與 LLM）
+# 回歸測試（170 項，數秒，不需資料庫與 LLM）
 python tests\test_core.py
 
 # 外部 benchmark
@@ -618,7 +618,7 @@ python rag_query.py --verify-isolation CASE-0001 CASE-9999
 | 認證鏈（authn） | 四情境全過：授權/未授權/偽造權杖/撤銷即時生效 |
 | 稽核雜湊鏈 | 完整未斷鏈 |
 | **端到端可重現性** | 安靜條件 **9/9 完全一致**；顯存競爭下**不一致**（見下） |
-| 回歸測試 | **163 / 163** |
+| 回歸測試 | **170 / 170** |
 | 知識圖譜 | **128 節點**（83 文件 · 16 產業 · 11 期間 · 9 主題 · 9 法域） |
 | 知識庫規模 | 83 份文件 / **7,619** chunks |
 
@@ -936,7 +936,7 @@ flowmind_AI/
 │   ├── fetch_benchmarks.py      SROIE / FUNSD / CORD
 │   ├── run_verifin.py           評測執行器
 │   └── eval_models.py           模型選型實測
-├── tests/test_core.py           163 項回歸測試（無外部依賴）
+├── tests/test_core.py           170 項回歸測試（無外部依賴）
 ├── sql/init/                    RLS policy 與 schema
 ├── docs/
 │   ├── SDD.md                   軟體設計規格書
