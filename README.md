@@ -160,7 +160,7 @@ flowchart TB
     Q["❓ 使用者提問"]
     PLAN["② 查詢理解層（零 LLM）<br/>問題分解 · 實體連結<br/>中繼資料過濾"]
     ROUTE{"決定性路由<br/>關鍵詞規則"}
-    DET["③ 決定性層（零 LLM）<br/>26 條交叉驗證 · 集中度 · 帳齡<br/>現金缺口 · 班佛定律<br/>產業側寫（推導自官方統計）"]
+    DET["③ 決定性層（零 LLM）<br/>27 條交叉驗證 · 集中度 · 帳齡<br/>現金缺口 · 班佛定律<br/>產業側寫（推導自官方統計）"]
     RET["④ 檢索層<br/>Dense 向量 + CJK BM25<br/>RRF 融合 + 多樣性過濾"]
     KG["知識圖譜<br/>applies_to 由發布機關決定<br/>128 節點 · 多跳查詢"]
     CORE["⑤ 機率性核心<br/>受約束 JSON 解碼<br/>Ollama / 可換 Claude"]
@@ -213,7 +213,7 @@ python -m flowmind.dashboard        # → http://127.0.0.1:8000
 | 區塊 | 資料來源 | 重點 |
 |---|---|---|
 | ① 委任案總覽 | `fin_alerts`（watchtower 寫入） | 紅黃綠燈；每條警示可展開**觸發它的實際資料列** |
-| ② 交叉驗證 | `crosscheck.run_all()` | 26 條檢查分六類，點卡片展開逐條結果 |
+| ② 交叉驗證 | `crosscheck.run_all()` | 27 條檢查分六類，點卡片展開逐條結果 |
 | ③ 現金流時間軸 | `fin_invoices` / `fin_ledger` | 見下方說明 |
 | ④ 信心分數組成 | `evidence` 的公開權重 | **支援連續追問**；決定性與 RAG 兩種答案分開呈現 |
 

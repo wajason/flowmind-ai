@@ -321,7 +321,7 @@ flowchart TB
 | `flowmind/evidence.py` | 引用逐字驗證、斷言層級佐證、信心分數、拒答閘門 | ✗ |
 | `flowmind/auditor.py` | 覆核代理人：跨 agent 一致性 | ✗ |
 | `flowmind/guardrail.py` | 零信任閘門（檢索前攔截，規則非模型） | ✗ |
-| `flowmind/crosscheck.py` | 決定性交叉驗證（26 項檢查） | ✗ |
+| `flowmind/crosscheck.py` | 決定性交叉驗證（27 項檢查） | ✗ |
 | `flowmind/metrics.py` | 決定性指標 + 問題路由 | ✗ |
 | `flowmind/industry.py` | 產業知識：從 29 份官方統計推導 | ✗ |
 | `flowmind/financials.py` | 財務明細匯入 RLS 資料表 + 隔離驗證 | ✗ |
