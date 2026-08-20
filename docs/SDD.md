@@ -719,17 +719,19 @@ flowchart LR
 | Extractor | 文件 → 結構化欄位 | 抽錯 → 被 crosscheck 抓到 |
 | Verifier | 交叉驗證（純程式） | 不會失敗（決定性） |
 | Advisor | 法規/商品問答 | 幻覺 → 被引用驗證擋下 |
-| Auditor | 覆核前三者的輸出一致性 | **尚未實作** |
+| Auditor | 覆核前三者的輸出一致性 | 抓到矛盾 → 標記，不阻擋輸出 |
 
-Auditor 是唯一值得新增的：它負責偵測「Extractor 說 A、Advisor 說 B」的矛盾。
-這是目前架構的真實缺口。
+Auditor **已實作**（`flowmind/auditor.py`，四條規則），偵測「Extractor 說 A、
+Advisor 說 B」的矛盾。此表格先前寫「尚未實作」是過時內容，已更正——
+架構圖（§3.1 E4）與模組清單（§4）從一開始就把它列為既有模組，三處互相矛盾。
 
 ### 10.4 完整 Roadmap
 
 | 階段 | 內容 | 觸發條件 |
 |---|---|---|
 | **現在（MVP）** | 決定性交叉驗證 · 可驗證引用 · RLS 隔離 · VeriFin | — |
-| **next** | OCR 接入 · 中文 B2B 標註集 · L3-E 對抗性拒答 · Auditor agent | 進入 POC 前 |
+| **next** | OCR 接入 · 中文 B2B 標註集 · L3-E 對抗性拒答 | 進入 POC 前 |
+| **next（需謹慎）** | **外部檢索 tool use**：知識庫撈不到時讓系統上網查證，緩解 U-01（見 §9） | 需先解決：①網路來源可信度沒有把關機制，會直接牴觸「引用必須可驗證」的核心主張；②實測過本地小模型 tool use 可靠度不足（見 `docs/DECISIONS.md` U-01 第 3 點）。**這是被討論過、明確標成「需驗證、非既定結論」的方向，目前沒有一行實作** |
 | **Enterprise** | Zero-Trust AI Gateway（意圖防禦／異常偵測／去識別化） | 首家銀行導入 |
 | **Platform** | Knowledge Graph（關係企業網絡）· 銀行端 API · 多幣別跨境 | 客戶出現關係企業案例 |
 
