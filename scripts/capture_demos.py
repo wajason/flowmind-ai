@@ -46,7 +46,7 @@ DEMOS = [
             "—— 用 superuser 連線會繞過 RLS，隔離就形同虛設。",
      "cmd": [PY, "-m", "flowmind.cli", "doctor"]},
 
-    {"n": 2, "title": "回歸測試（39 項）", "slow": False,
+    {"n": 2, "title": "回歸測試", "slow": False,
      "why": "不依賴資料庫與 LLM，數秒跑完。要先開 Docker 才能跑的測試，"
             "實務上不會有人跑。其中負向測試組證明的是「錯誤引用會被擋下來」。",
      "cmd": [PY, "tests/test_core.py"]},
