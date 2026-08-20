@@ -1,0 +1,5 @@
+#!/bin/sh
+# 提交前檢查暫存區有沒有混進不該公開的內容。
+# 邏輯在 scripts/check_public_safe.py；此處只是掛載點。
+# 誤判時可用 git commit --no-verify 略過（請先真的確認過）。
+python scripts/check_public_safe.py --staged || exit 1

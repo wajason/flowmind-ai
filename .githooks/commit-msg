@@ -1,0 +1,4 @@
+#!/bin/sh
+# 檢查 commit 訊息本身有沒有寫出不該公開的內容。
+# 這一關是專門為了「檔案清乾淨了、但訊息把答案寫出來」這個坑而設。
+python scripts/check_public_safe.py --msg "$1" || exit 1

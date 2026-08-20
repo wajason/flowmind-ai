@@ -946,7 +946,43 @@ git push -u origin feat/ocr-layer
 gh pr create --title "接入 OCR 層" --body "解決 #12。已補 3 項測試。"
 ```
 
-### 11.4 Code Review 檢查清單
+### 11.4 Clone 之後的第一件事：啟用提交前檢查
+
+```bash
+git config core.hooksPath .githooks     # 啟用 pre-commit / commit-msg 檢查
+cp .private-terms.example .private-terms  # 再依團隊實際情況填入內容
+```
+
+本專案有一部分文件僅保留於團隊本機、不納入版控。`.gitignore` 只擋得住
+「不小心 `git add`」，擋不住另外兩種情況：**換個檔名但內容一樣不該公開**，
+以及**commit 訊息本身把不該說的寫出來**。
+
+第二種最容易被忽略也最難補救——檔案內容可以事後從歷史清除，
+但如果 commit 訊息寫著「移除了某某內部文件」，那句話本身就說明了
+「這裡曾經有東西、它叫什麼、為什麼被拿掉」，而訊息比檔案更難清理。
+
+所以檢查自動化成兩道 hook：
+
+| Hook | 擋什麼 |
+|---|---|
+| `pre-commit` | 暫存區含 `.gitignore` 列出的私有路徑；或新檔案內容含私有詞彙 |
+| `commit-msg` | commit 訊息含私有詞彙 |
+
+也可以手動執行：
+
+```bash
+python scripts/check_public_safe.py --staged   # 檢查暫存區
+python scripts/check_public_safe.py --all      # 檢查整個工作目錄與全部歷史訊息
+```
+
+> `.private-terms`（實際的詞彙清單）**不進版控**——在公開 repo 裡放一份
+> 「這些字不能出現」的清單，等於把答案寫在題目旁邊。版控裡只有
+> `.private-terms.example` 這份說明範本。
+>
+> 清單檔不存在時檢查會**直接失敗**而不是靜默放行。一個「找不到設定就自動通過」
+> 的檢查，在最需要它的時候（新環境、剛 clone）剛好不會作用，而且沒有人會發現。
+
+### 11.5 Code Review 檢查清單
 
 在按下 Approve 前，這四項一定要看：
 
@@ -957,7 +993,7 @@ gh pr create --title "接入 OCR 層" --body "解決 #12。已補 3 項測試。
 | 3 | 有沒有在 `crosscheck.py` / `metrics.py` 裡呼叫 LLM | 這兩個模組必須維持零 LLM |
 | 4 | 新增的宣稱有沒有對應的測試或實測數字 | 文件裡的數字必須可重跑驗證 |
 
-### 11.5 常用指令速查
+### 11.6 常用指令速查
 
 ```powershell
 git status                          # 現在改了什麼
@@ -981,7 +1017,7 @@ gh pr checkout 12                   # 把別人的 PR 抓下來測
 gh pr create                        # 開 PR
 ```
 
-### 11.6 絕對不要提交的東西
+### 11.7 絕對不要提交的東西
 
 `.gitignore` 已設定，但仍請確認：
 
