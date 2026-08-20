@@ -73,3 +73,32 @@ docs/*.log
 # 這條規則是被實際的混亂逼出來的：out/ 曾經有一份過期的 SKILL.md 複本，
 # 與 skills/ 底下的正本同名但內容不同 —— 沒有人知道該看哪一份。
 out/
+
+# ── 本機文件：不進公開 repo ──────────────────────────────
+# 理由分兩類：
+#   ①「非最終版本」—— 計畫書與簡報在報名後仍會持續修訂，
+#     推上公開 repo 只會讓外界看到已作廢的版本。
+#   ②「內部策略」—— （略）、
+#     （略），這些是團隊內部作業文件，
+#     不是產品文件。
+# 這些檔案仍留在本機，只是不進版控。
+HANDOVER.md
+ONE_PAGER.md
+docs/APPLICATION_FORM_FIELDS.md
+docs/BUSINESS_CASE.md
+docs/MARKET_VALIDATION.md
+docs/PROPOSAL.md
+docs/PROPOSAL_SUBMISSION.md
+docs/slides/
+docs/FlowMind_*.docx
+docs/FlowMind_*.pdf
+FlowMind_AI_2026*.docx
+NEXT_SESSION_PROMPT.md
+
+# 產生／修改本機文件的腳本：本身含競賽策略分析（（略）、
+# （略）），不適合公開；且它們操作的目標檔案也不在公開 repo 內。
+scripts/patch_proposal_docx.py
+scripts/build_submission_docx.py
+scripts/build_submission_pdf.py
+scripts/check_slide_overflow.py
+docs/images/proposal/

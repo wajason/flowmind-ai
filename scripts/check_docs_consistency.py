@@ -47,6 +47,11 @@ sys.path.insert(0, str(ROOT))
 
 # 要掃描的文件。刻意逐一列出而不是掃全部 *.md ——
 # scratch 筆記、第三方文件的數字不歸我們管。
+#
+# 註：清單中的競賽文件（PROPOSAL*／BUSINESS_CASE／簡報／HANDOVER 等）
+# 不在公開 repository 內（詳見 .gitignore 的說明）。
+# 這裡刻意保留它們的路徑：團隊本機仍有這些檔案、需要被一起檢查；
+# 而 scan() 對不存在的檔案會直接跳過，因此公開版執行不會出錯。
 DOCS = [
     "README.md", "HANDOVER.md", "ONE_PAGER.md",
     "docs/SDD.md", "docs/PROPOSAL.md", "docs/PROPOSAL_SUBMISSION.md",

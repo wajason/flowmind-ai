@@ -7,7 +7,7 @@
 
 2026 台北金融科技獎｜金融創新獎—校園組
 
-[![tests](https://img.shields.io/badge/tests-196%2F196-brightgreen)]()
+[![tests](https://img.shields.io/badge/tests-201%2F201-brightgreen)]()
 [![python](https://img.shields.io/badge/python-3.11-blue)]()
 [![db](https://img.shields.io/badge/PostgreSQL-17%20%2B%20pgvector%200.8-336791)]()
 [![llm](https://img.shields.io/badge/LLM-本地%20Ollama%20·%20資料不出本機-7c3aed)]()
@@ -241,7 +241,7 @@ python -m flowmind.dashboard        # → http://127.0.0.1:8000
 
 > 商業論證（KPI 現況 vs 目標、市場規模、飛輪）刻意**不**放進這個工作台——
 > 那是給評審／投資人看的東西，授信人員每天要用的操作介面裡放這些只會讓人
-> 搞不清楚這是產品還是簡報。完整內容在 `docs/BUSINESS_CASE.md` §5.0。
+> 搞不清楚這是產品還是簡報。
 
 **佇列不是寫死三間**——右上角「＋ 新增案件」可直接建立新委任案並上傳憑證，
 建完立即可查，不需要另外跑一次批次匯入：
@@ -952,7 +952,7 @@ gh pr create --title "接入 OCR 層" --body "解決 #12。已補 3 項測試。
 
 | # | 檢查 | 為什麼 |
 |---|---|---|
-| 1 | `python tests\test_core.py` 是否 39/39 全過 | 核心邏輯不能退步 |
+| 1 | `python tests\test_core.py` 是否 **失敗 0**（項數會隨新增測試成長，看的是有沒有失敗，不是看總數） | 核心邏輯不能退步 |
 | 2 | 有沒有新的 SQL 直接寫 `WHERE tenant_id` | 隔離應由 RLS 負責，手寫過濾是反模式 |
 | 3 | 有沒有在 `crosscheck.py` / `metrics.py` 裡呼叫 LLM | 這兩個模組必須維持零 LLM |
 | 4 | 新增的宣稱有沒有對應的測試或實測數字 | 文件裡的數字必須可重跑驗證 |
@@ -1029,7 +1029,6 @@ flowmind_AI/
 ├── docs/
 │   ├── SDD.md                   軟體設計規格書
 │   ├── MODEL_SELECTION.md       模型選型實測數據
-│   └── BUSINESS_CASE.md         商業論證與 demo 劇本
 ├── data/raw/<engagement>/       各委任案原始文件（互相隔離）
 ├── generate_synthetic_data.py   合成營運資料（含負向對照組）
 ├── data_update_finance.py       入庫 pipeline
@@ -1046,7 +1045,6 @@ flowmind_AI/
 |---|---|
 | [`docs/SDD.md`](docs/SDD.md) | 軟體設計規格書：架構、資料模型、三層 benchmark、業界未解難題、Roadmap |
 | [`docs/MODEL_SELECTION.md`](docs/MODEL_SELECTION.md) | 模型選型的實測數據與判讀 |
-| [`docs/BUSINESS_CASE.md`](docs/BUSINESS_CASE.md) | 目標用戶、商業模式、競爭定位、（略） |
 | [`交接檔案_v4.md`](交接檔案_v4.md) | 接手指南：現況、四個關鍵發現、下一步 |
 
 ---
