@@ -102,3 +102,7 @@ scripts/build_submission_docx.py
 scripts/build_submission_pdf.py
 scripts/check_slide_overflow.py
 docs/images/proposal/
+
+# 與 LLM 的本機紀錄：含（略）與未定案的推論過程，非產品文件
+針對每案人工核對時數的討論.txt
+*討論.txt
