@@ -71,18 +71,20 @@ def _d(s: Any) -> Optional[date]:
 def check_tax_ids(invoices: list[dict]) -> list[Finding]:
     """統一編號檢核碼。這是財政部公告的算術規則，0.1 毫秒就能算出真偽。"""
     out = []
-    bad: list[str] = []
+    bad: list[str] = []          # 人看的說明文字，帶欄位名方便判讀
+    bad_refs: list[str] = []     # 純發票號碼，給證據回查用——不能夾帶附註文字
     for inv in invoices:
         for role in ("seller_ban", "buyer_ban"):
             ban = inv.get(role)
             if ban and not validate_tax_id(ban):
                 bad.append(f"{inv.get('invoice_number')}({role}={ban})")
+                bad_refs.append(str(inv.get("invoice_number")))
     out.append(Finding(
         "TAXID-01", "統一編號檢核碼", Severity.CRITICAL, not bad,
         "全部統編通過財政部檢核碼演算法。" if not bad else
         f"有 {len(bad)} 筆統編未通過檢核碼，代表號碼本身不可能存在："
         + "、".join(bad[:5]) + ("…" if len(bad) > 5 else ""),
-        refs=bad[:20],
+        refs=bad_refs[:20],
     ))
     return out
 

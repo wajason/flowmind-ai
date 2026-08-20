@@ -330,7 +330,7 @@ def api_crosscheck(tenant: str) -> JSONResponse:
             "passed": sum(1 for f in items if f["passed"]), "total": len(items),
             "items": [{"id": f["check_id"], "title": f["title"],
                        "passed": f["passed"], "severity": f["severity"],
-                       "detail": f["detail"]} for f in items],
+                       "detail": f["detail"], "refs": f.get("refs", [])} for f in items],
         })
     other = [f for f in rep["findings"] if f["check_id"] not in seen]
     if other:
@@ -339,7 +339,7 @@ def api_crosscheck(tenant: str) -> JSONResponse:
             "passed": sum(1 for f in other if f["passed"]), "total": len(other),
             "items": [{"id": f["check_id"], "title": f["title"],
                        "passed": f["passed"], "severity": f["severity"],
-                       "detail": f["detail"]} for f in other],
+                       "detail": f["detail"], "refs": f.get("refs", [])} for f in other],
         })
 
     return JSONResponse({
@@ -351,6 +351,47 @@ def api_crosscheck(tenant: str) -> JSONResponse:
         "as_of": str(rep["as_of"]),
         "groups": groups,
     })
+
+
+@app.get("/api/cases/{tenant}/lookup/{ref}")
+def api_lookup_ref(tenant: str, ref: str) -> JSONResponse:
+    """
+    憑證證據回查：交叉驗證結果裡點一個發票號碼/合約編號，
+    直接看到原始那筆資料長什麼樣子——不用自己去 data/raw/ 底下找檔案。
+
+    這支端點**不做任何判斷**，純粹是「拿 ref 去三個檔案裡找同一個 ID」，
+    找到就把整筆原始記錄照樣搬過去。跟儀表板其餘部分一樣：
+    呈現層只呈現，不重新計算、不重新判讀。
+    """
+    data = metrics.load_engagement_files(tenant)
+    if not data.get("invoices") and not data.get("contracts"):
+        return JSONResponse({"error": f"{tenant} 沒有可查詢的憑證資料"}, status_code=404)
+
+    hits: list[dict] = []
+    for inv in data.get("invoices", []):
+        if str(inv.get("invoice_number", "")) == ref:
+            hits.append({"kind": "發票", "source_file": "receivables.json", "record": inv})
+    for c in data.get("contracts", []):
+        if str(c.get("contract_number", "")) == ref:
+            hits.append({"kind": "合約", "source_file": "contracts.json", "record": c})
+    for row in data.get("ledger", []):
+        if str(row.get("reference", "")) == ref and ref:
+            hits.append({"kind": "銀行流水", "source_file": "bank_ledger.csv", "record": row})
+    # 統編也是常見的查詢對象（買方/賣方欄位）；一個統編可能對到很多張發票，
+    # 上限 5 筆——這裡是「秀出證據長怎樣」，不是「列出全部交易紀錄」。
+    if not hits and ref:
+        for inv in data.get("invoices", []):
+            if ref in (str(inv.get("buyer_ban", "")), str(inv.get("seller_ban", ""))):
+                hits.append({"kind": "發票（統編相符）", "source_file": "receivables.json", "record": inv})
+            if len(hits) >= 5:
+                break
+
+    if not hits:
+        return JSONResponse(
+            {"error": f"在 {tenant} 的憑證資料裡找不到「{ref}」",
+             "searched": ["receivables.json", "contracts.json", "bank_ledger.csv"]},
+            status_code=404)
+    return JSONResponse({"ref": ref, "tenant": tenant, "hits": hits})
 
 
 @app.get("/api/cashflow/{tenant}")

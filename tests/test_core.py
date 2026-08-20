@@ -360,6 +360,26 @@ def test_dashboard() -> None:
     check("所有檢查都已歸類（無未分類群組）", not unlabeled,
           unlabeled[0]["items"] if unlabeled else None)
 
+    all_items = [i for g in d["groups"] for i in g["items"]]
+    failing_with_refs = [i for i in all_items if not i["passed"] and i["refs"]]
+    check("交叉驗證回傳的失敗項目附帶原始憑證編號（供證據回查）",
+          bool(failing_with_refs), [i["id"] for i in all_items if not i["passed"]])
+    taxid = next((i for i in all_items if i["id"] == "TAXID-01"), None)
+    check("TAXID-01 的 refs 是乾淨的發票號碼，不夾帶附註文字（曾經是 'AB123(buyer_ban=456)'）",
+          taxid is not None and taxid["refs"] and "(" not in taxid["refs"][0], taxid)
+
+    known_ref = failing_with_refs[0]["refs"][0].split("(")[0].strip()
+    r = c.get(f"/api/cases/CASE-9999/lookup/{known_ref}")
+    d = r.json()
+    check("證據回查：交叉驗證抓到的憑證編號查得到原始記錄",
+          r.status_code == 200 and len(d.get("hits", [])) >= 1, d)
+    check("證據回查：回傳的是完整原始記錄而非摘要（欄位數對得上原始 schema）",
+          d["hits"] and len(d["hits"][0]["record"]) >= 5, d.get("hits"))
+
+    r = c.get("/api/cases/CASE-9999/lookup/NOT-A-REAL-INVOICE-NUMBER")
+    check("證據回查：查無此編號時明確回報，不是靜默回空清單",
+          r.status_code == 404 and "error" in r.json(), r.status_code)
+
     r = c.get("/api/cashflow/CASE-9999")
     d = r.json()
     check("現金流時間軸回傳資料點", r.status_code == 200 and len(d["points"]) > 0)

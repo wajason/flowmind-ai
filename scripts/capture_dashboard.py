@@ -40,11 +40,6 @@ SHOTS = [
      "現金流時間軸"),
 ]
 
-# 資安防護面板不屬於任何案件（在 #case-view 外層，佇列頁就看得到），
-# 所以獨立於 SHOTS 迴圈之外截，時機是「佇列截完、還沒點進案件」那一刻。
-SECURITY_SHOT = ("dashboard-security.png", "#sec-security",
-                  "資安防護面板：RLS 隔離／稽核鏈／Zero-Trust 即時驗證")
-
 # ── 投影片專用截圖 ────────────────────────────────────────────────────────
 #
 # 16:9 投影片的可用區域大約是 1280×580（扣掉標題與頁尾）。
@@ -139,21 +134,6 @@ def main() -> int:
         print(f"  ✅ {'dashboard-queue.png':<28}案件佇列：授信人員的入口畫面　"
               f"({queue_path.stat().st_size // 1024} KB)")
 
-        # 資安面板是頁面載入時就與佇列平行呼叫的（loadQueue + loadSecurity
-        # 同時觸發），這裡等它把「驗證中…」換成真正結果，避免截到空殼。
-        sec_name, sec_sel, sec_desc = SECURITY_SHOT
-        try:
-            page.wait_for_function(
-                "document.querySelector('#security') && "
-                "!document.querySelector('#security .empty')",
-                timeout=30_000)
-        except Exception as e:                             # noqa: BLE001
-            print(f"  ⚠️ 資安面板逾時未載入完成（{type(e).__name__}），仍照截")
-        sec_path = OUT_DIR / sec_name
-        page.locator(sec_sel).screenshot(path=str(sec_path))
-        print(f"  ✅ {sec_name:<28}{sec_desc}　"
-              f"({sec_path.stat().st_size // 1024} KB)")
-
         # 點進指定的委任案——案件佇列是純 HTML 卡片，用文字內容定位比
         # CSS class 選擇器更貼近使用者實際的操作方式（找名字點下去）。
         page.click(f"text={args.tenant}")
@@ -167,6 +147,24 @@ def main() -> int:
                 page.screenshot(path=str(path), full_page=True)
             print(f"  ✅ {name:<28}{desc}　"
                   f"({path.stat().st_size // 1024} KB)")
+
+        # 證據回查：點開一張交叉驗證卡片，點第一個憑證編號的 chip，
+        # 截「原始記錄」彈窗——只有失敗項目才有 refs，CASE-9999 的負向
+        # 對照組保證每次都截得到（不像 --tenant 參數指定的乾淨案件）。
+        try:
+            page.locator("#sec-cross .card").first.click()
+            page.wait_for_timeout(400)
+            chip = page.locator(".ref-chip").first
+            chip.wait_for(state="visible", timeout=5000)
+            chip.click()
+            page.wait_for_timeout(1000)
+            ev_path = OUT_DIR / "dashboard-evidence.png"
+            page.locator(".ev-box").screenshot(path=str(ev_path))
+            print(f"  ✅ {'dashboard-evidence.png':<28}證據回查：點憑證編號看原始記錄　"
+                  f"({ev_path.stat().st_size // 1024} KB)")
+            page.click(".ev-box .close")
+        except Exception as e:                             # noqa: BLE001
+            print(f"  ⚠️ 證據回查截圖失敗（{type(e).__name__}），其餘截圖仍有效")
 
         page.evaluate("document.querySelector('header').style.position = ''")
 

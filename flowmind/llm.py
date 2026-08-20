@@ -26,7 +26,6 @@ import time
 from typing import Any, Optional
 
 import httpx
-from litellm import completion
 
 from . import config
 
@@ -101,6 +100,11 @@ def chat(
     timeout: int = 600,
     retries: int = 2,
 ) -> str:
+    # 延遲載入：litellm 是重套件，CI 的核心測試只需要 monkeypatch
+    # extract_json 就能測 run_verifin 的錯誤處理，不該逼它把 litellm
+    # 也裝起來（跟 embeddings.py 延遲載入 sentence_transformers 同理）。
+    from litellm import completion          # noqa: PLC0415
+
     name = resolve_model(role, model)
     # LiteLLM 需要 provider 前綴才知道要走哪套 API schema
     litellm_name = name if "/" in name else f"openai/{name}"

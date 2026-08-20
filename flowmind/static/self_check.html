@@ -29,8 +29,8 @@ body {
 }
 .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
 header { text-align: center; margin-bottom: 28px; }
-header h1 { font-size: 22px; margin: 0 0 6px; color: var(--brand); }
-header p { color: var(--ink-2); margin: 0; font-size: 14px; }
+header h1 { font-size: 33px; margin: 0 0 6px; color: var(--brand); }
+header p { color: var(--ink-2); margin: 0; font-size: 21px; }
 .panel { background: var(--surface-1); border: 1px solid var(--ring);
          border-radius: 12px; padding: 22px 24px; margin-bottom: 16px; }
 .intake { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -41,38 +41,64 @@ header p { color: var(--ink-2); margin: 0; font-size: 14px; }
           border: none; background: var(--brand); color: #fff; cursor: pointer;
           text-decoration: none; display: inline-block; }
 .intake button:hover, .dl-btn:hover { opacity: .9; }
-.hint { color: var(--ink-muted); font-size: 12.5px; margin-top: 8px; }
-.ph { font-weight: 650; font-size: 16px; margin-bottom: 4px; }
+.hint { color: var(--ink-muted); font-size: 18.8px; margin-top: 8px; }
+.ph { font-weight: 650; font-size: 24px; margin-bottom: 4px; }
 .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
                gap: 10px; margin: 12px 0; }
-.upload-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 13px;
+.upload-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 19.5px;
                       color: var(--ink-2); background: var(--plane);
                       border: 1px solid var(--grid); border-radius: 8px; padding: 10px 12px; }
-.upload-grid input[type=file] { font-size: 12px; }
+.upload-grid input[type=file] { font-size: 18px; }
 .empty { color: var(--ink-muted); text-align: center; padding: 20px 0; }
 .err { color: var(--critical); text-align: center; padding: 20px 0; }
 
 .verdict { border-radius: 10px; padding: 18px 20px; text-align: center; margin-bottom: 18px; }
 .verdict.ok { background: rgba(12,163,12,.10); border: 1px solid rgba(12,163,12,.3); }
 .verdict.bad { background: rgba(208,59,59,.08); border: 1px solid rgba(208,59,59,.28); }
-.verdict .big { font-size: 26px; font-weight: 700; }
+.verdict .big { font-size: 39px; font-weight: 700; }
 .verdict.ok .big { color: var(--good); }
 .verdict.bad .big { color: var(--critical); }
-.verdict .sub { color: var(--ink-2); font-size: 13.5px; margin-top: 6px; }
+.verdict .sub { color: var(--ink-2); font-size: 20.2px; margin-top: 6px; }
 
 .cat { border-top: 1px solid var(--grid); padding: 14px 0; }
 .cat:first-child { border-top: 0; }
 .cat .row { display: flex; justify-content: space-between; align-items: center; }
-.cat .nm { font-weight: 600; font-size: 14.5px; }
-.badge { font-size: 12px; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+.cat .nm { font-weight: 600; font-size: 21.8px; }
+.badge { font-size: 18px; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
 .badge.good { background: rgba(12,163,12,.13); color: var(--good); }
 .badge.bad  { background: rgba(208,59,59,.12); color: var(--critical); }
 .issue { margin-top: 8px; padding: 10px 12px; border-radius: 8px;
-         background: var(--plane); font-size: 13.5px; color: var(--ink-2); }
+         background: var(--plane); font-size: 20.2px; color: var(--ink-2); }
 .issue + .issue { margin-top: 6px; }
 
 .actions { text-align: center; margin-top: 20px; }
-.foot { text-align: center; color: var(--ink-muted); font-size: 12px; margin-top: 24px; }
+.foot { text-align: center; color: var(--ink-muted); font-size: 18px; margin-top: 24px; }
+
+/* ── 證據回查：憑證編號可直接點開看原始那筆資料 ─────────────────────── */
+.ref-chip { display: inline-block; margin: 6px 6px 0 0; padding: 3px 10px;
+            border-radius: 999px; font-size: 17px; font-family: ui-monospace, monospace;
+            background: var(--surface-1); border: 1px solid var(--brand); color: var(--brand);
+            cursor: pointer; }
+.ref-chip:hover { background: var(--brand); color: #fff; }
+#evidence-modal { position: fixed; inset: 0; background: rgba(11,11,11,.55);
+                   display: none; align-items: center; justify-content: center;
+                   z-index: 50; padding: 24px; }
+#evidence-modal.open { display: flex; }
+.ev-box { background: var(--surface-1); border-radius: 14px; max-width: 720px;
+          width: 100%; max-height: 84vh; overflow: auto; padding: 22px 26px;
+          box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+.ev-box h3 { margin: 0 0 4px; font-size: 24px; }
+.ev-box .sub { margin-bottom: 14px; color: var(--ink-2); font-size: 18px; }
+.ev-box .close { float: right; background: transparent; border: none; color: var(--ink-muted);
+                  font-size: 24px; cursor: pointer; line-height: 1; }
+.ev-hit { border: 1px solid var(--ring); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.ev-hit .kind { display: inline-block; background: var(--brand); color: #fff; font-size: 14px;
+                 padding: 2px 9px; border-radius: 999px; margin-bottom: 8px; }
+.ev-hit table { width: 100%; border-collapse: collapse; }
+.ev-hit td { padding: 3px 8px 3px 0; font-size: 17px; vertical-align: top; border: none; }
+.ev-hit td.k { color: var(--ink-muted); white-space: nowrap; width: 1%; }
+.ev-hit td.v { color: var(--ink-1); word-break: break-all; }
+.ev-hit .src { margin-top: 8px; font-size: 14.5px; color: var(--ink-muted); }
 </style>
 </head>
 <body>
@@ -109,6 +135,15 @@ header p { color: var(--ink-2); margin: 0; font-size: 14px; }
 
   <div class="foot">
     FlowMind AI —— 這份自檢報告與您之後送給銀行的版本使用同一套規則計算，數字不會不一樣
+  </div>
+</div>
+
+<div id="evidence-modal" onclick="if(event.target===this) closeEvidence()">
+  <div class="ev-box">
+    <button class="close" onclick="closeEvidence()">×</button>
+    <h3 id="ev-title">證據回查</h3>
+    <div class="sub" id="ev-sub"></div>
+    <div id="ev-body"></div>
   </div>
 </div>
 
@@ -163,7 +198,11 @@ async function runCheck() {
               <span class="badge ${g.status === 'good' ? 'good' : 'bad'}">${g.passed}/${g.total} 項通過</span>
             </div>
             ${g.status !== 'good' ? g.items.filter(i => !i.passed).map(i => `
-              <div class="issue">${esc(i.detail)}</div>`).join('') : ''}
+              <div class="issue">${esc(i.detail)}
+                ${(i.refs && i.refs.length) ? `<div>${i.refs.map(r => {
+                  const clean = String(r).split('(')[0].trim();
+                  return `<span class="ref-chip" onclick="showEvidence('${esc(tenant)}','${esc(clean)}')">🔍 ${esc(clean)}</span>`;
+                }).join('')}</div>` : ''}</div>`).join('') : ''}
           </div>`).join('')}
       </div>
       <div class="actions">
@@ -176,6 +215,51 @@ async function runCheck() {
     el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`;
   }
 }
+
+// 中文欄位名稱對照——原始 JSON 的 key 是英文（跟財政部電子發票規格對齊），
+// 但企業財務人員看的是中文，不該逼他們自己去猜 seller_ban 是什麼意思。
+const FIELD_LABEL = {
+  doc_type: '文件類型', invoice_number: '發票號碼', contract_number: '合約編號',
+  invoice_date: '開立日期', seller_ban: '賣方統編', seller_name: '賣方名稱',
+  buyer_ban: '買方統編', buyer_name: '買方名稱', sales_amount: '銷售額',
+  tax_amount: '稅額', total_amount: '總額', payment_terms_days: '帳期（天）',
+  due_date: '到期日', status: '狀態', paid_date: '實際收款日',
+  buyer_payment_behaviour: '買方付款行為', effective_date: '生效日',
+  expiry_date: '到期日', annual_commitment_amount: '年度承諾額', currency: '幣別',
+  recourse_note: '追索權說明', date: '日期', description: '摘要',
+  counterparty_ban: '對手統編', reference: '關聯憑證', amount: '金額',
+  balance: '餘額', source_note: '資料來源說明',
+};
+
+async function showEvidence(tenant, ref) {
+  const modal = $('#evidence-modal');
+  modal.classList.add('open');
+  $('#ev-title').textContent = `🔍 ${ref}`;
+  $('#ev-sub').textContent = '正在從原始檔案回查……';
+  $('#ev-body').innerHTML = '';
+  try {
+    const res = await fetch(`/api/cases/${encodeURIComponent(tenant)}/lookup/${encodeURIComponent(ref)}`);
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || String(res.status));
+    }
+    const d = await res.json();
+    $('#ev-sub').textContent = `在您上傳的資料裡找到 ${d.hits.length} 筆——底下是完整原始記錄，不是摘要。`;
+    $('#ev-body').innerHTML = d.hits.map(h => `
+      <div class="ev-hit">
+        <span class="kind">${esc(h.kind)}</span>
+        <table>${Object.entries(h.record).map(([k, v]) => `
+          <tr><td class="k">${esc(FIELD_LABEL[k] || k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}
+        </table>
+        <div class="src">來源檔案：<code>${esc(h.source_file)}</code></div>
+      </div>`).join('');
+  } catch (e) {
+    $('#ev-sub').textContent = '';
+    $('#ev-body').innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+}
+
+function closeEvidence() { $('#evidence-modal').classList.remove('open'); }
 
 async function uploadFiles() {
   const tenant = $('#case-id').value.trim();

@@ -37,8 +37,8 @@ header {
   padding: 14px 22px; display: flex; align-items: center; gap: 16px;
   flex-wrap: wrap; position: sticky; top: 0; z-index: 10;
 }
-h1 { font-size: 19.5px; margin: 0; letter-spacing: .2px; }
-h1 small { color: var(--ink-muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+h1 { font-size: 29.2px; margin: 0; letter-spacing: .2px; }
+h1 small { color: var(--ink-muted); font-weight: 400; font-size: 21px; margin-left: 8px; }
 select, button, input {
   font: inherit; padding: 6px 10px; border-radius: 6px;
   border: 1px solid var(--axis); background: var(--surface-1); color: var(--ink-1);
@@ -53,37 +53,37 @@ section {
   scroll-margin-top: 72px;  /* header 是 sticky，捲動定位時留出空間避免疊在標題上 */
 }
 section.wide { grid-column: 1 / -1; }
-h2 { font-size: 15px; margin: 0 0 4px; letter-spacing: .3px; text-transform: none; }
-.sub { color: var(--ink-muted); font-size: 13px; margin-bottom: 12px; }
+h2 { font-size: 22.5px; margin: 0 0 4px; letter-spacing: .3px; text-transform: none; }
+.sub { color: var(--ink-muted); font-size: 19.5px; margin-bottom: 12px; }
 
 /* 紅黃綠燈：色 + 圖示 + 文字，三重編碼 */
 .light { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
 .lamp { width: 44px; height: 44px; border-radius: 50%; flex: none;
-        display: grid; place-items: center; font-size: 25.5px; color: #fff; }
+        display: grid; place-items: center; font-size: 38.2px; color: #fff; }
 .lamp.good { background: var(--good); }
 .lamp.warning { background: var(--warning); color: #0b0b0b; }
 .lamp.critical { background: var(--critical); }
-.lamp-txt b { font-size: 18.5px; }
-.lamp-txt div { color: var(--ink-2); font-size: 14px; }
+.lamp-txt b { font-size: 27.8px; }
+.lamp-txt div { color: var(--ink-2); font-size: 21px; }
 
 .alert { border-left: 3px solid var(--axis); padding: 7px 0 7px 11px; margin: 9px 0; }
 .alert.critical { border-color: var(--critical); }
 .alert.warning  { border-color: var(--warning); }
 .alert.info     { border-color: var(--s1); }
-.alert b { font-size: 14.5px; }
-.alert p { margin: 3px 0 0; color: var(--ink-2); font-size: 14px; }
-.tag { font-size: 12px; color: var(--ink-muted); font-family: ui-monospace, monospace; }
-.ev { font-size: 12.5px; color: var(--ink-muted); font-family: ui-monospace, monospace;
+.alert b { font-size: 21.8px; }
+.alert p { margin: 3px 0 0; color: var(--ink-2); font-size: 21px; }
+.tag { font-size: 18px; color: var(--ink-muted); font-family: ui-monospace, monospace; }
+.ev { font-size: 18.8px; color: var(--ink-muted); font-family: ui-monospace, monospace;
       margin-top: 4px; white-space: nowrap; overflow-x: auto; }
 .evd { margin-top: 6px; }
-.evd summary { font-size: 13px; color: var(--ink-muted); cursor: pointer;
+.evd summary { font-size: 19.5px; color: var(--ink-muted); cursor: pointer;
                user-select: none; }
 .evd summary:hover { color: var(--ink-2); }
-.evd table { margin-top: 6px; font-size: 12.5px; }
-.chart-lbl { font-size: 13px; color: var(--ink-2); font-weight: 600;
+.evd table { margin-top: 6px; font-size: 18.8px; }
+.chart-lbl { font-size: 19.5px; color: var(--ink-2); font-weight: 600;
              margin: 10px 0 2px; }
 .chart-lbl span { font-weight: 400; color: var(--ink-muted); }
-.verdict { padding: 10px 14px; border-radius: 8px; font-size: 15.5px; font-weight: 600;
+.verdict { padding: 10px 14px; border-radius: 8px; font-size: 23.2px; font-weight: 600;
            margin-bottom: 12px; border: 1px solid transparent; }
 .verdict.ok { background: rgba(12,163,12,.10); color: #0a7a0a; border-color: rgba(12,163,12,.28); }
 .verdict.bad { background: rgba(208,59,59,.10); color: var(--critical); border-color: rgba(208,59,59,.28); }
@@ -94,38 +94,38 @@ h2 { font-size: 15px; margin: 0 0 4px; letter-spacing: .3px; text-transform: non
 .card { border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
 .card:hover { background: var(--plane); }
 .card .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.card .nm { font-weight: 600; font-size: 14.5px; }
-.pill { font-size: 12px; padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+.card .nm { font-weight: 600; font-size: 21.8px; }
+.pill { font-size: 18px; padding: 2px 7px; border-radius: 999px; white-space: nowrap;
         border: 1px solid transparent; }
 .pill.good { background: rgba(12,163,12,.13); color: var(--good); border-color: rgba(12,163,12,.3); }
 .pill.warning { background: rgba(250,178,25,.16); color: #8a5c00; border-color: rgba(250,178,25,.4); }
 .pill.critical { background: rgba(208,59,59,.13); color: var(--critical); border-color: rgba(208,59,59,.3); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme=light]) .pill.warning { color: var(--warning); } }
-.card .det { display: none; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+.card .det { display: none; margin-top: 8px; font-size: 19.5px; color: var(--ink-2); }
 .card.open .det { display: block; }
 .card .det div { padding: 4px 0; border-top: 1px solid var(--grid); }
 
-.hero { font-size: 34.5px; font-weight: 650; letter-spacing: -.5px; }
-.hero small { font-size: 14px; font-weight: 400; color: var(--ink-muted); margin-left: 6px; }
+.hero { font-size: 51.8px; font-weight: 650; letter-spacing: -.5px; }
+.hero small { font-size: 21px; font-weight: 400; color: var(--ink-muted); margin-left: 6px; }
 
 /* 信心分數堆疊條 */
 .stack { display: flex; height: 26px; border-radius: 5px; overflow: hidden; margin: 10px 0 6px;
          background: var(--grid); }
 .stack i { display: block; height: 100%; border-right: 2px solid var(--surface-1); }
-.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 19.5px; color: var(--ink-2); }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 21px; }
 th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
-th { color: var(--ink-muted); font-weight: 500; font-size: 12.5px; }
+th { color: var(--ink-muted); font-weight: 500; font-size: 18.8px; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .scroll { overflow-x: auto; }
 /* 對話歷程 */
 .turn { border-top: 1px solid var(--grid); padding: 14px 0 4px; }
 .turn:first-child { border-top: 0; padding-top: 2px; }
-.q-line { font-weight: 600; font-size: 15.5px; margin-bottom: 6px; }
-.kind { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px;
+.q-line { font-weight: 600; font-size: 23.2px; margin-bottom: 6px; }
+.kind { display: inline-block; font-size: 18px; padding: 2px 8px; border-radius: 999px;
         margin-bottom: 6px; border: 1px solid transparent; }
 .kind.det { background: rgba(27,175,122,.14); color: #0a7a5a; border-color: rgba(27,175,122,.35); }
 .kind.rag { background: rgba(124,58,237,.12); color: #6d3fd4; border-color: rgba(124,58,237,.3); }
@@ -133,18 +133,18 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   :root:not([data-theme=light]) .kind.rag { color: #b9a6f5; } }
 .ans { margin-top: 10px; padding: 12px 14px; border-radius: 8px;
        background: var(--plane); border: 1px solid var(--ring); }
-.ans-h { font-weight: 650; font-size: 15px; margin: 10px 0 4px; color: var(--ink-1); }
+.ans-h { font-weight: 650; font-size: 22.5px; margin: 10px 0 4px; color: var(--ink-1); }
 .ans-h:first-child { margin-top: 0; }
-.ans-p { margin: 5px 0; font-size: 14.5px; line-height: 1.7; }
-.ans-li { margin: 3px 0 3px 14px; font-size: 14.5px; line-height: 1.7;
+.ans-p { margin: 5px 0; font-size: 21.8px; line-height: 1.7; }
+.ans-li { margin: 3px 0 3px 14px; font-size: 21.8px; line-height: 1.7;
           position: relative; }
 .ans-li::before { content: "·"; position: absolute; left: -12px; color: var(--ink-muted); }
 .ans code { background: var(--surface-1); padding: 1px 4px; border-radius: 3px;
             font-size: .9em; }
 #conf { max-height: 68vh; overflow-y: auto; }
-.empty { color: var(--ink-muted); font-size: 14.5px; padding: 14px 0; }
-.err { color: var(--critical); font-size: 14.5px; }
-.foot { grid-column: 1/-1; color: var(--ink-muted); font-size: 13px; text-align: center;
+.empty { color: var(--ink-muted); font-size: 21.8px; padding: 14px 0; }
+.err { color: var(--critical); font-size: 21.8px; }
+.foot { grid-column: 1/-1; color: var(--ink-muted); font-size: 19.5px; text-align: center;
         padding-top: 6px; }
 
 /* 案件佇列 */
@@ -153,59 +153,62 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
              cursor: pointer; background: var(--surface-1); }
 .queue-row:hover { background: var(--plane); }
 .queue-row .qlamp { width: 30px; height: 30px; border-radius: 50%; flex: none;
-                     display: grid; place-items: center; font-size: 17px; color: #fff; }
+                     display: grid; place-items: center; font-size: 25.5px; color: #fff; }
 .queue-row .qlamp.good { background: var(--good); }
 .queue-row .qlamp.warning { background: var(--warning); color: #0b0b0b; }
 .queue-row .qlamp.critical { background: var(--critical); }
 .queue-row .qmain { flex: 1; min-width: 0; }
-.queue-row .qname { font-weight: 600; font-size: 15.5px; }
-.queue-row .qmeta { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
-.queue-row .qaging { font-size: 13px; color: var(--ink-2); text-align: right; flex: none; }
-.queue-row .qaging b { font-size: 17px; display: block; }
+.queue-row .qname { font-weight: 600; font-size: 23.2px; }
+.queue-row .qmeta { font-size: 19.5px; color: var(--ink-muted); margin-top: 2px; }
+.queue-row .qaging { font-size: 19.5px; color: var(--ink-2); text-align: right; flex: none; }
+.queue-row .qaging b { font-size: 25.5px; display: block; }
 .breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.breadcrumb button { font-size: 14px; padding: 4px 10px; }
+.breadcrumb button { font-size: 21px; padding: 4px 10px; }
 
 /* 新增案件面板 */
 .new-case { border: 1px dashed var(--axis); border-radius: 10px; padding: 16px 18px;
             margin: 14px 0; background: var(--plane); }
-.nc-h { font-weight: 650; font-size: 15px; margin-bottom: 10px; }
+.nc-h { font-weight: 650; font-size: 22.5px; margin-bottom: 10px; }
 .nc-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
 .nc-row label, .new-case > .nc-files label { display: flex; flex-direction: column; gap: 4px;
-              font-size: 13px; color: var(--ink-2); flex: 1; min-width: 200px; }
+              font-size: 19.5px; color: var(--ink-2); flex: 1; min-width: 200px; }
 .nc-files { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
             gap: 12px; margin: 10px 0 14px; }
 .nc-files label { background: var(--surface-1); border: 1px solid var(--ring);
                    border-radius: 8px; padding: 10px 12px; }
-.new-case input[type=file] { font-size: 12.5px; }
-.nc-msg { margin-left: 10px; font-size: 13px; }
+.new-case input[type=file] { font-size: 18.8px; }
+.nc-msg { margin-left: 10px; font-size: 19.5px; }
 .nc-msg.ok { color: var(--good); }
 .nc-msg.err { color: var(--critical); }
 .nc-step { border-top: 1px solid var(--grid); padding-top: 14px; margin-top: 14px; }
 .nc-step:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
 
-/* 資安防護：深色科技感卡片，跟其餘區塊的中性色刻意做出區隔 */
-#sec-security { background: #0d1b1a; border-color: #16302d; }
-@media (prefers-color-scheme: light) { #sec-security { background: #0d1b1a; } }
-#sec-security h2, #sec-security .sub { color: #e7fbf5; }
-#sec-security .sub b { color: #5eead4; }
-.sec-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.sec-card { background: rgba(255,255,255,.04); border: 1px solid rgba(94,234,212,.18);
-            border-radius: 10px; padding: 14px 16px; }
-.sec-card .sh { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.sec-card .si { width: 22px; height: 22px; border-radius: 50%; flex: none;
-                display: grid; place-items: center; font-size: 13px; font-weight: 700; }
-.sec-card .si.pass { background: #14532d; color: #86efac; }
-.sec-card .si.fail { background: #7f1d1d; color: #fca5a5; }
-.sec-card .nm { color: #e7fbf5; font-weight: 600; font-size: 14.5px; }
-.sec-card .dt { color: #9cc7bf; font-size: 13px; line-height: 1.65; }
-.sec-card .dt code { background: rgba(94,234,212,.12); color: #5eead4; }
-.probe-row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
-             padding: 6px 0; border-top: 1px solid rgba(94,234,212,.12); font-size: 13px; }
-.probe-row:first-child { border-top: 0; }
-.probe-row .pq { color: #9cc7bf; font-family: ui-monospace, monospace; font-size: 12px; }
-.probe-row .pv { color: #86efac; font-weight: 600; white-space: nowrap; }
-#sec-security button { background: #134e4a; color: #e7fbf5; border-color: rgba(94,234,212,.3); }
-#sec-security button:hover { background: #0f3d3a; }
+/* ── 證據回查：憑證編號可直接點開看原始那筆資料 ─────────────────────── */
+.ref-chip { display: inline-block; margin: 3px 4px 0 0; padding: 2px 9px;
+            border-radius: 999px; font-size: 16.5px; font-family: ui-monospace, monospace;
+            background: var(--surface-1); border: 1px solid var(--s1); color: var(--s1);
+            cursor: pointer; }
+.ref-chip:hover { background: var(--s1); color: #fff; }
+#evidence-modal { position: fixed; inset: 0; background: rgba(11,11,11,.55);
+                   display: none; align-items: center; justify-content: center;
+                   z-index: 50; padding: 24px; }
+#evidence-modal.open { display: flex; }
+.ev-box { background: var(--surface-1); border-radius: 14px; max-width: 720px;
+          width: 100%; max-height: 84vh; overflow: auto; padding: 22px 26px;
+          box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+.ev-box h3 { margin: 0 0 4px; font-size: 24px; }
+.ev-box .sub { margin-bottom: 14px; }
+.ev-box .close { float: right; background: transparent; border: none; color: var(--ink-muted);
+                  font-size: 24px; cursor: pointer; line-height: 1; }
+.ev-hit { border: 1px solid var(--ring); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.ev-hit .kind { display: inline-block; background: var(--s1); color: #fff; font-size: 14px;
+                 padding: 2px 9px; border-radius: 999px; margin-bottom: 8px; }
+.ev-hit table { width: 100%; border-collapse: collapse; }
+.ev-hit td { padding: 3px 8px 3px 0; font-size: 17px; vertical-align: top; border: none; }
+.ev-hit td.k { color: var(--ink-muted); white-space: nowrap; width: 1%; }
+.ev-hit td.v { color: var(--ink-1); word-break: break-all; }
+.ev-hit .src { margin-top: 8px; font-size: 14.5px; color: var(--ink-muted); }
+
 </style>
 </head>
 <body>
@@ -332,17 +335,17 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   </section>
   </div><!-- /#case-view -->
 
-  <section class="wide" id="sec-security">
-    <div class="breadcrumb" style="justify-content:space-between">
-      <h2 style="margin:0">🛡 資安防護</h2>
-      <button id="sec-reload">重新驗證</button>
-    </div>
-    <div class="sub">每一項都是<b>當場執行一次</b>既有的驗證函式，不是靜態宣稱清單</div>
-    <div id="security"><div class="empty">載入中…</div></div>
-  </section>
-
   <div class="foot">每個數字都可用終端機指令重現　·　本頁不含任何外部資源</div>
 </main>
+
+<div id="evidence-modal" onclick="if(event.target===this) closeEvidence()">
+  <div class="ev-box">
+    <button class="close" onclick="closeEvidence()">×</button>
+    <h3 id="ev-title">證據回查</h3>
+    <div class="sub" id="ev-sub"></div>
+    <div id="ev-body"></div>
+  </div>
+</div>
 
 <script>
 const $ = s => document.querySelector(s);
@@ -421,10 +424,56 @@ async function loadCross(t) {
             <span class="pill ${g.status}">${g.passed}/${g.total} 通過</span></div>
           <div class="det">${g.items.map(i => `
             <div>${i.passed ? '✓' : (i.severity === 'critical' ? '✕' : '!')}
-              <b>${esc(i.title)}</b> <span class="tag">${i.id}</span><br>${esc(i.detail)}</div>`).join('')}
+              <b>${esc(i.title)}</b> <span class="tag">${i.id}</span><br>${esc(i.detail)}
+              ${(i.refs && i.refs.length) ? `<div>${i.refs.map(r => {
+                // 部分檢查的 ref 帶了附註，例如 "AB123(buyer_ban=456)"——
+                // 附註是給人看的，查詢跟按鈕文字都只該用前面乾淨的那段 ID。
+                const clean = String(r).split('(')[0].trim();
+                return `<span class="ref-chip" onclick="event.stopPropagation();showEvidence('${esc(t)}','${esc(clean)}')">🔍 ${esc(clean)}</span>`;
+              }).join('')}</div>` : ''}</div>`).join('')}
           </div></div>`).join('') + '</div>';
   } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
 }
+
+// 中文欄位名稱對照——原始 JSON 的 key 是英文（跟 schema 對齊），
+// 但人工稽核看的是中文，不該逼審查人員自己去猜 seller_ban 是什麼意思。
+const FIELD_LABEL = {
+  doc_type: '文件類型', invoice_number: '發票號碼', contract_number: '合約編號',
+  invoice_date: '開立日期', seller_ban: '賣方統編', seller_name: '賣方名稱',
+  buyer_ban: '買方統編', buyer_name: '買方名稱', sales_amount: '銷售額',
+  tax_amount: '稅額', total_amount: '總額', payment_terms_days: '帳期（天）',
+  due_date: '到期日', status: '狀態', paid_date: '實際收款日',
+  buyer_payment_behaviour: '買方付款行為', effective_date: '生效日',
+  expiry_date: '到期日', annual_commitment_amount: '年度承諾額', currency: '幣別',
+  recourse_note: '追索權說明', date: '日期', description: '摘要',
+  counterparty_ban: '對手統編', reference: '關聯憑證', amount: '金額',
+  balance: '餘額', source_note: '資料來源說明',
+};
+
+async function showEvidence(tenant, ref) {
+  const modal = $('#evidence-modal');
+  modal.classList.add('open');
+  $('#ev-title').textContent = `🔍 ${ref}`;
+  $('#ev-sub').textContent = '正在從原始檔案回查……';
+  $('#ev-body').innerHTML = '';
+  try {
+    const d = await get(`/api/cases/${tenant}/lookup/${encodeURIComponent(ref)}`);
+    $('#ev-sub').textContent = `在 ${tenant} 的原始憑證資料裡找到 ${d.hits.length} 筆——底下是完整原始記錄，不是摘要。`;
+    $('#ev-body').innerHTML = d.hits.map(h => `
+      <div class="ev-hit">
+        <span class="kind">${esc(h.kind)}</span>
+        <table>${Object.entries(h.record).map(([k, v]) => `
+          <tr><td class="k">${esc(FIELD_LABEL[k] || k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}
+        </table>
+        <div class="src">來源檔案：<code>data/raw/${esc(tenant)}/${esc(h.source_file)}</code></div>
+      </div>`).join('');
+  } catch (e) {
+    $('#ev-sub').textContent = '';
+    $('#ev-body').innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+}
+
+function closeEvidence() { $('#evidence-modal').classList.remove('open'); }
 
 // 目前開啟的案件。沒有全域下拉選單了——案件是從佇列點進來的。
 let currentTenant = null;
@@ -512,55 +561,6 @@ async function loadQueue() {
     el.querySelectorAll('.queue-row').forEach(row =>
       row.onclick = () => openCase(row.dataset.tenant));
   } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
-}
-
-async function loadSecurity() {
-  const el = $('#security');
-  el.innerHTML = '<div class="empty" style="color:#9cc7bf">驗證中…</div>';
-  try {
-    const d = await get('/api/security');
-    const iso = d.isolation;
-    const isoOk = iso && iso.passed;
-    const probesHtml = d.probes.map(p => `
-      <div class="probe-row">
-        <div><span class="pv">${p.blocked ? '✓ 已阻擋' : '✕ 未阻擋'}</span> ${esc(p.label)}
-          <div class="pq">"${esc(p.question)}"</div></div>
-      </div>`).join('');
-
-    el.innerHTML = `
-      <div class="sec-grid">
-        <div class="sec-card">
-          <div class="sh"><span class="si ${!d.db_role_is_superuser ? 'pass' : 'fail'}">${!d.db_role_is_superuser ? '✓' : '✕'}</span>
-            <span class="nm">資料庫連線角色</span></div>
-          <div class="dt">以 <code>${esc(d.db_role)}</code> 連線，${d.db_role_is_superuser
-            ? '⚠ 是 superuser，RLS 會被繞過' : '非 superuser，Row-Level Security 強制生效'}</div>
-        </div>
-        <div class="sec-card">
-          <div class="sh"><span class="si ${isoOk ? 'pass' : 'fail'}">${isoOk ? '✓' : '✕'}</span>
-            <span class="nm">跨委任案資料隔離</span></div>
-          <div class="dt">${iso ? `以 ${esc(iso.tenant_a)} 身分下「無 WHERE 條件」查詢：
-            看不到 ${esc(iso.tenant_b)} 的 ${iso.b_rows_actually_exist} 筆真實存在的資料，
-            嘗試寫入也被拒絕（<code>cross_tenant_write_blocked=${iso.cross_tenant_write_blocked}</code>）`
-            : '委任案不足兩筆，無法示範'}</div>
-        </div>
-        <div class="sec-card">
-          <div class="sh"><span class="si ${d.audit_chain.intact ? 'pass' : 'fail'}">${d.audit_chain.intact ? '✓' : '✕'}</span>
-            <span class="nm">稽核雜湊鏈</span></div>
-          <div class="dt">重算全部 ${d.audit_chain.rows} 筆稽核紀錄的雜湊鏈，
-            ${d.audit_chain.intact ? '逐筆比對一致，沒有被事後竄改或刪除的紀錄'
-              : `在第 ${d.audit_chain.break_at} 筆發現斷點`}</div>
-        </div>
-        <div class="sec-card">
-          <div class="sh"><span class="si pass">✓</span><span class="nm">資料在地</span></div>
-          <div class="dt">${esc(d.data_locality)}——不經雲端 API，內網部署即可運作</div>
-        </div>
-        <div class="sec-card" style="grid-column:1/-1">
-          <div class="sh"><span class="si pass">✓</span>
-            <span class="nm">Zero-Trust 輸入防護（即時探測，非宣稱）</span></div>
-          ${probesHtml}
-        </div>
-      </div>`;
-  } catch (e) { el.innerHTML = `<div class="err">驗證失敗：${esc(e.message)}</div>`; }
 }
 
 async function openCase(tenant) {
@@ -842,14 +842,13 @@ async function loadAll() {
   document.querySelectorAll('.ex').forEach(a => a.onclick = e => {
     e.preventDefault(); $('#q').value = a.textContent.trim(); ask();
   });
-  $('#sec-reload').onclick = loadSecurity;
   $('#new-case-btn').onclick = toggleNewCasePanel;
   $('#nc-create').onclick = createCase;
   $('#nc-upload').onclick = uploadCaseFiles;
   $('#nc-skip').onclick = () => finishNewCase('尚未上傳資料——案件已建立，之後可以在案件細節頁重新上傳。');
   $('#nc-open').onclick = () => { toggleNewCasePanel(); openCase(newCaseTenant); };
   $('#nc-close').onclick = () => { toggleNewCasePanel(); loadQueue(); };
-  await Promise.all([loadQueue(), loadSecurity()]);
+  await loadQueue();
 })();
 </script>
 </body>
