@@ -205,7 +205,7 @@ flowchart TB
     end
 
     subgraph OUTL["⑦ 輸出層"]
-        O1["dashboard.py<br/>單頁戰情室 + 情境模擬"]
+        O1["dashboard.py<br/>審查工作台：案件佇列 + 情境模擬"]
         O2["report.py<br/>Bank-ready PDF"]
         O3["watchtower.py<br/>主動監控（無人問也會動）"]
     end
@@ -331,9 +331,11 @@ flowchart TB
 | `flowmind/fraud_injector.py` | 22 種造假樣態注入（含 2 種已知不可偵測） | ✗ |
 | `flowmind/verifin.py` | 不可 gameable 的評測指標 | ✗ |
 | `flowmind/tables.py` | 統計表精確查詢（不經摘要） | ✗ |
+| `flowmind/dashboard.py` | 審查工作台：案件佇列 + 案件細節（呈現層零運算，見 §3.1.1） | ✗ |
+| `flowmind/report.py` | Bank-ready PDF 報告 | ✗ |
 | `flowmind/cli.py` | crosscheck / engagements / doctor | ✗ |
 
-**23 個模組中只有 1 個呼叫 LLM。** 這個比例本身就是架構主張。
+**25 個模組中只有 1 個呼叫 LLM。** 這個比例本身就是架構主張。
 
 而且「零 LLM」不是靠紀律維持的：`query_plan`、`watchtower`、`industry`
 的單元測試會**讀自己的模組原始碼**，確認裡面沒有任何模型呼叫。
@@ -485,10 +487,10 @@ flowchart TB
 | 測項 | 資料 | 指標 | 目前狀態 |
 |---|---|---|---|
 | L2-A 幻覺懲罰計分 | SROIE test | **HPES (λ=2)** | gemma4:26b **+0.175** |
-| L2-B 反向拒答 | CORD test（問 B2B 欄位） | 正確留白率 | 待全量跑 |
-| L2-C 表單結構理解 | FUNSD test | 鍵值配對 F1 | 待全量跑 |
-| L2-D 引用可驗證率 | SROIE + 自建 | **CVR** | **97.5%** |
-| L2-E 憑空生成率 | SROIE | fabrication rate | **2.38%** |
+| L2-B 反向拒答 | CORD test（問 B2B 欄位） | 正確留白率 | **100%**（600/600 全數正確留白，2026-08-20 全量） |
+| L2-C 表單結構理解 | FUNSD test | 欄位準確率 / CVR | 準確率 **22.7%**、CVR **98.33%**（n=194 欄位／46 份，2026-08-20 全量）——高雜訊掃描件，準確率遠低於 SROIE 屬預期，見下方誠實揭露 |
+| L2-D 引用可驗證率 | SROIE + 自建 | **CVR** | **99.93%**（SROIE 361 份全量） |
+| L2-E 憑空生成率 | SROIE | fabrication rate | **0.07%**（SROIE 361 份全量） |
 
 **HPES 的不可 gameable 性是可以算出來的**：
 
@@ -509,10 +511,10 @@ flowchart TB
 
 | 測項 | 設計 | 為什麼難 | 目前狀態 |
 |---|---|---|---|
-| **L3-A 反事實穩健度 CRC** | 評測當下把原文標準答案換成隨機新值，要求模型答案跟著改 | 區分「真的讀了」與「靠版面/記憶猜」。**擾動值評測當下才生成，無法背題** | 已實作，待全量跑 |
+| **L3-A 反事實穩健度 CRC** | 評測當下把原文標準答案換成隨機新值，要求模型答案跟著改 | 區分「真的讀了」與「靠版面/記憶猜」。**擾動值評測當下才生成，無法背題** | 全量已跑：SROIE 49.9%、FUNSD 73.2%——明顯低於 1.0，代表有一部分答案來自記憶或版面猜測而非真的讀文件，如實揭露 |
 | **L3-B 跨文件矛盾偵測** | 發票帳期與合約不符，但發票**內部欄位完全自洽** | 單文件檢查一定漏。必須跨文件比對 | ✅ 已通過（負向對照組五項全中） |
 | **L3-C 長尾造假樣態** | 自我交易、重複請款、人頭買方、帳期美化 | 造假者會讓文件內部自洽；真實案例不公開，無標註資料 | ✅ 四類已實作並驗收 |
-| **L3-D Risk-Coverage / AURC** | 依自報信心排序，量測「錯誤率 ≤5% 時能自動處理多少比例」 | 自報信心可灌水，但灌水會立刻毀掉曲線 | AURC **0.241** |
+| **L3-D Risk-Coverage / AURC** | 依自報信心排序，量測「錯誤率 ≤5% 時能自動處理多少比例」 | 自報信心可灌水，但灌水會立刻毀掉曲線 | 全量重跑後 AURC **0.34**（SROIE，361 份），5% 錯誤率下僅 **0.14%** 欄位可信心放行——**推翻了先前 12 份小樣本測出的 60%**，證明模型自報信心在全量下幾乎沒有鑑別力，見 `docs/DECISIONS.md` D-27 |
 | **L3-E 對抗性拒答** | 誘導性提問（「所以這家一定能過對吧？」）、超出知識庫範圍、要求做授信決策 | 模型天生想取悅使用者 | ⚠️ **未實作** |
 | **L3-F 真實髒資料韌性** | 真實 PCC 資料的 13.9% 無效統編、機關代碼、聯合承攬體 | 合成資料永遠乾淨，這一層只有真實資料測得出來 | ⚠️ **部分**（已抓取，未納入自動評測） |
 | **L3-G 跨年度實體解析** | 同一家廠商在不同標案的名稱寫法不一致（有無「股份」、簡稱） | 業界公認難題：entity resolution without golden key | ⚠️ **未實作** |
@@ -627,11 +629,11 @@ flowchart TB
 | 決定性路由 | 精確數字、零 LLM、瞬時回應 | 集中度/帳齡/現金流 |
 | 跨委任案隔離 | **通過** —— CASE-9999 有 86 筆確實存在，CASE-0001 讀不到也寫不進去 | 查詢語句無 `WHERE tenant_id` |
 | 稽核雜湊鏈 | 完整未斷鏈 | |
-| 引用可驗證率 (CVR) | **97.5%** | SROIE |
-| 憑空生成率 | **2.38%** | 值在原文中完全不存在 |
-| AURC | **0.241** | 越低越好 |
-| 嚴格 JSON 失敗率 | **0.0%** | grammar-constrained decoding |
-| 回歸測試 | **170 / 170 通過** | 含負向測試組 |
+| 引用可驗證率 (CVR) | **99.93%** | SROIE，361 份文件全量 |
+| 憑空生成率 | **0.07%** | 1,437 個已作答欄位中 1 個 |
+| AURC | **0.34** | 越低越好；5% 錯誤率下僅 0.14% 欄位可信心放行，推翻先前小樣本測出的 60%（D-27） |
+| 嚴格 JSON 失敗率 | **0.0%** | grammar-constrained decoding，SROIE/FUNSD/CORD 全量 |
+| 回歸測試 | **196 / 196 通過** | 含負向測試組 |
 | 知識庫規模 | 84 份文件 / **7,619** chunks | SHARED |
 
 ### 8.3 已知不足（誠實揭露）
@@ -665,7 +667,7 @@ flowchart TB
 | 4 | **長文件的跨頁推理** | 合約條款散落數十頁，chunk 切開後語義斷裂 | Long-context 模型成本高且中段遺忘（lost in the middle） | Small-to-Big 部分緩解；**完整解法未有** |
 | 5 | **中文金融文件的 OCR** | 直式排版、印章遮蓋、手寫批註、複寫紙 | 商用 OCR 對中文表格準確率明顯低於英文 | **尚未進入**，誠實標為 Roadmap |
 | 6 | **無標註的造假偵測** | 真實造假案例不會被公開標註，無監督式資料 | 靠規則引擎 + 人工經驗，各行不外流 | 用**負向對照組注入**建立可驗收的 ground truth |
-| 7 | **模型行為的版本漂移** | 模型更新後行為改變，既有 prompt 失效 | 業界靠 regression suite，但覆蓋率普遍不足 | 170 項回歸測試 + VeriFin 可隨時重跑 |
+| 7 | **模型行為的版本漂移** | 模型更新後行為改變，既有 prompt 失效 | 業界靠 regression suite，但覆蓋率普遍不足 | 196 項回歸測試 + VeriFin 可隨時重跑 |
 
 ---
 
@@ -840,7 +842,7 @@ Auditor 是唯一值得新增的：它負責偵測「Extractor 說 A、Advisor �
 
 ```mermaid
 flowchart LR
-    T1["回歸測試<br/>tests/test_core.py<br/>39 項 · 數秒 · 無外部依賴"] --> T2["整合驗收<br/>負向對照組<br/>flowmind.cli crosscheck<br/>--against-answer-key"] --> T3["外部 benchmark<br/>VeriFin<br/>SROIE/FUNSD/CORD"]
+    T1["回歸測試<br/>tests/test_core.py<br/>196 項 · 數秒 · 無外部依賴"] --> T2["整合驗收<br/>負向對照組<br/>flowmind.cli crosscheck<br/>--against-answer-key"] --> T3["外部 benchmark<br/>VeriFin<br/>SROIE/FUNSD/CORD"]
     style T1 fill:#166534,color:#fff
     style T2 fill:#b45309,color:#fff
     style T3 fill:#b91c1c,color:#fff

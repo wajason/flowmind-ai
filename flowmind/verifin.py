@@ -386,7 +386,14 @@ def risk_coverage(results: list[DocResult], target_risk: float = 0.05) -> dict:
              for r in results for d in r.details
              if d["outcome"] in ("correct", "wrong")]
     if not items:
-        return {"n": 0, "aurc": None, "coverage_at_target_risk": None}
+        # 沒有任何一個欄位是「答對」或「答錯」——可能整份文件都被拒答/留白。
+        # 這裡曾經漏掉下面這幾個 key，讓 render_report() 存取
+        # rc['overall_risk'] 時直接 KeyError 崩潰（在全量重跑的 CORD
+        # 反事實擾動階段實際發生過）。空結果也要回傳完整的欄位結構，
+        # 呼叫端不該需要另外判斷「這次是不是空的」。
+        return {"n": 0, "aurc": None, "target_risk": target_risk,
+                "coverage_at_target_risk": None, "overall_risk": None,
+                "curve": [], "interpretation": "沒有可供評估的欄位（全數留白或無比對結果）"}
 
     items.sort(key=lambda x: -x[0])
     n = len(items)
@@ -462,7 +469,8 @@ def render_report(rep: dict) -> str:
         f"（{c['fabrication_rate']:.2%}）",
         "",
         "③ Risk-Coverage 選擇性預測",
-        f"   AURC = {rc['aurc']}（越低越好）　整體錯誤率 {rc['overall_risk']:.1%}",
+        (f"   AURC = {rc['aurc']}（越低越好）　整體錯誤率 {rc['overall_risk']:.1%}"
+         if rc.get("overall_risk") is not None else "   AURC = N/A（無可評估欄位）"),
         f"   {rc['interpretation']}",
     ]
     if "CRC" in rep:

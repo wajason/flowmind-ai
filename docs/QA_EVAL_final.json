@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-08-09T05:09:52",
+  "generated_at": "2026-08-20T10:46:26",
   "model": "gemma4:26b",
   "tenant": "CASE-0001",
-  "elapsed_s": 1982.4,
+  "elapsed_s": 4281.8,
   "summary": {
-    "n": 50,
-    "overall_pass_rate": 0.78,
+    "n": 105,
+    "overall_pass_rate": 0.781,
     "by_tier": {
-      "easy": 0.8,
-      "medium": 0.85,
-      "hard": 0.667
+      "easy": 0.741,
+      "medium": 0.789,
+      "hard": 0.8
     },
     "abstention": {
-      "should_abstain_n": 9,
-      "correct_abstain_rate": 0.778,
+      "should_abstain_n": 20,
+      "correct_abstain_rate": 0.9,
       "hallucinated_on_unanswerable": 2,
-      "over_abstain_n": 5,
-      "over_abstain_rate": 0.122
+      "over_abstain_n": 11,
+      "over_abstain_rate": 0.129
     },
-    "source_accuracy": 0.889,
-    "fact_accuracy": 0.939,
+    "source_accuracy": 0.846,
+    "fact_accuracy": 0.914,
     "route_accuracy": 1.0,
     "mean_citation_rate": 1.0
   },
@@ -30,7 +30,7 @@
       "q": "信保基金的供應商融資，信用保證成數最高是幾成？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.723,
+      "confidence": 0.904,
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
@@ -40,8 +40,8 @@
         "九成"
       ],
       "facts_ok": true,
-      "claims": 1,
-      "claims_grounded": 1,
+      "claims": 8,
+      "claims_grounded": 8,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -57,6 +57,7 @@
       "source_ok": true,
       "facts_found": [
         "訂單",
+        "發票",
         "支票",
         "預約付款通知"
       ],
@@ -67,8 +68,8 @@
         "預約付款通知"
       ],
       "facts_ok": true,
-      "claims": 1,
-      "claims_grounded": 1,
+      "claims": 4,
+      "claims_grounded": 4,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -79,19 +80,20 @@
       "q": "台灣的營業稅稅率是多少？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.779,
+      "confidence": 0.623,
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
-        "百分之五"
+        "百分之五",
+        "5"
       ],
       "facts_expected": [
         "百分之五",
         "5"
       ],
       "facts_ok": true,
-      "claims": 8,
-      "claims_grounded": 8,
+      "claims": 7,
+      "claims_grounded": 7,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -126,8 +128,8 @@
         "交易真實性"
       ],
       "facts_ok": true,
-      "claims": 1,
-      "claims_grounded": 1,
+      "claims": 3,
+      "claims_grounded": 3,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -148,8 +150,8 @@
         "債權讓與"
       ],
       "facts_ok": true,
-      "claims": 2,
-      "claims_grounded": 2,
+      "claims": 3,
+      "claims_grounded": 3,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -160,7 +162,7 @@
       "q": "中小企業發展條例對於金融機構辦理中小企業融資有什麼規定？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.829,
+      "confidence": 0.896,
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
@@ -170,8 +172,8 @@
         "融資"
       ],
       "facts_ok": true,
-      "claims": 7,
-      "claims_grounded": 7,
+      "claims": 8,
+      "claims_grounded": 8,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -207,7 +209,7 @@
       "q": "信保基金的直接信用保證與間接信用保證有什麼不同？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.797,
+      "confidence": 0.637,
       "route": "gemma4:26b",
       "source_ok": false,
       "actual_sources": [
@@ -239,15 +241,16 @@
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
+        "SellerId",
         "賣方"
       ],
       "facts_expected": [
-        "SellerBAN",
+        "SellerId",
         "賣方"
       ],
       "facts_ok": true,
-      "claims": 2,
-      "claims_grounded": 2,
+      "claims": 1,
+      "claims_grounded": 1,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -258,7 +261,7 @@
       "q": "玉山銀行的應收帳款承購服務提供哪些功能？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.651,
+      "confidence": 0.813,
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
@@ -268,8 +271,8 @@
         "應收帳款"
       ],
       "facts_ok": true,
-      "claims": 4,
-      "claims_grounded": 4,
+      "claims": 5,
+      "claims_grounded": 5,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -312,8 +315,8 @@
         "特定目的"
       ],
       "facts_ok": true,
-      "claims": 1,
-      "claims_grounded": 1,
+      "claims": 2,
+      "claims_grounded": 2,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -368,12 +371,258 @@
       "reason": "✅ 通過"
     },
     {
+      "id": "E16",
+      "tier": "easy",
+      "q": "中小企業認定標準對實收資本額與員工人數的門檻各是多少？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.89,
+      "route": "gemma4:26b",
+      "source_ok": false,
+      "actual_sources": [
+        "2023年中小企業白皮書.pdf",
+        "2024年中小企業白皮書.pdf",
+        "2025中小企業白皮書.pdf"
+      ],
+      "facts_found": [],
+      "facts_expected": [
+        "一億元",
+        "二百人"
+      ],
+      "facts_ok": false,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": false,
+      "reason": "❌ 來源不符；關鍵事實未出現"
+    },
+    {
+      "id": "E17",
+      "tier": "easy",
+      "q": "中小企業認定標準所稱的小規模企業，員工人數上限是多少？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.955,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "小規模企業"
+      ],
+      "facts_expected": [
+        "小規模企業"
+      ],
+      "facts_ok": true,
+      "claims": 4,
+      "claims_grounded": 4,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "E18",
+      "tier": "easy",
+      "q": "中國信託的供應鏈融資業務，是在買賣雙方採用什麼付款方式時提供？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.826,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "Open Account"
+      ],
+      "facts_expected": [
+        "Open Account"
+      ],
+      "facts_ok": true,
+      "claims": 1,
+      "claims_grounded": 1,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "E19",
+      "tier": "easy",
+      "q": "中國信託應收帳款承購暨融資業務的英文名稱是什麼？",
+      "must_abstain": false,
+      "abstained": true,
+      "confidence": 0.32,
+      "route": "gemma4:26b",
+      "pass": false,
+      "over_abstain": true,
+      "reason": "⚠️ 過度保守：本題有答案卻拒答"
+    },
+    {
+      "id": "E20",
+      "tier": "easy",
+      "q": "信保基金職員遇到與本人或關係人利益相關的職務時，應該怎麼做？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.842,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "迴避"
+      ],
+      "facts_expected": [
+        "迴避"
+      ],
+      "facts_ok": true,
+      "claims": 4,
+      "claims_grounded": 4,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "E21",
+      "tier": "easy",
+      "q": "信保基金的利益衝突迴避規範中，關係人包含哪些親屬範圍？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.755,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "二親等"
+      ],
+      "facts_expected": [
+        "二親等"
+      ],
+      "facts_ok": true,
+      "claims": 1,
+      "claims_grounded": 1,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "E22",
+      "tier": "easy",
+      "q": "信保基金直接信用保證要點是依據什麼訂定的？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.778,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "直接信用保證"
+      ],
+      "facts_expected": [
+        "直接信用保證"
+      ],
+      "facts_ok": true,
+      "claims": 1,
+      "claims_grounded": 1,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "E23",
+      "tier": "easy",
+      "q": "企業相對保證專案信用保證要點的主管機關是哪個部會？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.64,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [],
+      "facts_expected": [
+        "經濟部"
+      ],
+      "facts_ok": false,
+      "claims": 1,
+      "claims_grounded": 1,
+      "citation_rate": 1.0,
+      "pass": false,
+      "reason": "❌ 關鍵事實未出現"
+    },
+    {
+      "id": "E24",
+      "tier": "easy",
+      "q": "民法規定債權讓與要對債務人生效，需要什麼要件？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.823,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "通知"
+      ],
+      "facts_expected": [
+        "通知"
+      ],
+      "facts_ok": true,
+      "claims": 4,
+      "claims_grounded": 4,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "E25",
+      "tier": "easy",
+      "q": "營業稅法規定的營業稅率是多少？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.804,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "百分之五"
+      ],
+      "facts_expected": [
+        "百分之五"
+      ],
+      "facts_ok": true,
+      "claims": 5,
+      "claims_grounded": 5,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X16",
+      "tier": "easy",
+      "q": "信保基金的誠信經營規範，主要規範哪些行為？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.665,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "誠信"
+      ],
+      "facts_expected": [
+        "誠信"
+      ],
+      "facts_ok": true,
+      "claims": 8,
+      "claims_grounded": 8,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X17",
+      "tier": "easy",
+      "q": "信保基金的組織架構中，最高決策單位是什麼？",
+      "must_abstain": false,
+      "abstained": true,
+      "confidence": 0.215,
+      "route": "gemma4:26b",
+      "pass": false,
+      "over_abstain": true,
+      "reason": "⚠️ 過度保守：本題有答案卻拒答"
+    },
+    {
       "id": "M01",
       "tier": "medium",
       "q": "有追索權與無追索權的應收帳款承購，在會計處理與銀行授信上最關鍵的差別是什麼？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.812,
+      "confidence": 0.879,
       "route": "gemma4:26b",
       "facts_found": [
         "追索權"
@@ -394,7 +643,7 @@
       "q": "一家中小企業要申請信保基金的供應商融資，中心廠商需要符合什麼條件？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.693,
+      "confidence": 0.867,
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
@@ -404,8 +653,8 @@
         "中心廠商"
       ],
       "facts_ok": true,
-      "claims": 3,
-      "claims_grounded": 3,
+      "claims": 4,
+      "claims_grounded": 4,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -420,11 +669,10 @@
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
-        "0.375"
+        "零點三七五"
       ],
       "facts_expected": [
-        "零點三七五",
-        "0.375"
+        "零點三七五"
       ],
       "facts_ok": true,
       "claims": 4,
@@ -439,7 +687,7 @@
       "q": "債權讓與要對債務人生效，依民法需要什麼要件？這對應收帳款承購有什麼實務影響？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.751,
+      "confidence": 0.939,
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
@@ -449,8 +697,8 @@
         "通知"
       ],
       "facts_ok": true,
-      "claims": 6,
-      "claims_grounded": 6,
+      "claims": 7,
+      "claims_grounded": 7,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -500,7 +748,7 @@
       "q": "中國信託的供應鏈融資與應收帳款融資業務有什麼差別？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.77,
+      "confidence": 0.896,
       "route": "gemma4:26b",
       "facts_found": [
         "供應鏈"
@@ -509,8 +757,8 @@
         "供應鏈"
       ],
       "facts_ok": true,
-      "claims": 4,
-      "claims_grounded": 4,
+      "claims": 5,
+      "claims_grounded": 5,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -530,8 +778,8 @@
         "中小企業"
       ],
       "facts_ok": true,
-      "claims": 6,
-      "claims_grounded": 6,
+      "claims": 8,
+      "claims_grounded": 8,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -551,8 +799,8 @@
         "保證"
       ],
       "facts_ok": true,
-      "claims": 1,
-      "claims_grounded": 1,
+      "claims": 2,
+      "claims_grounded": 2,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -563,7 +811,7 @@
       "q": "信保基金在什麼情況下會註銷中心廠商的資格？對供應商有什麼影響？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.809,
+      "confidence": 0.876,
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
@@ -573,8 +821,8 @@
         "中心廠商"
       ],
       "facts_ok": true,
-      "claims": 2,
-      "claims_grounded": 2,
+      "claims": 4,
+      "claims_grounded": 4,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -677,14 +925,12 @@
       "tier": "medium",
       "q": "一家公司想同時申請信保基金保證與銀行的應收帳款承購，這兩者可以並用嗎？",
       "must_abstain": false,
-      "abstained": false,
-      "confidence": 0.803,
+      "abstained": true,
+      "confidence": 0.22,
       "route": "gemma4:26b",
-      "claims": 7,
-      "claims_grounded": 7,
-      "citation_rate": 1.0,
-      "pass": true,
-      "reason": "✅ 通過"
+      "pass": false,
+      "over_abstain": true,
+      "reason": "⚠️ 過度保守：本題有答案卻拒答"
     },
     {
       "id": "M16",
@@ -692,7 +938,7 @@
       "q": "信保基金對於申貸戶未辦理公司登記或商業登記者，有哪些例外可以視同已登記？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.863,
+      "confidence": 0.691,
       "route": "gemma4:26b",
       "source_ok": true,
       "facts_found": [
@@ -702,8 +948,8 @@
         "營業證照"
       ],
       "facts_ok": true,
-      "claims": 2,
-      "claims_grounded": 2,
+      "claims": 4,
+      "claims_grounded": 4,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -712,13 +958,13 @@
       "id": "M17",
       "tier": "medium",
       "q": "依 2025 年作業手冊，代位清償的作業流程為何？",
-      "must_abstain": false,
+      "must_abstain": true,
       "abstained": true,
       "confidence": 0.202,
       "route": "gemma4:26b",
-      "pass": false,
-      "over_abstain": true,
-      "reason": "⚠️ 過度保守：本題有答案卻拒答"
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
     },
     {
       "id": "M18",
@@ -736,8 +982,8 @@
         "利益"
       ],
       "facts_ok": true,
-      "claims": 7,
-      "claims_grounded": 7,
+      "claims": 6,
+      "claims_grounded": 6,
       "citation_rate": 1.0,
       "pass": true,
       "reason": "✅ 通過"
@@ -781,6 +1027,346 @@
       "reason": "✅ 通過"
     },
     {
+      "id": "M21",
+      "tier": "medium",
+      "q": "中國信託的供應鏈融資中，買方扮演什麼角色來協助供應商取得額度？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.843,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "買方"
+      ],
+      "facts_expected": [
+        "買方"
+      ],
+      "facts_ok": true,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "M22",
+      "tier": "medium",
+      "q": "應收帳款承購對企業的財務面有什麼幫助？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.731,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "呆帳"
+      ],
+      "facts_expected": [
+        "呆帳"
+      ],
+      "facts_ok": true,
+      "claims": 3,
+      "claims_grounded": 3,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "M23",
+      "tier": "medium",
+      "q": "信保基金的迴避要點中，利益的範圍包含哪兩大類？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.764,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "財產上利益"
+      ],
+      "facts_expected": [
+        "財產上利益"
+      ],
+      "facts_ok": true,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "M24",
+      "tier": "medium",
+      "q": "主管如果知道職員應該迴避卻沒有申請，應該怎麼處理？",
+      "must_abstain": false,
+      "abstained": true,
+      "confidence": 0.35,
+      "route": "gemma4:26b",
+      "pass": false,
+      "over_abstain": true,
+      "reason": "⚠️ 過度保守：本題有答案卻拒答"
+    },
+    {
+      "id": "M25",
+      "tier": "medium",
+      "q": "供應商融資的信用保證，供應商要在融資後幾個營業日內移送信保基金？",
+      "must_abstain": false,
+      "abstained": true,
+      "confidence": 0.246,
+      "route": "gemma4:26b",
+      "pass": false,
+      "over_abstain": true,
+      "reason": "⚠️ 過度保守：本題有答案卻拒答"
+    },
+    {
+      "id": "M26",
+      "tier": "medium",
+      "q": "信保基金供應商融資的保證手續費，在什麼情況下會被酌增？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.841,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "逾期"
+      ],
+      "facts_expected": [
+        "逾期"
+      ],
+      "facts_ok": true,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "M27",
+      "tier": "medium",
+      "q": "中小企業發展條例對於金融機構辦理中小企業放款有什麼規定？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.813,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "金融機構"
+      ],
+      "facts_expected": [
+        "金融機構"
+      ],
+      "facts_ok": true,
+      "claims": 5,
+      "claims_grounded": 5,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "M28",
+      "tier": "medium",
+      "q": "商業會計法對會計憑證的保存年限是怎麼規定的？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 1.0,
+      "route": "決定性運算（未使用語言模型）",
+      "source_ok": false,
+      "actual_sources": [
+        "bank_ledger.csv",
+        "contracts.json",
+        "receivables.json"
+      ],
+      "facts_found": [],
+      "facts_expected": [
+        "保存"
+      ],
+      "facts_ok": false,
+      "claims": 0,
+      "claims_grounded": 0,
+      "citation_rate": null,
+      "pass": false,
+      "reason": "❌ 來源不符；關鍵事實未出現"
+    },
+    {
+      "id": "M29",
+      "tier": "medium",
+      "q": "個人資料保護法對於特定目的消失後的個人資料，有什麼要求？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.784,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "刪除"
+      ],
+      "facts_expected": [
+        "刪除"
+      ],
+      "facts_ok": true,
+      "claims": 1,
+      "claims_grounded": 1,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "M30",
+      "tier": "medium",
+      "q": "經濟部中小及新創企業署提供哪些面向的企業輔導資源？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.695,
+      "route": "gemma4:26b",
+      "source_ok": false,
+      "actual_sources": [
+        "2024年中小企業白皮書.pdf",
+        "2024新創企業白皮書.pdf",
+        "2025中小企業白皮書.pdf",
+        "2025新創企業白皮書.pdf"
+      ],
+      "facts_found": [
+        "融資"
+      ],
+      "facts_expected": [
+        "融資"
+      ],
+      "facts_ok": true,
+      "claims": 6,
+      "claims_grounded": 6,
+      "citation_rate": 1.0,
+      "pass": false,
+      "reason": "❌ 來源不符"
+    },
+    {
+      "id": "X11",
+      "tier": "medium",
+      "q": "本案的最大買方占應收帳款總額多少比例？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 1.0,
+      "route": "決定性運算（未使用語言模型）",
+      "route_ok": true,
+      "claims": 0,
+      "claims_grounded": 0,
+      "citation_rate": null,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X12",
+      "tier": "medium",
+      "q": "本案有多少筆應收帳款已經逾期？合計金額多少？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 1.0,
+      "route": "決定性運算（未使用語言模型）",
+      "route_ok": true,
+      "claims": 0,
+      "claims_grounded": 0,
+      "citation_rate": null,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X13",
+      "tier": "medium",
+      "q": "本案未來三個月的現金流會不會出現缺口？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 1.0,
+      "route": "決定性運算（未使用語言模型）",
+      "route_ok": true,
+      "claims": 0,
+      "claims_grounded": 0,
+      "citation_rate": null,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X14",
+      "tier": "medium",
+      "q": "本案的憑證有沒有問題？可以送件嗎？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 1.0,
+      "route": "決定性運算（未使用語言模型）",
+      "route_ok": true,
+      "claims": 0,
+      "claims_grounded": 0,
+      "citation_rate": null,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X15",
+      "tier": "medium",
+      "q": "製造業這個產業的出口依存度是多少？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 1.0,
+      "route": "決定性運算（未使用語言模型）",
+      "route_ok": true,
+      "claims": 0,
+      "claims_grounded": 0,
+      "citation_rate": null,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X18",
+      "tier": "medium",
+      "q": "2025 年版作業手冊相對於前一版，修正了哪些內容？",
+      "must_abstain": false,
+      "abstained": true,
+      "confidence": 0.29,
+      "route": "gemma4:26b",
+      "pass": false,
+      "over_abstain": true,
+      "reason": "⚠️ 過度保守：本題有答案卻拒答"
+    },
+    {
+      "id": "X19",
+      "tier": "medium",
+      "q": "信保基金對於申貸戶未辦理公司登記者，有哪些例外可視同已登記？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.63,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "登記"
+      ],
+      "facts_expected": [
+        "登記"
+      ],
+      "facts_ok": true,
+      "claims": 1,
+      "claims_grounded": 1,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X20",
+      "tier": "medium",
+      "q": "電子發票的訊息規格中，買方統一編號的欄位名稱是什麼？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.822,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "Buyer"
+      ],
+      "facts_expected": [
+        "Buyer"
+      ],
+      "facts_ok": true,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
       "id": "H01",
       "tier": "hard",
       "q": "2027 年信保基金的保證成數上限會調整到幾成？",
@@ -810,7 +1396,7 @@
       "q": "依信保基金統計，2026 年 12 月的行業別承保金額為何？",
       "must_abstain": true,
       "abstained": true,
-      "confidence": 0.35,
+      "confidence": 0.226,
       "route": "gemma4:26b",
       "abstain_correct": true,
       "pass": true,
@@ -857,12 +1443,12 @@
       "tier": "hard",
       "q": "信保基金的內部授信評分卡是怎麼設計的？各項權重為何？",
       "must_abstain": true,
-      "abstained": false,
-      "confidence": 0.708,
+      "abstained": true,
+      "confidence": 0.192,
       "route": "gemma4:26b",
-      "abstain_correct": false,
-      "pass": false,
-      "reason": "❌ 應拒答卻回答了（幻覺風險）"
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
     },
     {
       "id": "H08",
@@ -913,7 +1499,7 @@
       "q": "依 2015 年版作業手冊，現在的保證手續費率是多少？",
       "must_abstain": true,
       "abstained": true,
-      "confidence": 0.35,
+      "confidence": 0.298,
       "route": "gemma4:26b",
       "abstain_correct": true,
       "pass": true,
@@ -929,11 +1515,9 @@
       "route": "決定性運算（未使用語言模型）",
       "source_ok": true,
       "facts_found": [
-        "3,719,611",
         "4,414,900"
       ],
       "facts_expected": [
-        "3,719,611",
         "4,414,900"
       ],
       "facts_ok": true,
@@ -964,7 +1548,7 @@
       "q": "無追索權承購真的能把應收帳款移出資產負債表嗎？在什麼條件下不行？",
       "must_abstain": false,
       "abstained": false,
-      "confidence": 0.811,
+      "confidence": 0.877,
       "route": "gemma4:26b",
       "facts_found": [
         "追索權"
@@ -985,8 +1569,388 @@
       "q": "請提供三家銀行應收帳款承購的手續費率比較表。",
       "must_abstain": true,
       "abstained": true,
-      "confidence": 0.211,
+      "confidence": 0.169,
       "route": "gemma4:26b",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "H16",
+      "tier": "hard",
+      "q": "直接信用保證與供應商融資信用保證，在送保時點上有什麼不同？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.872,
+      "route": "gemma4:26b",
+      "claims": 3,
+      "claims_grounded": 3,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "H17",
+      "tier": "hard",
+      "q": "企業相對保證專案與供應商融資保證，適用對象有何不同？",
+      "must_abstain": false,
+      "abstained": true,
+      "confidence": 0.242,
+      "route": "gemma4:26b",
+      "pass": false,
+      "over_abstain": true,
+      "reason": "⚠️ 過度保守：本題有答案卻拒答"
+    },
+    {
+      "id": "H18",
+      "tier": "hard",
+      "q": "中國信託的供應鏈融資與應收帳款承購，本質差別在哪裡？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.927,
+      "route": "gemma4:26b",
+      "claims": 4,
+      "claims_grounded": 4,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "H19",
+      "tier": "hard",
+      "q": "信保基金 2027 年的保證成數上限是多少？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.218,
+      "route": "gemma4:26b",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "H20",
+      "tier": "hard",
+      "q": "新加坡的中小企業信用保證成數最高是幾成？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.0,
+      "route": "知識圖譜範圍檢查（未進入檢索）",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "H21",
+      "tier": "hard",
+      "q": "信保基金供應商融資信用保證要點第 99 條規定什麼？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.272,
+      "route": "gemma4:26b",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "H22",
+      "tier": "hard",
+      "q": "玉山銀行應收帳款承購的客戶違約率是多少？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.35,
+      "route": "gemma4:26b",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "H23",
+      "tier": "hard",
+      "q": "依 2015 年版作業手冊，現行的保證手續費率是多少？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.35,
+      "route": "gemma4:26b",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "H24",
+      "tier": "hard",
+      "q": "中小企業認定標準的資本額門檻，與信保基金的保證成數上限有什麼關聯？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.746,
+      "route": "gemma4:26b",
+      "claims": 3,
+      "claims_grounded": 3,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "H25",
+      "tier": "hard",
+      "q": "如果一家公司同時符合中小企業認定標準與小規模企業定義，適用哪一個？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.809,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "小規模企業"
+      ],
+      "facts_expected": [
+        "小規模企業"
+      ],
+      "facts_ok": true,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X01",
+      "tier": "hard",
+      "q": "應收帳款融資這件事，信保基金的要點、銀行的商品說明、民法的規定，三者各自談的是什麼層面？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.864,
+      "route": "gemma4:26b",
+      "claims": 4,
+      "claims_grounded": 4,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X02",
+      "tier": "hard",
+      "q": "不同銀行的應收帳款承購服務，內容完全一樣嗎？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.719,
+      "route": "gemma4:26b",
+      "claims": 8,
+      "claims_grounded": 8,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X03",
+      "tier": "hard",
+      "q": "中小企業的定義，中小企業發展條例與中小企業認定標準是同一套標準嗎？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.893,
+      "route": "gemma4:26b",
+      "claims": 4,
+      "claims_grounded": 4,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X04",
+      "tier": "hard",
+      "q": "供應鏈融資和應收帳款承購是同一件事嗎？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.922,
+      "route": "gemma4:26b",
+      "claims": 3,
+      "claims_grounded": 3,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X05",
+      "tier": "hard",
+      "q": "信保基金的保證成數，不同保證商品之間是一致的嗎？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.707,
+      "route": "gemma4:26b",
+      "claims": 9,
+      "claims_grounded": 9,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X06",
+      "tier": "hard",
+      "q": "一家公司實收資本額剛好等於新臺幣一億元，算不算中小企業？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.876,
+      "route": "gemma4:26b",
+      "source_ok": false,
+      "actual_sources": [
+        "2023年中小企業白皮書.pdf",
+        "2024年中小企業白皮書.pdf",
+        "2024新創企業白皮書.pdf",
+        "2025中小企業白皮書.pdf"
+      ],
+      "facts_found": [
+        "一億元"
+      ],
+      "facts_expected": [
+        "一億元"
+      ],
+      "facts_ok": true,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": false,
+      "reason": "❌ 來源不符"
+    },
+    {
+      "id": "X07",
+      "tier": "hard",
+      "q": "一家公司員工剛好二百人，算不算中小企業？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.643,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "二百人"
+      ],
+      "facts_expected": [
+        "二百人"
+      ],
+      "facts_ok": true,
+      "claims": 1,
+      "claims_grounded": 1,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X08",
+      "tier": "hard",
+      "q": "一家公司資本額三億元但只有 30 名員工，算不算中小企業？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.588,
+      "route": "gemma4:26b",
+      "source_ok": false,
+      "actual_sources": [
+        "2023年中小企業白皮書.pdf",
+        "2024年中小企業白皮書.pdf",
+        "2025中小企業白皮書.pdf",
+        "信保基金-2025年作業手冊修正對照表_公告版.pdf"
+      ],
+      "facts_found": [
+        "或"
+      ],
+      "facts_expected": [
+        "或"
+      ],
+      "facts_ok": true,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": false,
+      "reason": "❌ 來源不符"
+    },
+    {
+      "id": "X09",
+      "tier": "hard",
+      "q": "發票的開立日期早於合約簽署日，這代表什麼問題？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 1.0,
+      "route": "決定性運算（未使用語言模型）",
+      "claims": 0,
+      "claims_grounded": 0,
+      "citation_rate": null,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X10",
+      "tier": "hard",
+      "q": "信保基金的保證手續費是百分之零點三七五，還是零點三七五元？",
+      "must_abstain": false,
+      "abstained": false,
+      "confidence": 0.693,
+      "route": "gemma4:26b",
+      "source_ok": true,
+      "facts_found": [
+        "零點三七五"
+      ],
+      "facts_expected": [
+        "零點三七五"
+      ],
+      "facts_ok": true,
+      "claims": 2,
+      "claims_grounded": 2,
+      "citation_rate": 1.0,
+      "pass": true,
+      "reason": "✅ 通過"
+    },
+    {
+      "id": "X21",
+      "tier": "hard",
+      "q": "信保基金去年的呆帳率是多少？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.206,
+      "route": "gemma4:26b",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "X22",
+      "tier": "hard",
+      "q": "中國信託供應鏈融資的實際利率區間是多少？",
+      "must_abstain": true,
+      "abstained": false,
+      "confidence": 0.745,
+      "route": "gemma4:26b",
+      "abstain_correct": false,
+      "pass": false,
+      "reason": "❌ 應拒答卻回答了（幻覺風險）"
+    },
+    {
+      "id": "X23",
+      "tier": "hard",
+      "q": "依據金管會 2026 年最新函令，供應鏈金融有什麼新規定？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.35,
+      "route": "gemma4:26b",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "X24",
+      "tier": "hard",
+      "q": "本案這家公司的信用評等是幾等？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.133,
+      "route": "gemma4:26b",
+      "abstain_correct": true,
+      "pass": true,
+      "reason": "✅ 正確拒答"
+    },
+    {
+      "id": "X25",
+      "tier": "hard",
+      "q": "日本的中小企業信用保證制度，保證成數是多少？",
+      "must_abstain": true,
+      "abstained": true,
+      "confidence": 0.0,
+      "route": "知識圖譜範圍檢查（未進入檢索）",
       "abstain_correct": true,
       "pass": true,
       "reason": "✅ 正確拒答"

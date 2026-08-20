@@ -33,12 +33,17 @@ OUT_DIR = ROOT / "docs" / "images"
 
 SHOTS = [
     ("dashboard-overview.png", None, 2200,
-     "整體：四區塊一次看完（README 用）"),
+     "案件詳情整頁（README 用）"),
     ("dashboard-crosscheck.png", "#sec-cross", None,
      "交叉驗證分類卡片"),
     ("dashboard-cashflow.png", "#sec-cash", None,
      "現金流時間軸"),
 ]
+
+# 資安防護面板不屬於任何案件（在 #case-view 外層，佇列頁就看得到），
+# 所以獨立於 SHOTS 迴圈之外截，時機是「佇列截完、還沒點進案件」那一刻。
+SECURITY_SHOT = ("dashboard-security.png", "#sec-security",
+                  "資安防護面板：RLS 隔離／稽核鏈／Zero-Trust 即時驗證")
 
 # ── 投影片專用截圖 ────────────────────────────────────────────────────────
 #
@@ -53,7 +58,7 @@ SHOTS = [
 # 直接整塊截下來放進投影片就是溢出。
 SLIDE_SHOTS = [
     ("slide-dashboard-top.png", {"width": 1440, "height": 640}, None, None,
-     "戰情室上半：紅黃綠燈 + 交叉驗證卡片"),
+     "工作台上半：紅黃綠燈 + 交叉驗證卡片"),
     ("slide-dashboard-cash.png", None, "#sec-cash", 600,
      "現金流兩張圖"),
     ("slide-simulate.png", None, "#sec-sim", 620,
@@ -119,7 +124,39 @@ def main() -> int:
             browser.close()
             return 1
 
-        page.select_option("#tenant", args.tenant)
+        # header 是 position:sticky。對比視窗高的區塊做 locator.screenshot()
+        # 時，CDP 用捲動拼接擷取，sticky 元素每一段拼接都會被重複疊進畫面 ——
+        # 結果是截圖中間浮出一條重複的頁首。截圖前先暫時關掉 sticky，
+        # 圖存完再還原，不影響互動時的實際行為。
+        page.wait_for_selector(".queue-row", timeout=30_000)
+        page.evaluate("document.querySelector('header').style.position = 'static'")
+        page.wait_for_timeout(500)
+
+        # 先截「案件佇列」——這是使用者進來看到的第一個畫面，
+        # 不是某個委任案的細節。點進案件之前的樣子跟之後同樣要留證據。
+        queue_path = OUT_DIR / "dashboard-queue.png"
+        page.locator("#sec-queue").screenshot(path=str(queue_path))
+        print(f"  ✅ {'dashboard-queue.png':<28}案件佇列：授信人員的入口畫面　"
+              f"({queue_path.stat().st_size // 1024} KB)")
+
+        # 資安面板是頁面載入時就與佇列平行呼叫的（loadQueue + loadSecurity
+        # 同時觸發），這裡等它把「驗證中…」換成真正結果，避免截到空殼。
+        sec_name, sec_sel, sec_desc = SECURITY_SHOT
+        try:
+            page.wait_for_function(
+                "document.querySelector('#security') && "
+                "!document.querySelector('#security .empty')",
+                timeout=30_000)
+        except Exception as e:                             # noqa: BLE001
+            print(f"  ⚠️ 資安面板逾時未載入完成（{type(e).__name__}），仍照截")
+        sec_path = OUT_DIR / sec_name
+        page.locator(sec_sel).screenshot(path=str(sec_path))
+        print(f"  ✅ {sec_name:<28}{sec_desc}　"
+              f"({sec_path.stat().st_size // 1024} KB)")
+
+        # 點進指定的委任案——案件佇列是純 HTML 卡片，用文字內容定位比
+        # CSS class 選擇器更貼近使用者實際的操作方式（找名字點下去）。
+        page.click(f"text={args.tenant}")
         page.wait_for_timeout(4000)          # 等三個區塊的 API 回來
 
         for name, sel, height, desc in SHOTS:
@@ -130,6 +167,8 @@ def main() -> int:
                 page.screenshot(path=str(path), full_page=True)
             print(f"  ✅ {name:<28}{desc}　"
                   f"({path.stat().st_size // 1024} KB)")
+
+        page.evaluate("document.querySelector('header').style.position = ''")
 
         # 模擬區要先真的跑一次才有內容 ——
         # 截一張空的模擬區等於截一張「這個功能沒做」的圖。

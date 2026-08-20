@@ -75,9 +75,13 @@ def build_prompt(text: str, fields: list[str]) -> str:
 
 
 def run_doc(row: dict, model: str) -> tuple[list[FieldPrediction], dict]:
+    # timeout 刻意收緊到 150s（預設 600s，retries=1 時最壞情況要等 1200s）。
+    # SROIE/FUNSD/CORD 都是短篇收據/表單，實測每份 10~20s；一份卡到 150s
+    # 都拿不到回應，代表這次請求本身有問題，繼續等只是在浪費一整晚的時間，
+    # 不會讓它突然成功。
     obj, diag = llm.extract_json(
         build_prompt(row["text"], row["ask_fields"]),
-        schema=EXTRACT_SCHEMA, system=SYSTEM, model=model,
+        schema=EXTRACT_SCHEMA, system=SYSTEM, model=model, timeout=150,
     )
     preds: list[FieldPrediction] = []
     got = {}
@@ -122,6 +126,32 @@ def load_rows(suite: str, limit: int | None) -> list[dict]:
     return rows[:limit] if limit else rows
 
 
+def run_doc_safe(row: dict, model: str) -> tuple[list[FieldPrediction], dict]:
+    """
+    `run_doc()` 包一層容錯。
+
+    【為什麼要這一層】一次全量重跑要對 500+ 份文件各打一次 Ollama，
+    跑好幾個小時。**曾經真實發生過**：其中一份文件的請求卡住不動
+    （不是報錯，是網路層級掛住，httpx 逾時前完全沒有任何輸出），
+    在沒有這層容錯的版本裡，這一份文件會讓前面已經跑完的幾百份
+    全部白費——一個晚上的算力，因為一份文件而歸零。
+
+    逾時或任何例外都當成「這份文件抽取失敗」處理：全部欄位計為留白
+    （而不是憑空造一個答案），並在 diag 裡老實記下失敗原因。
+    這不是把失敗藏起來——`strict_json_failure_rate` 本來就是要如實
+    反映「pipeline 真實中斷率」的指標，一次逾時就該算進那個分母，
+    不能因為它換了一種失敗方式就不計分。
+    """
+    try:
+        return run_doc(row, model)
+    except Exception as e:                                     # noqa: BLE001
+        print(f"   ⚠️ {row.get('doc_id', '?')} 抽取失敗（{type(e).__name__}: {e}），"
+              f"計為留白後繼續", flush=True)
+        preds = [FieldPrediction(field=f, value=None, confidence=0.0, evidence_span=None)
+                 for f in row["ask_fields"]]
+        return preds, {"strict": False, "error": f"{type(e).__name__}: {e}"}
+
+
 def evaluate(suite: str, model: str, limit: int | None,
              do_counterfactual: bool, seed: int) -> dict:
     rows = load_rows(suite, limit)
@@ -130,7 +160,7 @@ def evaluate(suite: str, model: str, limit: int | None,
     print(f"\n▶ {suite.upper()}：{len(rows)} 份文件　模型 {model}")
     results, strict_fail, t0 = [], 0, time.time()
     for i, row in enumerate(rows, 1):
-        preds, diag = run_doc(row, model)
+        preds, diag = run_doc_safe(row, model)
         if not diag.get("strict"):
             strict_fail += 1
         results.append(verifin.score_document(
@@ -149,7 +179,7 @@ def evaluate(suite: str, model: str, limit: int | None,
                 continue
             changed_map[row["doc_id"]] = changed
             cf_row = {**row, "text": cf_text, "gold": cf_gold}
-            preds, _ = run_doc(cf_row, model)
+            preds, _ = run_doc_safe(cf_row, model)
             cf_results.append(verifin.score_document(
                 row["doc_id"] + "::cf", row["dataset"], cf_text, preds, cf_gold))
             if i % 10 == 0:

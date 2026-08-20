@@ -22,7 +22,7 @@ check_docs_consistency.py — 文件裡的數字必須與實際跑出來的一�
     回歸測試項數      跑 tests/test_core.py 取得
     知識庫規模        查資料庫
     知識圖譜節點數    查資料庫
-    50 題評測指標     讀 docs/QA_EVAL_final.json
+    105 題評測指標    讀 docs/QA_EVAL_final.json
     造假偵測指標      讀 docs/FRAUD_BENCHMARK.json
 
 這些都有唯一正確答案，對不上就是錯，沒有解釋空間。
@@ -53,6 +53,7 @@ DOCS = [
     "docs/DECISIONS.md", "docs/BUSINESS_CASE.md", "docs/MODEL_SELECTION.md",
     "docs/MARKET_VALIDATION.md", "docs/DEMO_RESULTS.md",
     "docs/slides/FlowMind_團隊簡報.md",
+    "docs/slides/FlowMind_5分鐘決賽簡報.md",
 ]
 
 
@@ -200,7 +201,7 @@ def collect_facts(skip_db: bool = False) -> list[Fact]:
 
     pr = _json_get("docs/QA_EVAL_final.json", "overall_pass_rate")
     if pr is not None:
-        facts.append(Fact("50 題整體通過率(%)", round(pr * 100, 1),
+        facts.append(Fact("105 題整體通過率(%)", round(pr * 100, 1),
                           [rf"整體通過\s*\*{{0,2}}{B}(?P<num>[\d.]+){E}\s*%"],
                           "讀 QA_EVAL_final.json"))
     return facts

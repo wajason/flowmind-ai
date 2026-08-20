@@ -45,3 +45,15 @@ tabulate>=0.9.0
 # ── 資料抓取 ──────────────────────────────────────────────────────────────────
 requests>=2.31.0
 beautifulsoup4>=4.12.0
+
+# ── 審查工作台 / 自檢入口 / Bank-ready PDF ──────────────────────────────────────
+# 這一段原本漏在 requirements.txt 之外——本機開發環境早就裝了，所以沒發現
+# 「照 README 步驟從零安裝」其實會在 `python -m flowmind.dashboard` 這一步
+# 直接炸掉。README 承諾「Linux 與 Windows 都能跑」，前提是這份清單本身要完整。
+fastapi>=0.115.0
+uvicorn>=0.30.0
+python-multipart>=0.0.9      # 儀表板檔案上傳（新增案件的憑證上傳表單）需要
+reportlab>=4.2.0             # flowmind/report.py 產生 Bank-ready PDF
+
+# ── 開發工具（非執行期必要，但 scripts/capture_*.py 需要）──────────────────────
+playwright>=1.45.0           # 儀表板/簡報截圖，`python -m playwright install chromium`

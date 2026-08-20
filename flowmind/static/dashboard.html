@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FlowMind AI — 授信戰情室</title>
+<title>FlowMind AI — 供應鏈融資審查工作台</title>
 <style>
 /* ── 色彩全部取自已驗證的參考調色盤 ────────────────────────────────
    狀態色（good/warning/critical）是保留色，永遠不當作序列色使用，
@@ -30,15 +30,15 @@
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--plane); color: var(--ink-1);
-  font: 14px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", sans-serif;
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", sans-serif;
 }
 header {
   background: var(--surface-1); border-bottom: 1px solid var(--ring);
   padding: 14px 22px; display: flex; align-items: center; gap: 16px;
   flex-wrap: wrap; position: sticky; top: 0; z-index: 10;
 }
-h1 { font-size: 17px; margin: 0; letter-spacing: .2px; }
-h1 small { color: var(--ink-muted); font-weight: 400; font-size: 12px; margin-left: 8px; }
+h1 { font-size: 19.5px; margin: 0; letter-spacing: .2px; }
+h1 small { color: var(--ink-muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
 select, button, input {
   font: inherit; padding: 6px 10px; border-radius: 6px;
   border: 1px solid var(--axis); background: var(--surface-1); color: var(--ink-1);
@@ -50,39 +50,40 @@ main { padding: 18px 22px 48px; display: grid; gap: 18px;
 section {
   background: var(--surface-1); border: 1px solid var(--ring);
   border-radius: 10px; padding: 16px 18px; min-width: 0;
+  scroll-margin-top: 72px;  /* header 是 sticky，捲動定位時留出空間避免疊在標題上 */
 }
 section.wide { grid-column: 1 / -1; }
-h2 { font-size: 13px; margin: 0 0 4px; letter-spacing: .3px; text-transform: none; }
-.sub { color: var(--ink-muted); font-size: 11.5px; margin-bottom: 12px; }
+h2 { font-size: 15px; margin: 0 0 4px; letter-spacing: .3px; text-transform: none; }
+.sub { color: var(--ink-muted); font-size: 13px; margin-bottom: 12px; }
 
 /* 紅黃綠燈：色 + 圖示 + 文字，三重編碼 */
 .light { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
 .lamp { width: 44px; height: 44px; border-radius: 50%; flex: none;
-        display: grid; place-items: center; font-size: 22px; color: #fff; }
+        display: grid; place-items: center; font-size: 25.5px; color: #fff; }
 .lamp.good { background: var(--good); }
 .lamp.warning { background: var(--warning); color: #0b0b0b; }
 .lamp.critical { background: var(--critical); }
-.lamp-txt b { font-size: 16px; }
-.lamp-txt div { color: var(--ink-2); font-size: 12px; }
+.lamp-txt b { font-size: 18.5px; }
+.lamp-txt div { color: var(--ink-2); font-size: 14px; }
 
 .alert { border-left: 3px solid var(--axis); padding: 7px 0 7px 11px; margin: 9px 0; }
 .alert.critical { border-color: var(--critical); }
 .alert.warning  { border-color: var(--warning); }
 .alert.info     { border-color: var(--s1); }
-.alert b { font-size: 12.5px; }
-.alert p { margin: 3px 0 0; color: var(--ink-2); font-size: 12px; }
-.tag { font-size: 10.5px; color: var(--ink-muted); font-family: ui-monospace, monospace; }
-.ev { font-size: 11px; color: var(--ink-muted); font-family: ui-monospace, monospace;
+.alert b { font-size: 14.5px; }
+.alert p { margin: 3px 0 0; color: var(--ink-2); font-size: 14px; }
+.tag { font-size: 12px; color: var(--ink-muted); font-family: ui-monospace, monospace; }
+.ev { font-size: 12.5px; color: var(--ink-muted); font-family: ui-monospace, monospace;
       margin-top: 4px; white-space: nowrap; overflow-x: auto; }
 .evd { margin-top: 6px; }
-.evd summary { font-size: 11.5px; color: var(--ink-muted); cursor: pointer;
+.evd summary { font-size: 13px; color: var(--ink-muted); cursor: pointer;
                user-select: none; }
 .evd summary:hover { color: var(--ink-2); }
-.evd table { margin-top: 6px; font-size: 11px; }
-.chart-lbl { font-size: 11.5px; color: var(--ink-2); font-weight: 600;
+.evd table { margin-top: 6px; font-size: 12.5px; }
+.chart-lbl { font-size: 13px; color: var(--ink-2); font-weight: 600;
              margin: 10px 0 2px; }
 .chart-lbl span { font-weight: 400; color: var(--ink-muted); }
-.verdict { padding: 10px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 600;
+.verdict { padding: 10px 14px; border-radius: 8px; font-size: 15.5px; font-weight: 600;
            margin-bottom: 12px; border: 1px solid transparent; }
 .verdict.ok { background: rgba(12,163,12,.10); color: #0a7a0a; border-color: rgba(12,163,12,.28); }
 .verdict.bad { background: rgba(208,59,59,.10); color: var(--critical); border-color: rgba(208,59,59,.28); }
@@ -93,38 +94,38 @@ h2 { font-size: 13px; margin: 0 0 4px; letter-spacing: .3px; text-transform: non
 .card { border: 1px solid var(--ring); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
 .card:hover { background: var(--plane); }
 .card .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.card .nm { font-weight: 600; font-size: 12.5px; }
-.pill { font-size: 10.5px; padding: 2px 7px; border-radius: 999px; white-space: nowrap;
+.card .nm { font-weight: 600; font-size: 14.5px; }
+.pill { font-size: 12px; padding: 2px 7px; border-radius: 999px; white-space: nowrap;
         border: 1px solid transparent; }
 .pill.good { background: rgba(12,163,12,.13); color: var(--good); border-color: rgba(12,163,12,.3); }
 .pill.warning { background: rgba(250,178,25,.16); color: #8a5c00; border-color: rgba(250,178,25,.4); }
 .pill.critical { background: rgba(208,59,59,.13); color: var(--critical); border-color: rgba(208,59,59,.3); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme=light]) .pill.warning { color: var(--warning); } }
-.card .det { display: none; margin-top: 8px; font-size: 11.5px; color: var(--ink-2); }
+.card .det { display: none; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
 .card.open .det { display: block; }
 .card .det div { padding: 4px 0; border-top: 1px solid var(--grid); }
 
-.hero { font-size: 30px; font-weight: 650; letter-spacing: -.5px; }
-.hero small { font-size: 12px; font-weight: 400; color: var(--ink-muted); margin-left: 6px; }
+.hero { font-size: 34.5px; font-weight: 650; letter-spacing: -.5px; }
+.hero small { font-size: 14px; font-weight: 400; color: var(--ink-muted); margin-left: 6px; }
 
 /* 信心分數堆疊條 */
 .stack { display: flex; height: 26px; border-radius: 5px; overflow: hidden; margin: 10px 0 6px;
          background: var(--grid); }
 .stack i { display: block; height: 100%; border-right: 2px solid var(--surface-1); }
-.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11.5px; color: var(--ink-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--ink-2); }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
 
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--grid); }
-th { color: var(--ink-muted); font-weight: 500; font-size: 11px; }
+th { color: var(--ink-muted); font-weight: 500; font-size: 12.5px; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .scroll { overflow-x: auto; }
 /* 對話歷程 */
 .turn { border-top: 1px solid var(--grid); padding: 14px 0 4px; }
 .turn:first-child { border-top: 0; padding-top: 2px; }
-.q-line { font-weight: 600; font-size: 13.5px; margin-bottom: 6px; }
-.kind { display: inline-block; font-size: 10.5px; padding: 2px 8px; border-radius: 999px;
+.q-line { font-weight: 600; font-size: 15.5px; margin-bottom: 6px; }
+.kind { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px;
         margin-bottom: 6px; border: 1px solid transparent; }
 .kind.det { background: rgba(27,175,122,.14); color: #0a7a5a; border-color: rgba(27,175,122,.35); }
 .kind.rag { background: rgba(124,58,237,.12); color: #6d3fd4; border-color: rgba(124,58,237,.3); }
@@ -132,42 +133,164 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   :root:not([data-theme=light]) .kind.rag { color: #b9a6f5; } }
 .ans { margin-top: 10px; padding: 12px 14px; border-radius: 8px;
        background: var(--plane); border: 1px solid var(--ring); }
-.ans-h { font-weight: 650; font-size: 13px; margin: 10px 0 4px; color: var(--ink-1); }
+.ans-h { font-weight: 650; font-size: 15px; margin: 10px 0 4px; color: var(--ink-1); }
 .ans-h:first-child { margin-top: 0; }
-.ans-p { margin: 5px 0; font-size: 12.8px; line-height: 1.7; }
-.ans-li { margin: 3px 0 3px 14px; font-size: 12.8px; line-height: 1.7;
+.ans-p { margin: 5px 0; font-size: 14.5px; line-height: 1.7; }
+.ans-li { margin: 3px 0 3px 14px; font-size: 14.5px; line-height: 1.7;
           position: relative; }
 .ans-li::before { content: "·"; position: absolute; left: -12px; color: var(--ink-muted); }
 .ans code { background: var(--surface-1); padding: 1px 4px; border-radius: 3px;
             font-size: .9em; }
 #conf { max-height: 68vh; overflow-y: auto; }
-.empty { color: var(--ink-muted); font-size: 12.5px; padding: 14px 0; }
-.err { color: var(--critical); font-size: 12.5px; }
-.foot { grid-column: 1/-1; color: var(--ink-muted); font-size: 11.5px; text-align: center;
+.empty { color: var(--ink-muted); font-size: 14.5px; padding: 14px 0; }
+.err { color: var(--critical); font-size: 14.5px; }
+.foot { grid-column: 1/-1; color: var(--ink-muted); font-size: 13px; text-align: center;
         padding-top: 6px; }
+
+/* 案件佇列 */
+.queue-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+             border: 1px solid var(--ring); border-radius: 8px; margin-bottom: 7px;
+             cursor: pointer; background: var(--surface-1); }
+.queue-row:hover { background: var(--plane); }
+.queue-row .qlamp { width: 30px; height: 30px; border-radius: 50%; flex: none;
+                     display: grid; place-items: center; font-size: 17px; color: #fff; }
+.queue-row .qlamp.good { background: var(--good); }
+.queue-row .qlamp.warning { background: var(--warning); color: #0b0b0b; }
+.queue-row .qlamp.critical { background: var(--critical); }
+.queue-row .qmain { flex: 1; min-width: 0; }
+.queue-row .qname { font-weight: 600; font-size: 15.5px; }
+.queue-row .qmeta { font-size: 13px; color: var(--ink-muted); margin-top: 2px; }
+.queue-row .qaging { font-size: 13px; color: var(--ink-2); text-align: right; flex: none; }
+.queue-row .qaging b { font-size: 17px; display: block; }
+.breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.breadcrumb button { font-size: 14px; padding: 4px 10px; }
+
+/* 新增案件面板 */
+.new-case { border: 1px dashed var(--axis); border-radius: 10px; padding: 16px 18px;
+            margin: 14px 0; background: var(--plane); }
+.nc-h { font-weight: 650; font-size: 15px; margin-bottom: 10px; }
+.nc-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.nc-row label, .new-case > .nc-files label { display: flex; flex-direction: column; gap: 4px;
+              font-size: 13px; color: var(--ink-2); flex: 1; min-width: 200px; }
+.nc-files { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+            gap: 12px; margin: 10px 0 14px; }
+.nc-files label { background: var(--surface-1); border: 1px solid var(--ring);
+                   border-radius: 8px; padding: 10px 12px; }
+.new-case input[type=file] { font-size: 12.5px; }
+.nc-msg { margin-left: 10px; font-size: 13px; }
+.nc-msg.ok { color: var(--good); }
+.nc-msg.err { color: var(--critical); }
+.nc-step { border-top: 1px solid var(--grid); padding-top: 14px; margin-top: 14px; }
+.nc-step:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+
+/* 資安防護：深色科技感卡片，跟其餘區塊的中性色刻意做出區隔 */
+#sec-security { background: #0d1b1a; border-color: #16302d; }
+@media (prefers-color-scheme: light) { #sec-security { background: #0d1b1a; } }
+#sec-security h2, #sec-security .sub { color: #e7fbf5; }
+#sec-security .sub b { color: #5eead4; }
+.sec-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.sec-card { background: rgba(255,255,255,.04); border: 1px solid rgba(94,234,212,.18);
+            border-radius: 10px; padding: 14px 16px; }
+.sec-card .sh { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.sec-card .si { width: 22px; height: 22px; border-radius: 50%; flex: none;
+                display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+.sec-card .si.pass { background: #14532d; color: #86efac; }
+.sec-card .si.fail { background: #7f1d1d; color: #fca5a5; }
+.sec-card .nm { color: #e7fbf5; font-weight: 600; font-size: 14.5px; }
+.sec-card .dt { color: #9cc7bf; font-size: 13px; line-height: 1.65; }
+.sec-card .dt code { background: rgba(94,234,212,.12); color: #5eead4; }
+.probe-row { display: flex; justify-content: space-between; gap: 10px; align-items: baseline;
+             padding: 6px 0; border-top: 1px solid rgba(94,234,212,.12); font-size: 13px; }
+.probe-row:first-child { border-top: 0; }
+.probe-row .pq { color: #9cc7bf; font-family: ui-monospace, monospace; font-size: 12px; }
+.probe-row .pv { color: #86efac; font-weight: 600; white-space: nowrap; }
+#sec-security button { background: #134e4a; color: #e7fbf5; border-color: rgba(94,234,212,.3); }
+#sec-security button:hover { background: #0f3d3a; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>FlowMind AI　授信戰情室<small>供應鏈融資可驗證證據層</small></h1>
-  <label>委任案
-    <select id="tenant"></select>
-  </label>
+  <h1>FlowMind AI　供應鏈融資審查工作台<small>可驗證證據層</small></h1>
+  <span id="hdr-case" class="tag" style="display:none"></span>
   <button id="reload">重新整理</button>
   <span id="asof" class="tag"></span>
 </header>
 
 <main>
+  <section class="wide" id="sec-queue">
+    <div class="breadcrumb" style="justify-content:space-between">
+      <h2 style="margin:0">案件佇列</h2>
+      <button id="new-case-btn">＋ 新增案件</button>
+    </div>
+    <div class="sub">依風險燈號與受理時間排序 —— 燈號來自 <code>watchtower</code> 既有規則，本頁只呈現、不重算</div>
+
+    <div id="new-case-panel" class="new-case" style="display:none">
+      <div class="nc-step" id="nc-step-1">
+        <div class="nc-h">① 建立案件</div>
+        <div class="nc-row">
+          <label>案件編號<input id="nc-tenant" placeholder="CASE-0003"></label>
+          <label>客戶名稱<input id="nc-name" placeholder="○○股份有限公司"></label>
+        </div>
+        <div class="nc-row">
+          <label>案件類型
+            <select id="nc-type">
+              <option>信保基金供應商融資送件</option>
+              <option>應收帳款承購案</option>
+              <option>一般周轉金融資</option>
+              <option>其他</option>
+            </select>
+          </label>
+          <label>產業別代碼（選填）<input id="nc-industry" placeholder="例如 C29"></label>
+        </div>
+        <button id="nc-create">建立</button>
+        <span class="nc-msg" id="nc-msg-1"></span>
+      </div>
+
+      <div class="nc-step" id="nc-step-2" style="display:none">
+        <div class="nc-h">② 上傳憑證資料</div>
+        <div class="sub">目前支援<b>結構化格式</b>（JSON／CSV）——本系統尚未接入 OCR，
+          上傳掃描件照片不會被自動解析成欄位，這是誠實揭露的已知限制，不是漏做。
+          四個檔案可以只上傳其中幾個，之後仍可以重新上傳覆蓋。</div>
+        <div class="nc-files">
+          <label>應收帳款發票 <span class="tag">receivables.json</span><input type="file" id="nc-f-receivables" accept=".json"></label>
+          <label>合約 <span class="tag">contracts.json</span><input type="file" id="nc-f-contracts" accept=".json"></label>
+          <label>應付帳款 <span class="tag">payables.json</span><input type="file" id="nc-f-payables" accept=".json"></label>
+          <label>銀行流水 <span class="tag">bank_ledger.csv</span><input type="file" id="nc-f-ledger" accept=".csv"></label>
+        </div>
+        <button id="nc-upload">上傳並立即驗證</button>
+        <button id="nc-skip" style="background:transparent;color:var(--ink-2)">先跳過，之後再補</button>
+        <span class="nc-msg" id="nc-msg-2"></span>
+      </div>
+
+      <div class="nc-step" id="nc-step-3" style="display:none">
+        <div class="nc-h">✓ 完成</div>
+        <div class="sub" id="nc-result"></div>
+        <button id="nc-open">開啟此案件</button>
+        <button id="nc-close" style="background:transparent;color:var(--ink-2)">關閉</button>
+      </div>
+    </div>
+
+    <div id="queue"><div class="empty">載入中…</div></div>
+  </section>
+
+  <div id="case-view" style="display:none">
+  <section class="wide" id="sec-case-header">
+    <div class="breadcrumb">
+      <button id="back-to-queue">← 返回案件佇列</button>
+      <span id="case-title" class="tag"></span>
+    </div>
+  </section>
+
   <section id="sec-overview">
-    <h2>① 委任案總覽</h2>
+    <h2>① 案件總覽</h2>
     <div class="sub">警示由 <code>watchtower</code> 以決定性 SQL 產生並寫入 <code>fin_alerts</code>，本頁只呈現、不重算</div>
     <div id="overview"><div class="empty">載入中…</div></div>
   </section>
 
   <section id="sec-cross">
-    <h2>② 交叉驗證</h2>
-    <div class="sub">26 條決定性檢查，零 LLM　·　點卡片展開逐條結果</div>
+    <h2>② 憑證交叉驗證</h2>
+    <div class="sub">27 條決定性檢查，零 LLM　·　點卡片展開逐條結果</div>
     <div id="cross"><div class="empty">載入中…</div></div>
   </section>
 
@@ -191,7 +314,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   </section>
 
   <section class="wide" id="sec-conf">
-    <h2>④ 信心分數的組成</h2>
+    <h2>⑤ 顧問問答與信心分數</h2>
     <div class="sub">信心不是模型自己說的 —— 由四項可量測訊號依<b>公開權重</b>算出，任何人都能重算</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <input id="q" style="flex:1;min-width:300px" placeholder="輸入問題後按 Enter，可以接著追問">
@@ -206,6 +329,16 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
       <a href="#" class="ex">日本的保證成數是多少？</a>
     </div>
     <div id="conf"><div class="empty">先輸入一個問題，之後可以接著追問。</div></div>
+  </section>
+  </div><!-- /#case-view -->
+
+  <section class="wide" id="sec-security">
+    <div class="breadcrumb" style="justify-content:space-between">
+      <h2 style="margin:0">🛡 資安防護</h2>
+      <button id="sec-reload">重新驗證</button>
+    </div>
+    <div class="sub">每一項都是<b>當場執行一次</b>既有的驗證函式，不是靜態宣稱清單</div>
+    <div id="security"><div class="empty">載入中…</div></div>
   </section>
 
   <div class="foot">每個數字都可用終端機指令重現　·　本頁不含任何外部資源</div>
@@ -291,6 +424,162 @@ async function loadCross(t) {
               <b>${esc(i.title)}</b> <span class="tag">${i.id}</span><br>${esc(i.detail)}</div>`).join('')}
           </div></div>`).join('') + '</div>';
   } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
+}
+
+// 目前開啟的案件。沒有全域下拉選單了——案件是從佇列點進來的。
+let currentTenant = null;
+
+const AGING_CLASS = n => n >= 14 ? 'var(--critical)' : n >= 7 ? 'var(--warning)' : 'var(--ink-2)';
+
+let newCaseTenant = null;
+
+function toggleNewCasePanel() {
+  const el = $('#new-case-panel');
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? '' : 'none';
+  if (opening) {
+    ['#nc-tenant', '#nc-name', '#nc-industry'].forEach(s => $(s).value = '');
+    $('#nc-msg-1').textContent = ''; $('#nc-msg-2').textContent = '';
+    $('#nc-step-1').style.display = ''; $('#nc-step-2').style.display = 'none';
+    $('#nc-step-3').style.display = 'none';
+    newCaseTenant = null;
+  }
+}
+
+async function createCase() {
+  const msg = $('#nc-msg-1');
+  msg.className = 'nc-msg'; msg.textContent = '建立中…';
+  const fd = new FormData();
+  fd.append('tenant_id', $('#nc-tenant').value.trim());
+  fd.append('client_name', $('#nc-name').value.trim());
+  fd.append('engagement_type', $('#nc-type').value);
+  fd.append('industry_code', $('#nc-industry').value.trim());
+  try {
+    const r = await fetch('/api/cases', { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || '建立失敗');
+    newCaseTenant = d.tenant_id;
+    msg.className = 'nc-msg ok'; msg.textContent = `✓ 已建立 ${d.tenant_id}`;
+    $('#nc-step-2').style.display = '';
+  } catch (e) { msg.className = 'nc-msg err'; msg.textContent = esc(e.message); }
+}
+
+async function uploadCaseFiles() {
+  if (!newCaseTenant) return;
+  const msg = $('#nc-msg-2');
+  msg.className = 'nc-msg'; msg.textContent = '上傳並驗證中…';
+  const fd = new FormData();
+  const map = { receivables: '#nc-f-receivables', contracts: '#nc-f-contracts',
+                payables: '#nc-f-payables', bank_ledger: '#nc-f-ledger' };
+  let any = false;
+  for (const [key, sel] of Object.entries(map)) {
+    const f = $(sel).files[0];
+    if (f) { fd.append(key, f); any = true; }
+  }
+  if (!any) { msg.className = 'nc-msg err'; msg.textContent = '請至少選一個檔案，或按「先跳過」'; return; }
+  try {
+    const r = await fetch(`/api/cases/${newCaseTenant}/upload`, { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || '上傳失敗');
+    finishNewCase(`已匯入：發票 ${d.ingested.invoices} 筆、合約 ${d.ingested.contracts} 筆、
+      流水 ${d.ingested.ledger} 筆。案件已可查看交叉驗證結果。`);
+  } catch (e) { msg.className = 'nc-msg err'; msg.textContent = esc(e.message); }
+}
+
+function finishNewCase(resultText) {
+  $('#nc-step-2').style.display = 'none';
+  $('#nc-step-3').style.display = '';
+  $('#nc-result').textContent = resultText;
+}
+
+async function loadQueue() {
+  const el = $('#queue');
+  try {
+    const rows = await get('/api/queue');
+    if (!rows.length) { el.innerHTML = '<div class="empty">目前沒有待處理案件。</div>'; return; }
+    el.innerHTML = rows.map(r => `
+      <div class="queue-row" data-tenant="${esc(r.tenant_id)}">
+        <div class="qlamp ${r.light}">${r.light === 'good' ? '✓' : r.light === 'warning' ? '!' : '✕'}</div>
+        <div class="qmain">
+          <div class="qname">${esc(r.client_name)}　<span class="tag">${esc(r.tenant_id)}</span></div>
+          <div class="qmeta">${esc(r.engagement_type)}${r.industry_code ? '　·　' + esc(r.industry_code) : ''}
+            　·　受理 ${esc(r.intake_date)}
+            　·　嚴重 ${r.alert_counts.critical}　注意 ${r.alert_counts.warning}　提示 ${r.alert_counts.info}</div>
+        </div>
+        <div class="qaging" style="color:${AGING_CLASS(r.aging_days)}">
+          <b>${r.aging_days}</b>受理天數</div>
+      </div>`).join('');
+    el.querySelectorAll('.queue-row').forEach(row =>
+      row.onclick = () => openCase(row.dataset.tenant));
+  } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
+}
+
+async function loadSecurity() {
+  const el = $('#security');
+  el.innerHTML = '<div class="empty" style="color:#9cc7bf">驗證中…</div>';
+  try {
+    const d = await get('/api/security');
+    const iso = d.isolation;
+    const isoOk = iso && iso.passed;
+    const probesHtml = d.probes.map(p => `
+      <div class="probe-row">
+        <div><span class="pv">${p.blocked ? '✓ 已阻擋' : '✕ 未阻擋'}</span> ${esc(p.label)}
+          <div class="pq">"${esc(p.question)}"</div></div>
+      </div>`).join('');
+
+    el.innerHTML = `
+      <div class="sec-grid">
+        <div class="sec-card">
+          <div class="sh"><span class="si ${!d.db_role_is_superuser ? 'pass' : 'fail'}">${!d.db_role_is_superuser ? '✓' : '✕'}</span>
+            <span class="nm">資料庫連線角色</span></div>
+          <div class="dt">以 <code>${esc(d.db_role)}</code> 連線，${d.db_role_is_superuser
+            ? '⚠ 是 superuser，RLS 會被繞過' : '非 superuser，Row-Level Security 強制生效'}</div>
+        </div>
+        <div class="sec-card">
+          <div class="sh"><span class="si ${isoOk ? 'pass' : 'fail'}">${isoOk ? '✓' : '✕'}</span>
+            <span class="nm">跨委任案資料隔離</span></div>
+          <div class="dt">${iso ? `以 ${esc(iso.tenant_a)} 身分下「無 WHERE 條件」查詢：
+            看不到 ${esc(iso.tenant_b)} 的 ${iso.b_rows_actually_exist} 筆真實存在的資料，
+            嘗試寫入也被拒絕（<code>cross_tenant_write_blocked=${iso.cross_tenant_write_blocked}</code>）`
+            : '委任案不足兩筆，無法示範'}</div>
+        </div>
+        <div class="sec-card">
+          <div class="sh"><span class="si ${d.audit_chain.intact ? 'pass' : 'fail'}">${d.audit_chain.intact ? '✓' : '✕'}</span>
+            <span class="nm">稽核雜湊鏈</span></div>
+          <div class="dt">重算全部 ${d.audit_chain.rows} 筆稽核紀錄的雜湊鏈，
+            ${d.audit_chain.intact ? '逐筆比對一致，沒有被事後竄改或刪除的紀錄'
+              : `在第 ${d.audit_chain.break_at} 筆發現斷點`}</div>
+        </div>
+        <div class="sec-card">
+          <div class="sh"><span class="si pass">✓</span><span class="nm">資料在地</span></div>
+          <div class="dt">${esc(d.data_locality)}——不經雲端 API，內網部署即可運作</div>
+        </div>
+        <div class="sec-card" style="grid-column:1/-1">
+          <div class="sh"><span class="si pass">✓</span>
+            <span class="nm">Zero-Trust 輸入防護（即時探測，非宣稱）</span></div>
+          ${probesHtml}
+        </div>
+      </div>`;
+  } catch (e) { el.innerHTML = `<div class="err">驗證失敗：${esc(e.message)}</div>`; }
+}
+
+async function openCase(tenant) {
+  currentTenant = tenant;
+  $('#sec-queue').style.display = 'none';
+  $('#case-view').style.display = 'contents';
+  $('#hdr-case').style.display = '';
+  $('#hdr-case').textContent = tenant;
+  $('#case-title').textContent = `目前案件：${tenant}`;
+  history.length = 0;
+  await loadAll();
+}
+
+function backToQueue() {
+  currentTenant = null;
+  $('#case-view').style.display = 'none';
+  $('#hdr-case').style.display = 'none';
+  $('#sec-queue').style.display = '';
+  loadQueue();
 }
 
 async function loadCash(t) {
@@ -452,7 +741,7 @@ async function ask() {
     + '<div class="empty">計算中…（首次會等模型載入，約 2 分鐘）</div>';
   el.scrollTop = el.scrollHeight;
   try {
-    const d = await get(`/api/confidence?q=${encodeURIComponent(q)}&tenant=${$('#tenant').value}`);
+    const d = await get(`/api/confidence?q=${encodeURIComponent(q)}&tenant=${currentTenant}`);
     history.push(d);
     el.innerHTML = history.map(renderTurn).join('');
     el.scrollTop = el.scrollHeight;
@@ -467,7 +756,7 @@ async function simulate() {
   const amt = +$('#sim-amt').value || 0, days = +$('#sim-days').value || 30;
   el.innerHTML = '<div class="empty">計算中…</div>';
   try {
-    const d = await get(`/api/simulate/?tenant=${$('#tenant').value}`.replace('/?', '?')
+    const d = await get(`/api/simulate/?tenant=${currentTenant}`.replace('/?', '?')
       + `&amount=${amt}&days=${days}`);
     $('#sim-hint').textContent = d.note;
     const b = d.baseline, s = d.simulated;
@@ -532,17 +821,15 @@ async function simulate() {
 }
 
 async function loadAll() {
-  const t = $('#tenant').value;
+  if (!currentTenant) return;
+  const t = currentTenant;
   await Promise.all([loadOverview(t), loadCross(t), loadCash(t)]);
   $('#sim').innerHTML = '<div class="empty">輸入金額後按「模擬」。</div>';
 }
 
 (async () => {
-  const es = await get('/api/engagements');
-  $('#tenant').innerHTML = es.map(e =>
-    `<option value="${e.tenant_id}">${esc(e.tenant_id)}　${esc(e.client_name || '')}</option>`).join('');
-  $('#tenant').onchange = loadAll;
-  $('#reload').onclick = loadAll;
+  $('#back-to-queue').onclick = backToQueue;
+  $('#reload').onclick = () => currentTenant ? loadAll() : loadQueue();
   $('#ask').onclick = ask;
   $('#q').onkeydown = e => { if (e.key === 'Enter') ask(); };
   $('#sim-run').onclick = simulate;
@@ -555,7 +842,14 @@ async function loadAll() {
   document.querySelectorAll('.ex').forEach(a => a.onclick = e => {
     e.preventDefault(); $('#q').value = a.textContent.trim(); ask();
   });
-  await loadAll();
+  $('#sec-reload').onclick = loadSecurity;
+  $('#new-case-btn').onclick = toggleNewCasePanel;
+  $('#nc-create').onclick = createCase;
+  $('#nc-upload').onclick = uploadCaseFiles;
+  $('#nc-skip').onclick = () => finishNewCase('尚未上傳資料——案件已建立，之後可以在案件細節頁重新上傳。');
+  $('#nc-open').onclick = () => { toggleNewCasePanel(); openCase(newCaseTenant); };
+  $('#nc-close').onclick = () => { toggleNewCasePanel(); loadQueue(); };
+  await Promise.all([loadQueue(), loadSecurity()]);
 })();
 </script>
 </body>

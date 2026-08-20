@@ -786,6 +786,94 @@ def apply_gates(pack: EvidencePack) -> EvidencePack:
     return pack
 
 
+# ══════════════════════════════════════════════════════════════════════════
+# 6. 專有名詞比對：抓敘述句裡打錯的機構／文件名稱
+# ══════════════════════════════════════════════════════════════════════════
+# 【已知缺口，見 HANDOVER.md §7】前面的逐字驗證只比對「被引號框住」的
+# quote 內容。答案裡非引用的敘述句若寫錯專有名詞
+# （例如把「中國信託商業銀行」打成「中國承信商業銀行」），那句話本來就
+# 不是一段要逐字比對的引用，前面的機制不會碰它，不會被攔下。
+#
+# 【做法】不去猜「這是不是專有名詞」——那需要 NER，且無法保證零 LLM。
+# 反過來做：這次查詢實際檢索到的文本裡，本來就會出現一批帶機構／文件
+# 後綴的詞（銀行、公司、基金…），把它們當作這次查詢「已知為真」的名稱
+# 清單——清單是**當場從檢索文本算出來的**，不是預先寫死的公司名單，
+# 換一批文件進來，清單自動跟著換，不需要人維護。
+#
+# 答案裡如果也出現同一類後綴的詞，但不是清單裡的任何一個、卻又跟清單
+# 裡某一個高度相似（打錯一兩個字），這是最典型的「講的是同一個東西，
+# 但名字被寫錯」。相似度門檻只抓「像打錯字」的區間，刻意不含「完全相同」
+# 與「完全不像」兩端：
+#   · 完全相同 → 沒有問題，不用抓
+#   · 完全不像（<85）→ 可能是模型引用了確實存在、只是這次沒被檢索到的
+#     其他機構，那是「檢索沒覆蓋到」的問題，跟「打錯字」不是同一件事，
+#     用同一個機制處理會製造大量與事實無關的假警報
+#
+# 這道檢查是**新增的獨立訊號**，不動 citation_integrity 或既有門檻——
+# 沒有校準集可以決定 85 這個門檻該是多少，所以刻意只做「附加警示 +
+# 轉人工複核」，不讓它影響信心分數或拒答判斷。這比引入一個沒校準過的
+# 門檻去動既有的計分邏輯更誠實。
+_ENTITY_SUFFIXES = ("商業銀行", "信保基金", "基金會", "股份有限公司",
+                    "有限公司", "信用保證協會", "銀行", "基金", "控股", "事務所")
+_ENTITY_SUFFIX = re.compile(r"[一-鿿]{2,12}(?:" + "|".join(_ENTITY_SUFFIXES) + ")")
+_ENTITY_PREFIX_WINDOW = 4  # 品牌核心字數的經驗值（"中國信託"、"台灣中小企業"取後四字）
+ENTITY_FUZZY_LOW = 85.0    # 低於此值：不像同一個名字，是另一個機構，不抓
+ENTITY_FUZZY_EXACT = 99.9  # 高於此值：正規化後視為完全相同
+
+
+def extract_entity_mentions(text: str) -> set[str]:
+    """
+    從一段文字裡抓出帶機構／文件後綴的詞。純規則字串比對，零 LLM。
+
+    正則的 `{2,12}` 只負責「找到後綴前面有一段連續中文字」，
+    真正決定要不要收進來的是後面這段裁切：機構後綴前面的敘述文字
+    長度不固定（「由中國信託商業銀行承作」vs.「另可比較玉山商業銀行」），
+    但品牌核心通常落在後綴前的最後 3~4 個字。只取最後
+    `_ENTITY_PREFIX_WINDOW` 個字，是為了不讓「由」「另可比較」這類
+    純敘述連接詞污染進比對用的名稱，否則兩邊各自帶著不同的敘述噪音，
+    模糊比對分數會被拉低到門檻以下，反而抓不到真正的錯字。
+    """
+    out: set[str] = set()
+    for m in _ENTITY_SUFFIX.finditer(text or ""):
+        cand = m.group(0)
+        suf = max((s for s in _ENTITY_SUFFIXES if cand.endswith(s)), key=len)
+        prefix = cand[:-len(suf)]
+        if len(prefix) > _ENTITY_PREFIX_WINDOW:
+            prefix = prefix[-_ENTITY_PREFIX_WINDOW:]
+        if len(prefix) < 2:
+            continue
+        out.add(prefix + suf)
+    return out
+
+
+def find_proper_noun_mismatches(answer: str, chunks: list[Chunk]) -> list[dict]:
+    """
+    找出答案裡「看起來是機構名，但檢索文本裡沒有一模一樣的，卻有高度
+    相似的」那種詞——最可能的解釋是模型把名字打錯了一兩個字。
+
+    回傳的每一筆都附上比對到的來源名稱與相似度，讓人工可以直接核對
+    是不是真的打錯，而不是只丟一句「可能有問題」。
+    """
+    known: set[str] = set()
+    for c in chunks:
+        known |= extract_entity_mentions(c.parent_content or c.child_content or "")
+    if not known:
+        return []
+
+    mentioned = extract_entity_mentions(answer) - known
+    flags = []
+    for m in sorted(mentioned):
+        best, best_score = None, 0.0
+        for k in known:
+            sc = fuzz.ratio(m, k)
+            if sc > best_score:
+                best, best_score = k, sc
+        if ENTITY_FUZZY_LOW <= best_score < ENTITY_FUZZY_EXACT:
+            flags.append({"written": m, "likely_intended": best,
+                          "similarity": round(best_score, 1)})
+    return flags
+
+
 def strip_ungrounded(pack: EvidencePack) -> EvidencePack:
     """
     把未通過驗證的主張從答案正文移除，並收進「已移除」清單。

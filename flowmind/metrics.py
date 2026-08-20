@@ -435,10 +435,38 @@ ROUTES: list[tuple[str, list[str]]] = [
 ]
 
 
+# ── 第三方機構名稱：問的是「誰」的數字 ──────────────────────────────────
+# 【這是一次真實評測抓到的失敗】105 題評測裡，「信保基金去年的呆帳率是
+# 多少？」被「呆帳」關鍵詞路由到 ageing 這個決定性指標——但 ageing
+# 算的是**本案自己**帳上的帳齡與呆帳沖銷比率，跟信保基金這個機構自己的
+# 呆帳率是兩件事。系統把本案 0.52% 的自家數字，當成信保基金的統計數字
+# 端出來，信心還打了 1.00——因為決定性路徑不經過 evidence.py 的信心與
+# 拒答閘門，這條路徑原本沒有東西能攔下這種「問錯對象」的情況。
+#
+# 修法沿用 graph.py 的 PUBLISHER_JURISDICTION（同一份機構名單，不重複維護）：
+# 問題裡一旦出現具名的第三方機構，就不走任何「算本案自己帳上數字」的
+# 決定性路由——那些指標的計算基礎是本案的 fin_invoices/fin_ledger，
+# 從結構上就不可能答得出另一個機構自己的統計。寧可讓它落到 RAG
+# （可能拒答、也可能引用到真實統計），也不要讓它套用錯的分母還打滿分信心。
+_TENANT_SCOPED_ROUTES = {"concentration", "ageing", "cashflow", "summary"}
+
+
+def _asks_about_external_entity(q: str) -> bool:
+    from . import graph                                    # noqa: PLC0415
+    names = set(graph.PUBLISHER_JURISDICTION.keys())
+    # 口語簡稱：使用者幾乎不會打全名「玉山商業銀行」，都寫「玉山銀行」——
+    # 只比對正式全名會讓這個檢查在真實提問裡形同虛設。
+    names |= {"信保基金", "玉山銀行", "中國信託銀行", "中國信託", "永豐銀行"}
+    return any(name in q for name in names)
+
+
 def route(question: str) -> list[str]:
     """回傳這個問題命中的決定性指標清單（可能多個，也可能空）。"""
     q = re.sub(r"\s+", "", question)
     keys = [key for key, kws in ROUTES if any(k in q for k in kws)]
+
+    if _asks_about_external_entity(q):
+        keys = [k for k in keys if k not in _TENANT_SCOPED_ROUTES]
 
     # 統計表查詢：問題裡若出現真實存在於統計表的類別名稱
     # （例如「機械設備製造業」「台北市」「股份有限公司」），

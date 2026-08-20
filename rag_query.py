@@ -321,6 +321,22 @@ def answer_question(tenant_id: str, question: str, top_k: int = 8,
             had_hallucination=had_hallucination, answer=pack.answer)
         evidence.apply_gates(pack)
 
+        # ── 專有名詞比對：抓敘述句（非引用）裡打錯的機構／文件名稱 ──────
+        # 逐字引用驗證只看 quote 欄位，這裡補的是它看不到的那一塊。
+        # 見 evidence.find_proper_noun_mismatches 的說明：只做「附加警示 +
+        # 轉人工複核」，不影響信心分數，因為門檻沒有校準集可依據。
+        if not pack.abstained and pack.answer:
+            pn_flags = evidence.find_proper_noun_mismatches(pack.answer, chunks)
+            if pn_flags:
+                pack.confidence_breakdown["proper_noun_flags"] = pn_flags
+                pack.needs_human_review = True
+                extra = "；".join(
+                    f"「{f['written']}」疑似應為「{f['likely_intended']}」"
+                    f"（相似度 {f['similarity']}）" for f in pn_flags)
+                pack.human_review_reason = (
+                    (pack.human_review_reason + "\n" if pack.human_review_reason else "")
+                    + f"偵測到疑似專有名詞誤植，請人工核對：{extra}")
+
         # ── 覆核代理人：跨 agent 一致性 ──────────────────────────────
         # 前面每一層各自把關自己的產出，但沒有人檢查它們**彼此說的話**
         # 是否一致。Advisor 引用合約說「帳期 90 天」（引用完全正確），

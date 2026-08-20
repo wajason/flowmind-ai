@@ -137,6 +137,41 @@ def test_citation_negative() -> None:
                   source="完全無關的檔案.pdf").verdict != Verdict.EXACT)
 
 
+BANK_TEXT = (
+    "本案供應商融資由中國信託商業銀行承作，另可比較玉山商業銀行方案。"
+)
+
+
+def _bank_chunks() -> list[Chunk]:
+    return [Chunk(source="商品說明.md", chunk_index=0, tenant_id="SHARED",
+                  child_content=BANK_TEXT, parent_content=BANK_TEXT,
+                  category="融資商品說明", dense_score=0.9,
+                  sparse_score=0.1, rrf_score=0.03)]
+
+
+def test_proper_noun_mismatch() -> None:
+    section("專有名詞比對：抓敘述句（非引用）裡打錯的機構名稱")
+    chunks = _bank_chunks()
+    flags = evidence.find_proper_noun_mismatches(
+        "本案建議透過中國承信商業銀行申請供應商融資。", chunks)
+    check("打錯一兩個字的機構名 → 被抓到", len(flags) == 1, flags)
+    check("附上比對到的正確名稱",
+          bool(flags) and flags[0]["likely_intended"] == "中國信託商業銀行", flags)
+
+    exact = evidence.find_proper_noun_mismatches(
+        "本案建議透過中國信託商業銀行申請供應商融資。", chunks)
+    check("完全正確的機構名 → 不誤報", exact == [], exact)
+
+    unrelated = evidence.find_proper_noun_mismatches(
+        "本案建議透過台北富邦商業銀行申請供應商融資。", chunks)
+    check("完全不相似的另一個機構名 → 不誤報（那是檢索沒覆蓋到，不是打錯字）",
+          unrelated == [], unrelated)
+
+    no_entity = evidence.find_proper_noun_mismatches(
+        "本案建議先確認發票金額與帳期是否一致。", chunks)
+    check("答案裡沒有機構名 → 不觸發", no_entity == [], no_entity)
+
+
 def test_confidence_gate() -> None:
     section("信心分數與拒答閘門")
     good = [_verify("信用保證成數最高九成。")]
@@ -295,8 +330,9 @@ def test_dashboard() -> None:
     """
     section("儀表板（呈現層，零重算）")
     try:
+        import json                                          # noqa: PLC0415
         from fastapi.testclient import TestClient
-        from flowmind import dashboard
+        from flowmind import dashboard, db                    # noqa: PLC0415
     except ImportError as e:                               # noqa: BLE001
         check(f"儀表板相依套件可載入（{e}）", False)
         return
@@ -333,6 +369,80 @@ def test_dashboard() -> None:
     d = r.json()
     check("信心權重可查詢且加總為 1",
           abs(sum(d["weights"].values()) - 1.0) < 1e-6, d["weights"])
+
+    r = c.get("/api/queue")
+    d = r.json()
+    check("案件佇列可讀取且每筆都有燈號", r.status_code == 200 and
+          all(x.get("light") in ("good", "warning", "critical") for x in d), d)
+    order = {"critical": 0, "warning": 1, "good": 2}
+    ranks = [order.get(x["light"], 3) for x in d]
+    check("佇列依燈號嚴重度排序（critical 在前）", ranks == sorted(ranks), ranks)
+    check("每筆案件都算得出受理天數", all(x.get("aging_days") is not None for x in d), d)
+
+    r = c.get("/self-check")
+    check("中小企業自檢入口是獨立頁面（不是同一份 dashboard.html）",
+          r.status_code == 200 and "案件佇列" not in r.text, r.status_code)
+
+    r = c.get("/api/report/CASE-9999")
+    check("自檢報告直接沿用 report.build()，回傳真正的 PDF",
+          r.status_code == 200 and r.content[:4] == b"%PDF", r.status_code)
+
+    r = c.get("/api/security")
+    d = r.json()
+    check("資安面板：連線角色檢查回傳", r.status_code == 200 and "db_role" in d, d)
+    check("資安面板：非 superuser 連線（用來查角色的連線本身不能是繞過 RLS 那條）",
+          d["db_role_is_superuser"] is False, d)
+    check("資安面板：跨案件隔離示範挑到真的有資料的兩個案件（不是 inconclusive）",
+          d["isolation"] is not None and d["isolation"]["verdict"] == "passed", d["isolation"])
+    check("資安面板：三個探測字串全部被 Zero-Trust 閘門擋下",
+          len(d["probes"]) == 3 and all(p["blocked"] for p in d["probes"]), d["probes"])
+
+    # 新增案件 + 上傳 + 立即入庫驗證，測完自己清乾淨（不留垃圾委任案）
+    test_tenant = "CASE-TESTONLY"
+    try:
+        c.get(f"/api/report/{test_tenant}")  # 確保起手式乾淨，殘留就先清掉
+        with db.tenant_session("SHARED", admin=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM engagements WHERE tenant_id = %s", (test_tenant,))
+            conn.commit()
+
+        r = c.post("/api/cases", data={"tenant_id": test_tenant, "client_name": "測試用",
+                                       "engagement_type": "測試", "industry_code": ""})
+        check("新增案件：格式正確可建立", r.status_code == 200 and
+              r.json()["tenant_id"] == test_tenant, r.text)
+
+        r = c.post("/api/cases", data={"tenant_id": "SHARED", "client_name": "x",
+                                       "engagement_type": "x", "industry_code": ""})
+        check("新增案件：拒絕使用 SHARED 這個保留字當案件編號", r.status_code == 400)
+
+        import io
+        recv = json.dumps([{"invoice_number": "T-001", "buyer_name": "測試買方",
+                            "buyer_ban": "22099131", "seller_name": "測試賣方",
+                            "seller_ban": "84726193", "invoice_date": "2026-01-01",
+                            "due_date": "2026-03-01", "sales_amount": 1000,
+                            "tax_amount": 50, "total_amount": 1050,
+                            "payment_terms_days": 60, "status": "PENDING"}]).encode()
+        r = c.post(f"/api/cases/{test_tenant}/upload",
+                   files={"receivables": ("receivables.json", io.BytesIO(recv),
+                                          "application/json")})
+        check("上傳並立即入庫：與 CLI 走同一支 financials.ingest()，回報實際筆數",
+              r.status_code == 200 and r.json()["ingested"]["invoices"] == 1, r.text)
+
+        r = c.get(f"/api/crosscheck/{test_tenant}")
+        check("上傳後立即可查——不需要另外跑一次批次匯入",
+              r.status_code == 200 and r.json()["documents_examined"]["invoices"] == 1,
+              r.text)
+    finally:
+        with db.tenant_session(test_tenant) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM fin_invoices")
+            conn.commit()
+        with db.tenant_session("SHARED", admin=True) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM engagements WHERE tenant_id = %s", (test_tenant,))
+            conn.commit()
+        import shutil                                          # noqa: PLC0415
+        shutil.rmtree(config.RAW_DIR / test_tenant, ignore_errors=True)
 
     # 呈現層不得變成第二套邏輯
     import inspect
@@ -710,6 +820,28 @@ def test_hpes() -> None:
     r_cord = score([FieldPrediction("tax_id", None)], {"tax_id": None})
     check("標準答案為 null 時留白算正確留白", r_cord.abstain_correct == 1)
 
+    # 全量重跑 CORD 反事實擾動時實際發生過：risk_coverage() 在沒有任何
+    # 「答對／答錯」欄位時（全數留白）少回傳幾個 key，render_report() 存取
+    # rc['overall_risk'] 直接 KeyError 崩潰，整個 suite 的報告因此沒有寫出來。
+    r_all_abstain = score([FieldPrediction("total", None)], {"total": "1197000"})
+    rc_empty = verifin.risk_coverage([r_all_abstain])
+    check("全數留白時 risk_coverage 仍回傳完整欄位結構（不缺 key）",
+          {"n", "aurc", "target_risk", "coverage_at_target_risk",
+           "overall_risk", "curve", "interpretation"} <= set(rc_empty.keys()),
+          rc_empty)
+    rep = {"dataset": "T", "model": "m", "n_documents": 1,
+           "HPES": verifin.hpes([r_all_abstain]),
+           "CVR": verifin.cvr([r_all_abstain]),
+           "RiskCoverage": rc_empty}
+    try:
+        verifin.render_report(rep)
+        rendered_ok = True
+    except KeyError as e:                                     # noqa: BLE001
+        rendered_ok = False
+        check("render_report 不因空的 risk_coverage 結果崩潰", False, str(e))
+    if rendered_ok:
+        check("render_report 不因空的 risk_coverage 結果崩潰", True)
+
 
 def test_counterfactual() -> None:
     section("VeriFin 反事實擾動")
@@ -724,6 +856,36 @@ def test_counterfactual() -> None:
           all(str(new_gold[f]) in new_text for f in changed))
     check("擾動後格式保持一致（仍有千分位）",
           "," in new_gold.get("total", ",") if "total" in changed else True)
+
+
+def test_verifin_resilience() -> None:
+    """
+    全量重跑跑好幾個小時，一份文件卡住不該讓前面幾百份的結果全部白費。
+
+    這不是假設性的——全量重跑時真的發生過：某份文件的 Ollama 請求卡住，
+    httpx 逾時前完全沒有任何輸出，`run_doc()` 沒有 try/except，
+    一次逾時就讓整支腳本崩潰，前面已經跑完的幾百份文件全部要重來。
+    """
+    section("VeriFin 全量重跑容錯（run_doc_safe）")
+    import scripts.run_verifin as rv                            # noqa: PLC0415
+
+    def _boom(*a, **k):
+        raise TimeoutError("模擬逾時")
+
+    orig = rv.llm.extract_json
+    rv.llm.extract_json = _boom
+    try:
+        row = {"doc_id": "T-CRASH", "ask_fields": ["total", "buyer"],
+               "text": "x", "gold": {}}
+        preds, diag = rv.run_doc_safe(row, "m")
+    finally:
+        rv.llm.extract_json = orig
+
+    check("逾時不會讓呼叫端崩潰（run_doc_safe 吞下例外）", True)
+    check("逾時的文件每個欄位都計為留白，不是編一個答案出來",
+          all(p.value is None for p in preds), preds)
+    check("診斷資訊老實記下失敗原因，不是靜默裝作沒事",
+          diag.get("strict") is False and "TimeoutError" in diag.get("error", ""), diag)
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -769,6 +931,17 @@ def test_router() -> None:
     check("法規問題不走決定性路徑（應交給 RAG）",
           metrics.route("無追索權承購的法律依據是什麼？") == [],
           metrics.route("無追索權承購的法律依據是什麼？"))
+
+    # 105 題評測實際抓到的失敗：「信保基金去年的呆帳率是多少？」被「呆帳」
+    # 關鍵詞誤路由到 ageing（本案自己帳上的呆帳沖銷比率），把本案 0.52%
+    # 的自家數字當成信保基金的統計數字端出來，還打信心 1.00。
+    r = metrics.route("信保基金去年的呆帳率是多少？")
+    check("問第三方機構自己的數字，不走本案帳齡計算（曾經誤路由並打信心1.00）",
+          "ageing" not in r, r)
+    r2 = metrics.route("玉山銀行的呆帳率去年是多少？")
+    check("問其他具名機構的數字，同樣不走本案帳齡計算", "ageing" not in r2, r2)
+    check("問本案自己的帳齡狀況，路由不受影響（不能因噎廢食）",
+          "ageing" in metrics.route("我們自己的逾期狀況如何？"))
 
 
 def test_auditor() -> None:
@@ -1001,9 +1174,10 @@ def metrics_route(q: str):
 # 一個「要先開 Docker 才能跑」的測試，實務上不會有人跑。
 CORE_TESTS = (
     test_tax_id, test_cjk, test_citation_positive, test_citation_negative,
+    test_proper_noun_mismatch,
     test_confidence_gate, test_claim_corroboration, test_hpes,
-    test_counterfactual, test_crosscheck, test_router, test_scope_terms,
-    test_guardrail, test_auditor,
+    test_counterfactual, test_verifin_resilience, test_crosscheck, test_router,
+    test_scope_terms, test_guardrail, test_auditor,
 )
 INTEGRATION_TESTS = (
     test_query_plan,             # 需要 kg_nodes

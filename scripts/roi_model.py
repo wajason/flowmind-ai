@@ -30,8 +30,13 @@ roi_model.py — 導入效益試算（參數化、可被質疑、可被重算）
 具名來源（IOFM / McKinsey / Deloitte）僅作為「數量級方向性佐證」，
 且我們是透過二手整理取得，未直接讀原始報告 —— 這一點也如實標註。
 
-自動化比例是唯一的例外：它不是假設，是從 VeriFin 的 Risk-Coverage
-曲線**實際量測**出來的（見 --measured-coverage 參數）。
+自動化比例**曾經**是唯一的例外——12 份文件的小樣本測出 60% 時，
+一度當成「唯一實測而非假設」的參數。2026-08-20 全量重跑（361 份）
+推翻了這個做法：模型自報的信心分數在全量下幾乎不能預測答案對不對
+（AURC 0.34，coverage_at_target_risk 只有 0.14%），繼續拿它當自動化
+比例的量測依據，等於拿一個沒有鑑別力的訊號冒充有鑑別力。
+**這個參數現在退回推算等級**，跟其他參數一樣待驗證——
+詳細揭露見 --show-assumptions 與 docs/DECISIONS.md D-27。
 
 Usage:
     python scripts/roi_model.py                      # 預設情境
@@ -137,16 +142,23 @@ ASSUMPTIONS = [
         "param": "automation_ratio",
         "label": "可自動化比例",
         "default": 0.60,
-        "basis": "★ 實際量測（非假設）",
+        "basis": "⚠️ 推算（原本標為「實際量測」，已被全量重跑推翻，見下方揭露）",
         "reasoning": (
-            "來自 VeriFin 的 Risk-Coverage 曲線："
-            "在錯誤率壓到 5% 以下的前提下，系統能自動處理的欄位比例。"
-            "其餘一律轉人工。這是本模型中唯一**量測**而非推估的參數，"
-            "而且可以寫進導入合約作為驗收標準。"),
+            "原本的做法：拿 VeriFin 的 Risk-Coverage 曲線——"
+            "在錯誤率壓到 5% 以下的前提下，系統能自動處理的欄位比例——"
+            "當作這個參數的量測值。12 份文件的小樣本測出 60%。"),
         "directional_support": "可用 python scripts/run_verifin.py 重跑驗證。",
         "source_caveat": (
-            "目前的量測樣本僅 12 份文件，且為域外 benchmark（SROIE）。"
-            "正式導入前必須以客戶自己的文件重新量測。"),
+            "★ 2026-08-20 全量重跑（SROIE 361 份文件）推翻了這個做法："
+            "coverage_at_target_risk 只有 0.14%（AURC 0.34，風險曲線幾乎打平），"
+            "代表模型自報的信心分數在全量下**幾乎不能預測答案對不對**——"
+            "不是系統不準（SROIE 整體準確率仍有 65.2%），是「用信心分數決定"
+            "要不要自動放行」這個機制本身失靈。用它繼續當自動化比例的量測依據，"
+            "是在拿一個沒有鑑別力的訊號冒充有鑑別力。\n"
+            "      這正是本產品把 crosscheck.py 設計成**零 LLM、決定性規則**的理由——"
+            "不信任模型自報的信心去做風險判斷。0.60 這個預設值**保留但退回推算等級**，"
+            "不再宣稱是實測；正式導入前，這個參數應該改用 crosscheck 引擎在客戶真實"
+            "文件上的覆蓋率／可靠度重新量測，而不是 LLM 自由格式抽取的信心分數。"),
     },
 ]
 
@@ -201,8 +213,10 @@ def show_assumptions() -> None:
     print("═" * 78)
     print("  ROI 模型的全部假設與出處")
     print("═" * 78)
-    print("\n⚠️  除了「可自動化比例」以外，以下全部是 bottom-up 推算的**假設值**，")
-    print("    不是實測值。任何一項都可以被質疑、被替換。\n")
+    print("\n⚠️  以下全部是 bottom-up 推算的**假設值**，沒有一項是實測值。")
+    print("    「可自動化比例」原本是唯一的例外，2026-08-20 全量重跑後")
+    print("    已推翻降級（見下方該項與 docs/DECISIONS.md D-27）。")
+    print("    任何一項都可以被質疑、被替換。\n")
     for a in ASSUMPTIONS:
         star = "★ " if a["basis"].startswith("★") else ""
         print("─" * 78)
@@ -228,7 +242,7 @@ def render(r: RoiResult, scenario: str) -> str:
         f"  撰寫核對紀錄              {p['min_report_writing']:>10.1f} 分鐘／案",
         f"  授信人員全負擔時薪        {p['hourly_cost']:>10,.0f} 元",
         f"  每月受理案件數            {p['cases_per_month']:>10,} 件",
-        f"  可自動化比例（★實測）     {p['automation_ratio']:>10.0%}",
+        f"  可自動化比例（⚠️ 推算，見 --show-assumptions） {p['automation_ratio']:>10.0%}",
         "",
         "【推算結果】",
         f"  單案人工核對工時          {r.manual_hours_per_case:>10.2f} 小時",
