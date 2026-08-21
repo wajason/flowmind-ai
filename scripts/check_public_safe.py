@@ -5,15 +5,20 @@ check_public_safe.py — 提交前檢查：不該公開的內容有沒有混進�
 【為什麼需要這支腳本】
 
 這個 repository 是公開的，但團隊本機有一些不對外的文件。
-把它們排除在 .gitignore 只擋得住「不小心 git add」，擋不住另外三種外洩：
+把它們排除在 .gitignore 只擋得住「不小心 git add」，擋不住另外四種外洩：
 
   1. `git add -f` 強制加入
   2. **新檔案**用了不同的檔名，但內容一樣不該公開
   3. **commit 訊息**本身寫出了不該說的內容
+  4. **修正用的 commit 本身**——diff 會同時顯示修改前與修改後
 
-第 3 種最容易被忽略，而且傷害最大：檔案內容就算清乾淨了，
-一句「移除了 XXX 內部文件」的 commit 訊息，等於公告「這裡藏了東西、
-它叫什麼名字、為什麼藏」。本專案實際踩過這個坑，所以把檢查自動化。
+第 3、4 種最容易被忽略。本專案兩者都實際踩過：
+先是 commit 訊息寫著「移除了 XXX 內部文件」，等於公告「這裡藏了東西、
+它叫什麼名字、為什麼藏」；發現後改用「再 commit 一次」把說明文字改掉，
+結果那個修正 commit 的 diff 又把原文完整展示出來。
+
+**歷史裡的東西不能靠新 commit 蓋掉**——檔案內容要用
+`git filter-repo --replace-text`，commit 訊息要用 `--replace-message`。
 
 【為什麼詞彙清單放在版控外】
 
@@ -29,7 +34,7 @@ check_public_safe.py — 提交前檢查：不該公開的內容有沒有混進�
 Usage:
     python scripts/check_public_safe.py --staged        # 檢查暫存區（pre-commit 用）
     python scripts/check_public_safe.py --msg <file>    # 檢查 commit 訊息（commit-msg 用）
-    python scripts/check_public_safe.py --all           # 檢查整個工作目錄與全部歷史訊息
+    python scripts/check_public_safe.py --all           # 檢查工作目錄 + 全部歷史訊息 + 全部歷史檔案內容
 """
 
 from __future__ import annotations
@@ -148,6 +153,22 @@ def check_all(terms: list[str]) -> int:
         if t in history:
             problems.append(f"歷史 commit 訊息含私有詞彙：「{t}」"
                             "（需 git filter-repo --replace-message 才能清除）")
+
+    # ── 歷史「檔案內容」也要掃，不能只掃當前檔案 ──────────────────────
+    #
+    # 這是實際漏掉過的一種情況：把某個檔案裡的敏感說明改掉之後，
+    # 當前版本乾淨了、commit 訊息也乾淨了，但**那個修正 commit 的 diff
+    # 會同時顯示修改前與修改後**——舊內容永遠留在 GitHub 的 diff 畫面上。
+    #
+    # 換句話說：用「再 commit 一次」修內容，等於把要藏的東西又展示一遍。
+    # 歷史裡的檔案內容只能靠 `git filter-repo --replace-text` 重寫。
+    for t in terms:
+        found = _git("log", "--all", "--oneline", "-S", t).strip()
+        if found:
+            n = len(found.splitlines())
+            problems.append(
+                f"歷史檔案內容含私有詞彙：「{t}」（{n} 個 commit 的 diff 看得到；"
+                "需 git filter-repo --replace-text 才能清除）")
     return report(problems, "全庫與歷史")
 
 
