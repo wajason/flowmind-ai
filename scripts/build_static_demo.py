@@ -92,7 +92,15 @@ def main() -> None:
             raise SystemExit(f"{path} → {r.status_code}: {r.text[:200]}")
         return r.json()
 
+    # --no-qa 時保留既有的問答快照（那是唯一需要 LLM 的部分，重抓要好幾分鐘）
+    kept_qa: dict[str, Path] = {}
     if DATA.exists():
+        if args.no_qa:
+            import tempfile                                # noqa: PLC0415
+            stash = Path(tempfile.mkdtemp(prefix="flowmind_qa_"))
+            for qa in DATA.glob("*/qa"):
+                shutil.copytree(qa, stash / qa.parent.name)
+                kept_qa[qa.parent.name] = stash / qa.parent.name
         shutil.rmtree(DATA)
     (DEMO / "report").mkdir(parents=True, exist_ok=True)
 
@@ -125,6 +133,9 @@ def main() -> None:
         if r.status_code == 200:
             (DEMO / "report" / f"{t}.pdf").write_bytes(r.content)
             print("   報告 PDF ✓")
+        if args.no_qa and t in kept_qa:
+            shutil.copytree(kept_qa[t], DATA / t / "qa")
+            print("   問答快照沿用既有")
         if not args.no_qa:
             index = {}
             for i, q in enumerate(QA_QUESTIONS, 1):

@@ -169,6 +169,8 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
     by_buyer = {normalize_tax_id(c.get("buyer_ban")): c for c in contracts
                 if c.get("buyer_ban")}
     term_mismatch, date_mismatch = [], []
+    # 帳期不符的另一半證據是合約本身——refs 兩邊都列，回查時發票與合約可以並排看。
+    term_contracts: list[str] = []
 
     for inv in invoices:
         idate, ddate = _d(inv.get("invoice_date")), _d(inv.get("due_date"))
@@ -181,6 +183,9 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
             if int(terms) != int(c["payment_terms_days"]):
                 term_mismatch.append(
                     f"{inv.get('invoice_number')}(發票{terms}天/合約{c['payment_terms_days']}天)")
+                cref = f"{c.get('contract_number')}(合約{c['payment_terms_days']}天)"
+                if c.get("contract_number") and cref not in term_contracts:
+                    term_contracts.append(cref)
 
     findings = [Finding(
         "TERM-01", "到期日與帳期一致性", Severity.WARNING, not date_mismatch,
@@ -193,7 +198,7 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
             "TERM-02", "發票帳期 vs 合約帳期", Severity.WARNING, not term_mismatch,
             "發票帳期與合約約定一致。" if not term_mismatch else
             f"{len(term_mismatch)} 張發票的帳期與合約不符：" + "、".join(term_mismatch[:5]),
-            refs=term_mismatch[:20]))
+            refs=term_mismatch[:20] + term_contracts[:5]))
     else:
         findings.append(Finding(
             "TERM-02", "發票帳期 vs 合約帳期", Severity.INFO, True,
