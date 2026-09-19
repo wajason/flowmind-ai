@@ -6,7 +6,7 @@
   "industry_code": "C29",
   "status": "active",
   "intake_date": "2026-08-07",
-  "aging_days": 43,
+  "aging_days": 44,
   "light": "warning",
   "alert_counts": {
    "critical": 0,
@@ -21,7 +21,7 @@
   "industry_code": "G45",
   "status": "active",
   "intake_date": "2026-08-07",
-  "aging_days": 43,
+  "aging_days": 44,
   "light": "good",
   "alert_counts": {
    "critical": 0,
@@ -36,7 +36,7 @@
   "industry_code": "C29",
   "status": "active",
   "intake_date": "2026-08-07",
-  "aging_days": 43,
+  "aging_days": 44,
   "light": "good",
   "alert_counts": {
    "critical": 0,

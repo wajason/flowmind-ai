@@ -17,7 +17,7 @@
  "simulated": {
   "curve": [
    {
-    "date": "2026-10-09",
+    "date": "2026-10-10",
     "balance": -20000000.0,
     "amount": -20000000.0,
     "type": "outflow",
@@ -25,10 +25,10 @@
    }
   ],
   "gap_detected": true,
-  "gap_date": "2026-10-09",
+  "gap_date": "2026-10-10",
   "gap_amount": -20000000.0,
   "trough_balance": -20000000,
-  "trough_date": "2026-10-09"
+  "trough_date": "2026-10-10"
  },
  "delta": {
   "trough_drop": 20000000,

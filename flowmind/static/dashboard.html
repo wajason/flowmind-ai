@@ -210,6 +210,17 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .ev-box .close { float: right; background: transparent; border: none; color: var(--ink-muted);
                   font-size: 24px; cursor: pointer; line-height: 1; }
 .ev-hit { border: 1px solid var(--ring); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.ev-box.wide { max-width: 1180px; }
+.ev-cmp { width: 100%; border-collapse: collapse; }
+.ev-cmp th { text-align: left; padding: 6px 10px; font-size: 16px; border-bottom: 2px solid var(--ring); }
+.ev-cmp th .kind { display: inline-block; background: var(--s1); color: #fff; font-size: 13px;
+                   padding: 1px 8px; border-radius: 999px; margin-right: 6px; }
+.ev-cmp td { padding: 5px 10px; font-size: 16.5px; border-bottom: 1px solid var(--ring); vertical-align: top; }
+.ev-cmp td.k { color: var(--ink-muted); white-space: nowrap; width: 1%; }
+.ev-cmp tr.diff td { background: rgba(220,38,38,.08); font-weight: 700; }
+.ev-cmp tr.diff td.k { color: var(--critical); }
+.ev-cmp tr.diff td.k::before { content: "≠ "; }
+.ref-chip.cmp { background: var(--s1); color: #fff; font-family: inherit; }
 .ev-hit .kind { display: inline-block; background: var(--s1); color: #fff; font-size: 14px;
                  padding: 2px 9px; border-radius: 999px; margin-bottom: 8px; }
 .ev-hit table { width: 100%; border-collapse: collapse; }
@@ -439,7 +450,7 @@ async function loadCross(t) {
                 // 附註是給人看的，查詢跟按鈕文字都只該用前面乾淨的那段 ID。
                 const clean = String(r).split('(')[0].trim();
                 return `<span class="ref-chip" onclick="event.stopPropagation();showEvidence('${esc(t)}','${esc(clean)}')">🔍 ${esc(clean)}</span>`;
-              }).join('')}</div>` : ''}</div>`).join('')}
+              }).join('') + compareChip(t, i)}</div>` : ''}</div>`).join('')}
           </div></div>`).join('') + '</div>';
   } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
 }
@@ -482,7 +493,53 @@ async function showEvidence(tenant, ref) {
   }
 }
 
-function closeEvidence() { $('#evidence-modal').classList.remove('open'); }
+function closeEvidence() { $('#evidence-modal').classList.remove('open'); $('.ev-box').classList.remove('wide'); }
+
+// ── 並排比對 ──────────────────────────────────────────────────────────
+// 跨文件的不一致，本質上是「兩份各自正確的記錄放在一起才矛盾」。
+// 一次只看一份原始記錄，使用者得自己記住上一份的欄位再心算；
+// 把涉及的記錄並排、把不一致的欄位標出來，才是這條警示真正要人看的東西。
+// 差異判定純粹是欄位值比對（模型外、可重算），不做任何判讀。
+const CMP_SKIP = new Set(['doc_type', 'source_note']);   // 註記性欄位，不算差異
+function compareChip(tenant, item) {
+  if (item.passed || !item.refs || item.refs.length < 2 || item.refs.length > 4) return '';
+  const refs = item.refs.map(r => String(r).split('(')[0].trim());
+  return `<span class="ref-chip cmp" onclick="event.stopPropagation();compareEvidence('${esc(tenant)}',${esc(JSON.stringify(refs))})">⇄ 並排比對</span>`;
+}
+async function compareEvidence(tenant, refs) {
+  const modal = $('#evidence-modal');
+  modal.classList.add('open'); $('.ev-box').classList.add('wide');
+  $('#ev-title').textContent = `⇄ 並排比對：${refs.join('　')}`;
+  $('#ev-sub').textContent = '正在從原始檔案回查……';
+  $('#ev-body').innerHTML = '';
+  try {
+    const hits = await Promise.all(refs.map(async r => {
+      const d = await get(`/api/cases/${tenant}/lookup/${encodeURIComponent(r)}`);
+      return d.hits[0] ? { ref: r, ...d.hits[0] } : null;
+    }));
+    const cols = hits.filter(Boolean);
+    const keys = [...new Set(cols.flatMap(c => Object.keys(c.record)))].filter(k => !CMP_SKIP.has(k));
+    let ndiff = 0;
+    const rows = keys.map(k => {
+      const vals = cols.map(c => c.record[k]);
+      const present = vals.filter(v => v !== undefined && v !== null && v !== '');
+      const diff = present.length >= 2 && new Set(present.map(String)).size > 1;
+      if (diff) ndiff++;
+      return `<tr class="${diff ? 'diff' : ''}"><td class="k">${esc(FIELD_LABEL[k] || k)}</td>${
+        vals.map(v => `<td>${v == null ? '<span style="color:var(--ink-muted)">—</span>' : esc(v)}</td>`).join('')}</tr>`;
+    });
+    $('#ev-sub').textContent = ndiff
+      ? `${cols.length} 份原始記錄並排；紅色列是兩邊都有、但值不一樣的欄位（共 ${ndiff} 個）——這就是警示指的地方。`
+      : `${cols.length} 份原始記錄並排；共同欄位沒有不一致，請看各自的內容。`;
+    $('#ev-body').innerHTML = `<div class="scroll"><table class="ev-cmp"><thead><tr><th></th>${
+      cols.map(c => `<th><span class="kind">${esc(c.kind)}</span>${esc(c.ref)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>
+      <div class="src" style="margin-top:10px;font-size:14.5px;color:var(--ink-muted)">來源檔案：${
+      [...new Set(cols.map(c => c.source_file))].map(f => `<code>data/raw/${esc(tenant)}/${esc(f)}</code>`).join('　')}</div>`;
+  } catch (e) {
+    $('#ev-sub').textContent = '';
+    $('#ev-body').innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+}
 
 // 目前開啟的案件。沒有全域下拉選單了——案件是從佇列點進來的。
 let currentTenant = null;

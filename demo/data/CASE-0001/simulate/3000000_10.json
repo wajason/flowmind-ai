@@ -39,7 +39,7 @@
     "counterparty": "隆陞機械股份有限公司"
    },
    {
-    "date": "2026-09-29",
+    "date": "2026-09-30",
     "balance": -2938687.0,
     "amount": -3000000.0,
     "type": "outflow",
@@ -54,10 +54,10 @@
    }
   ],
   "gap_detected": true,
-  "gap_date": "2026-09-29",
+  "gap_date": "2026-09-30",
   "gap_amount": -2938687.0,
   "trough_balance": -2938687,
-  "trough_date": "2026-09-29"
+  "trough_date": "2026-09-30"
  },
  "delta": {
   "trough_drop": 3000000,
