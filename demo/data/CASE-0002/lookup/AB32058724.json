@@ -1,0 +1,40 @@
+{
+ "ref": "AB32058724",
+ "tenant": "CASE-0002",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB32058724",
+    "invoice_date": "2026-03-16",
+    "seller_ban": "88778933",
+    "seller_name": "鴻達機電企業有限公司",
+    "buyer_ban": "55145064",
+    "buyer_name": "晶宇機械股份有限公司",
+    "sales_amount": 935875,
+    "tax_amount": 46794,
+    "total_amount": 982669,
+    "payment_terms_days": 30,
+    "due_date": "2026-04-15",
+    "status": "PAID",
+    "paid_date": "2026-04-14",
+    "buyer_payment_behaviour": "偏慢",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2026-04-14",
+    "description": "匯入-晶宇機械股份有限公司",
+    "counterparty_ban": "55145064",
+    "reference": "AB32058724",
+    "amount": 982669.0,
+    "balance": "16854747"
+   }
+  }
+ ]
+}

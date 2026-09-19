@@ -8,7 +8,7 @@ check_docs_consistency.py — 文件裡的數字必須與實際跑出來的一�
 這不是誰不小心 —— 而是**同一個事實被抄寫在十幾個地方**，
 每次改動都要人記得全部更新，那注定會失效。
 
-在一份要交給評審、要說服金融機構的技術文件裡，
+在一份要說服金融機構的技術文件裡，
 數字對不上比數字不好看嚴重得多：它會讓人合理懷疑**其他所有數字**。
 
 所以把「文件宣稱的數字」變成**可執行的檢查**：
@@ -48,10 +48,8 @@ sys.path.insert(0, str(ROOT))
 # 要掃描的文件。刻意逐一列出而不是掃全部 *.md ——
 # scratch 筆記、第三方文件的數字不歸我們管。
 #
-# 註：清單中的競賽文件（PROPOSAL*／BUSINESS_CASE／簡報／HANDOVER 等）
-# 不在公開 repository 內（詳見 .gitignore 的說明）。
-# 這裡刻意保留它們的路徑：團隊本機仍有這些檔案、需要被一起檢查；
-# 而 scan() 對不存在的檔案會直接跳過，因此公開版執行不會出錯。
+# 清單中的檔案不一定都存在（各環境的本機工作檔不同）；
+# scan() 對不存在的檔案直接跳過。
 DOCS = [
     "README.md", "HANDOVER.md", "ONE_PAGER.md",
     "docs/SDD.md", "docs/PROPOSAL.md", "docs/PROPOSAL_SUBMISSION.md",

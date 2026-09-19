@@ -1,0 +1,28 @@
+{
+ "ref": "AB99853245",
+ "tenant": "CASE-0001",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB99853245",
+    "invoice_date": "2026-05-20",
+    "seller_ban": "20433212",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "13056414",
+    "buyer_name": "德宇機械股份有限公司",
+    "sales_amount": 3000,
+    "tax_amount": 150,
+    "total_amount": 3150,
+    "payment_terms_days": 60,
+    "due_date": "2026-07-19",
+    "status": "OVERDUE",
+    "paid_date": null,
+    "buyer_payment_behaviour": "不穩定",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  }
+ ]
+}

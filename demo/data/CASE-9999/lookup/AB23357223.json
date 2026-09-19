@@ -1,0 +1,40 @@
+{
+ "ref": "AB23357223",
+ "tenant": "CASE-9999",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB23357223",
+    "invoice_date": "2025-01-05",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "69083011",
+    "buyer_name": "銘陽自動化科技有限公司",
+    "sales_amount": 4181,
+    "tax_amount": 209,
+    "total_amount": 4390,
+    "payment_terms_days": 60,
+    "due_date": "2025-03-06",
+    "status": "PAID",
+    "paid_date": "2025-03-04",
+    "buyer_payment_behaviour": "準時",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2025-03-04",
+    "description": "匯入-銘陽自動化科技有限公司",
+    "counterparty_ban": "69083011",
+    "reference": "AB23357223",
+    "amount": 4390.0,
+    "balance": "5618256"
+   }
+  }
+ ]
+}

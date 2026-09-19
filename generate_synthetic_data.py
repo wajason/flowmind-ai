@@ -9,7 +9,7 @@ v4 相對 v3 的四項修正，全部是被 flowmind/crosscheck.py 的決定性�
 
   1. 統一編號真的通過財政部檢核碼演算法。
      v3 的 docstring 寫著「通過檢查碼規則」，但實作只是隨機 8 碼數字——
-     90 張發票有 73 張的統編根本不可能存在。這在 demo 現場被評審拿計算機一算就穿幫。
+     90 張發票有 73 張的統編根本不可能存在。任何人拿檢核碼一算就穿幫。
 
   2. 導入「客戶主檔」。v3 每開一張發票就重新隨機一組 buyer_ban，
      結果同一個買方名稱底下有十幾個不同統編。這讓買方集中度、合約勾稽、
@@ -31,7 +31,7 @@ v4 相對 v3 的四項修正，全部是被 flowmind/crosscheck.py 的決定性�
 
 用法：
   python generate_synthetic_data.py --company "宏昇機械" --industry 精密機械 --seed 42
-  python generate_synthetic_data.py --stress          # 決賽 demo 的現金缺口情境
+  python generate_synthetic_data.py --stress          # 現金缺口壓力情境
 """
 
 from __future__ import annotations

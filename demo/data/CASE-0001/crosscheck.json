@@ -1,0 +1,297 @@
+{
+ "tenant": "CASE-0001",
+ "integrity_score": 0.957,
+ "critical_failures": 0,
+ "submission_ready": true,
+ "documents_examined": {
+  "invoices": 90,
+  "contracts": 4,
+  "bank_transactions": 170
+ },
+ "as_of": "2026-09-19",
+ "groups": [
+  {
+   "name": "憑證真偽",
+   "status": "good",
+   "passed": 2,
+   "total": 2,
+   "items": [
+    {
+     "id": "TAXID-01",
+     "title": "統一編號檢核碼",
+     "passed": true,
+     "severity": "critical",
+     "detail": "全部統編通過財政部檢核碼演算法。",
+     "refs": []
+    },
+    {
+     "id": "FRAUD-01",
+     "title": "自我交易偵測",
+     "passed": true,
+     "severity": "critical",
+     "detail": "未發現買賣方統編相同的發票。",
+     "refs": []
+    }
+   ]
+  },
+  {
+   "name": "金額算術",
+   "status": "good",
+   "passed": 5,
+   "total": 5,
+   "items": [
+    {
+     "id": "ARITH-01",
+     "title": "發票金額加總一致性",
+     "passed": true,
+     "severity": "critical",
+     "detail": "所有發票的銷售額＋稅額＝總額。",
+     "refs": []
+    },
+    {
+     "id": "ARITH-02",
+     "title": "營業稅率合理性(5%)",
+     "passed": true,
+     "severity": "warning",
+     "detail": "稅額皆符合 5% 營業稅。",
+     "refs": []
+    },
+    {
+     "id": "AMT-01",
+     "title": "發票金額須為正數",
+     "passed": true,
+     "severity": "critical",
+     "detail": "所有發票金額皆為正數。",
+     "refs": []
+    },
+    {
+     "id": "AMT-02",
+     "title": "稅額不得為負",
+     "passed": true,
+     "severity": "critical",
+     "detail": "無負稅額。",
+     "refs": []
+    },
+    {
+     "id": "AMT-03",
+     "title": "單筆金額量級合理性",
+     "passed": true,
+     "severity": "warning",
+     "detail": "單筆金額量級正常。",
+     "refs": []
+    }
+   ]
+  },
+  {
+   "name": "重複請款",
+   "status": "good",
+   "passed": 3,
+   "total": 3,
+   "items": [
+    {
+     "id": "DUP-01",
+     "title": "發票號碼唯一性",
+     "passed": true,
+     "severity": "critical",
+     "detail": "發票號碼無重複。",
+     "refs": []
+    },
+    {
+     "id": "DUP-02",
+     "title": "疑似重複請款",
+     "passed": true,
+     "severity": "warning",
+     "detail": "未發現同買方、同金額、同日期的可疑重複。",
+     "refs": []
+    },
+    {
+     "id": "SEQ-01",
+     "title": "同一買方發票連號偵測",
+     "passed": true,
+     "severity": "warning",
+     "detail": "未發現同一買方的發票號碼連續。",
+     "refs": []
+    }
+   ]
+  },
+  {
+   "name": "跨文件勾稽",
+   "status": "warning",
+   "passed": 7,
+   "total": 8,
+   "items": [
+    {
+     "id": "RELATED-01",
+     "title": "關係企業徵兆（統編前綴相似）",
+     "passed": true,
+     "severity": "info",
+     "detail": "未發現買賣方統編前綴高度相似的情形。",
+     "refs": []
+    },
+    {
+     "id": "TERM-01",
+     "title": "到期日與帳期一致性",
+     "passed": true,
+     "severity": "warning",
+     "detail": "所有發票到期日 = 開立日 + 約定帳期。",
+     "refs": []
+    },
+    {
+     "id": "TERM-02",
+     "title": "發票帳期 vs 合約帳期",
+     "passed": true,
+     "severity": "warning",
+     "detail": "發票帳期與合約約定一致。",
+     "refs": []
+    },
+    {
+     "id": "TERM-03",
+     "title": "發票開立日 vs 合約生效日",
+     "passed": true,
+     "severity": "warning",
+     "detail": "所有發票的開立日都在合約生效之後。",
+     "refs": []
+    },
+    {
+     "id": "CONTRACT-01",
+     "title": "重大發票的合約支撐",
+     "passed": false,
+     "severity": "warning",
+     "detail": "7 張重大金額發票的買方無合約：AB23209423、AB83863413、AB84593961、AB33763566、AB69849511。銀行通常要求重大交易附合約。",
+     "refs": [
+      "AB23209423",
+      "AB83863413",
+      "AB84593961",
+      "AB33763566",
+      "AB69849511",
+      "AB32520277",
+      "AB26247735"
+     ]
+    },
+    {
+     "id": "CONTRACT-02",
+     "title": "累計開票 vs 年度承諾額",
+     "passed": true,
+     "severity": "warning",
+     "detail": "累計開票未超出合約承諾額。",
+     "refs": []
+    },
+    {
+     "id": "BANK-01",
+     "title": "收款與銀行流水勾稽",
+     "passed": true,
+     "severity": "critical",
+     "detail": "已收款發票中有 100% 能在銀行流水找到對應入帳（其中 79 張以發票號碼直接勾稽，屬強證據）。所有已收款發票皆有對應入帳。",
+     "refs": []
+    },
+    {
+     "id": "LEDGER-01",
+     "title": "銀行流水餘額連續性",
+     "passed": true,
+     "severity": "critical",
+     "detail": "所有流水的餘額皆等於前筆餘額加本筆金額。",
+     "refs": []
+    }
+   ]
+  },
+  {
+   "name": "鑑識會計",
+   "status": "good",
+   "passed": 6,
+   "total": 6,
+   "items": [
+    {
+     "id": "DATE-01",
+     "title": "發票日期不得為未來",
+     "passed": true,
+     "severity": "critical",
+     "detail": "無未來日期發票。",
+     "refs": []
+    },
+    {
+     "id": "DATE-02",
+     "title": "到期日不得早於開立日",
+     "passed": true,
+     "severity": "critical",
+     "detail": "所有到期日皆晚於開立日。",
+     "refs": []
+    },
+    {
+     "id": "DATE-03",
+     "title": "帳期合理性(≤365天)",
+     "passed": true,
+     "severity": "warning",
+     "detail": "帳期皆在一年以內。",
+     "refs": []
+    },
+    {
+     "id": "FORENSIC-01",
+     "title": "整數金額比例",
+     "passed": true,
+     "severity": "warning",
+     "detail": "銷售額為萬元整數者占 2.2%（2/90）。屬正常範圍。",
+     "refs": []
+    },
+    {
+     "id": "FORENSIC-02",
+     "title": "班佛定律首位數字檢定",
+     "passed": true,
+     "severity": "warning",
+     "detail": "樣本 90 筆，卡方統計量 χ²=6.67（自由度 8，α=0.05 臨界值 15.51）。\n      首位數字分布：1:24、2:11、3:13、4:8、5:10、6:7、7:7、8:3、9:7\n      分布符合班佛定律，未偵測到人為編造的跡象。",
+     "refs": []
+    },
+    {
+     "id": "FORENSIC-03",
+     "title": "假日開立比例",
+     "passed": true,
+     "severity": "warning",
+     "detail": "假日（週六日）開立者占 0.0%（0/90）。屬正常範圍。",
+     "refs": []
+    }
+   ]
+  },
+  {
+   "name": "授信風險",
+   "status": "warning",
+   "passed": 2,
+   "total": 3,
+   "items": [
+    {
+     "id": "RISK-01",
+     "title": "買方集中度",
+     "passed": true,
+     "severity": "warning",
+     "detail": "最大買方「鴻麒精密工業有限公司」占應收總額 20.9%（NT$24,594,836／NT$117,519,531）。集中度在一般可接受範圍。",
+     "refs": []
+    },
+    {
+     "id": "RISK-02",
+     "title": "逾期應收帳款",
+     "passed": false,
+     "severity": "warning",
+     "detail": "逾期未收 5 筆，合計 NT$13,363,657，占未收帳款 99.5%。逾期比偏高，會直接影響信保基金與銀行的徵信評分，建議先處理催收或於送件時附上收款計畫。",
+     "refs": [
+      "AB84593961",
+      "AB84437458",
+      "AB59555330",
+      "AB99152472",
+      "AB99853245"
+     ]
+    },
+    {
+     "id": "RISK-03",
+     "title": "呆帳沖銷比率",
+     "passed": true,
+     "severity": "warning",
+     "detail": "期間內沖銷呆帳 4 筆，合計 NT$612,491，占累計開票金額 0.52%。低於一般製造業 3% 的常見水準。",
+     "refs": [
+      "AB33966966",
+      "AB59737181",
+      "AB81690398",
+      "AB64247457"
+     ]
+    }
+   ]
+  }
+ ]
+}

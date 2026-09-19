@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>[展示] FlowMind — 送件前自檢</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-1: #fcfcfb;  --plane: #f9f9f7;
+  --ink-1: #0b0b0b;      --ink-2: #52514e;   --ink-muted: #898781;
+  --grid: #e1e0d9;       --ring: rgba(11,11,11,.10);
+  --good: #0ca30c;  --warning: #fab219;  --critical: #d03b3b;
+  --brand: #0f766e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --plane: #0d0d0d;
+    --ink-1: #ffffff;     --ink-2: #c3c2b7;  --ink-muted: #898781;
+    --grid: #2c2c2a;      --ring: rgba(255,255,255,.10);
+    --brand: #2dd4bf;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--plane); color: var(--ink-1);
+  font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", sans-serif;
+}
+.wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
+header { text-align: center; margin-bottom: 28px; }
+header h1 { font-size: 33px; margin: 0 0 6px; color: var(--brand); }
+header p { color: var(--ink-2); margin: 0; font-size: 21px; }
+.panel { background: var(--surface-1); border: 1px solid var(--ring);
+         border-radius: 12px; padding: 22px 24px; margin-bottom: 16px; }
+.intake { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.intake input { flex: 1; min-width: 200px; font: inherit; padding: 10px 12px;
+                border-radius: 8px; border: 1px solid var(--grid);
+                background: var(--plane); color: var(--ink-1); }
+.intake button, .dl-btn { font: inherit; padding: 10px 18px; border-radius: 8px;
+          border: none; background: var(--brand); color: #fff; cursor: pointer;
+          text-decoration: none; display: inline-block; }
+.intake button:hover, .dl-btn:hover { opacity: .9; }
+.hint { color: var(--ink-muted); font-size: 18.8px; margin-top: 8px; }
+.ph { font-weight: 650; font-size: 24px; margin-bottom: 4px; }
+.upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+               gap: 10px; margin: 12px 0; }
+.upload-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 19.5px;
+                      color: var(--ink-2); background: var(--plane);
+                      border: 1px solid var(--grid); border-radius: 8px; padding: 10px 12px; }
+.upload-grid input[type=file] { font-size: 18px; }
+.empty { color: var(--ink-muted); text-align: center; padding: 20px 0; }
+.err { color: var(--critical); text-align: center; padding: 20px 0; }
+
+.verdict { border-radius: 10px; padding: 18px 20px; text-align: center; margin-bottom: 18px; }
+.verdict.ok { background: rgba(12,163,12,.10); border: 1px solid rgba(12,163,12,.3); }
+.verdict.bad { background: rgba(208,59,59,.08); border: 1px solid rgba(208,59,59,.28); }
+.verdict .big { font-size: 39px; font-weight: 700; }
+.verdict.ok .big { color: var(--good); }
+.verdict.bad .big { color: var(--critical); }
+.verdict .sub { color: var(--ink-2); font-size: 20.2px; margin-top: 6px; }
+
+.cat { border-top: 1px solid var(--grid); padding: 14px 0; }
+.cat:first-child { border-top: 0; }
+.cat .row { display: flex; justify-content: space-between; align-items: center; }
+.cat .nm { font-weight: 600; font-size: 21.8px; }
+.badge { font-size: 18px; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+.badge.good { background: rgba(12,163,12,.13); color: var(--good); }
+.badge.bad  { background: rgba(208,59,59,.12); color: var(--critical); }
+.issue { margin-top: 8px; padding: 10px 12px; border-radius: 8px;
+         background: var(--plane); font-size: 20.2px; color: var(--ink-2); }
+.issue + .issue { margin-top: 6px; }
+
+.actions { text-align: center; margin-top: 20px; }
+.foot { text-align: center; color: var(--ink-muted); font-size: 18px; margin-top: 24px; }
+
+/* ── 證據回查：憑證編號可直接點開看原始那筆資料 ─────────────────────── */
+.ref-chip { display: inline-block; margin: 6px 6px 0 0; padding: 3px 10px;
+            border-radius: 999px; font-size: 17px; font-family: ui-monospace, monospace;
+            background: var(--surface-1); border: 1px solid var(--brand); color: var(--brand);
+            cursor: pointer; }
+.ref-chip:hover { background: var(--brand); color: #fff; }
+#evidence-modal { position: fixed; inset: 0; background: rgba(11,11,11,.55);
+                   display: none; align-items: center; justify-content: center;
+                   z-index: 50; padding: 24px; }
+#evidence-modal.open { display: flex; }
+.ev-box { background: var(--surface-1); border-radius: 14px; max-width: 720px;
+          width: 100%; max-height: 84vh; overflow: auto; padding: 22px 26px;
+          box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+.ev-box h3 { margin: 0 0 4px; font-size: 24px; }
+.ev-box .sub { margin-bottom: 14px; color: var(--ink-2); font-size: 18px; }
+.ev-box .close { float: right; background: transparent; border: none; color: var(--ink-muted);
+                  font-size: 24px; cursor: pointer; line-height: 1; }
+.ev-hit { border: 1px solid var(--ring); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.ev-hit .kind { display: inline-block; background: var(--brand); color: #fff; font-size: 14px;
+                 padding: 2px 9px; border-radius: 999px; margin-bottom: 8px; }
+.ev-hit table { width: 100%; border-collapse: collapse; }
+.ev-hit td { padding: 3px 8px 3px 0; font-size: 17px; vertical-align: top; border: none; }
+.ev-hit td.k { color: var(--ink-muted); white-space: nowrap; width: 1%; }
+.ev-hit td.v { color: var(--ink-1); word-break: break-all; }
+.ev-hit .src { margin-top: 8px; font-size: 14.5px; color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>FlowMind 送件前自檢</h1>
+    <p>在正式送交銀行或信保基金之前，先確認您的發票、合約、銀行流水彼此對得起來</p>
+  </header>
+
+  <div class="panel">
+    <div class="intake">
+      <input id="case-id" placeholder="輸入您的案件編號（例如 CASE-0001）">
+      <button id="run">開始自檢</button>
+    </div>
+    <div class="hint">案件編號由承辦的銀行或信保機構提供，用來對應您上傳的憑證資料</div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">上傳／更新憑證資料</div>
+    <div class="hint">支援結構化格式（JSON／CSV）——本系統尚未接入 OCR，
+      上傳掃描件照片不會被自動解析成欄位，這是誠實揭露的已知限制，不是漏做。
+      可以只上傳其中幾項，之後仍可以重新上傳覆蓋，上傳完會立即重新檢查一次。</div>
+    <div class="upload-grid">
+      <label>應收帳款發票 <span class="tag">receivables.json</span><input type="file" id="up-receivables" accept=".json"></label>
+      <label>合約 <span class="tag">contracts.json</span><input type="file" id="up-contracts" accept=".json"></label>
+      <label>應付帳款 <span class="tag">payables.json</span><input type="file" id="up-payables" accept=".json"></label>
+      <label>銀行流水 <span class="tag">bank_ledger.csv</span><input type="file" id="up-ledger" accept=".csv"></label>
+    </div>
+    <button id="upload-btn" class="dl-btn" style="border:none">上傳並立即檢查</button>
+    <span class="hint" id="upload-msg"></span>
+  </div>
+
+  <div id="result"></div>
+
+  <div class="foot">
+    FlowMind AI —— 這份自檢報告與您之後送給銀行的版本使用同一套規則計算，數字不會不一樣
+  </div>
+</div>
+
+<div id="evidence-modal" onclick="if(event.target===this) closeEvidence()">
+  <div class="ev-box">
+    <button class="close" onclick="closeEvidence()">×</button>
+    <h3 id="ev-title">證據回查</h3>
+    <div class="sub" id="ev-sub"></div>
+    <div id="ev-body"></div>
+  </div>
+</div>
+
+<script src="static_shim.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// 把工程用的檢查分類名稱換成中小企業看得懂的說法。
+// crosscheck 分類本身（憑證真偽/金額算術…）已經算白話，這裡只加一句
+// 「這一類在檢查什麼」，避免使用者看到分類名字仍然不知道意義。
+const CAT_HINT = {
+  '憑證真偽': '發票統一編號是否為真、有沒有自己跟自己交易',
+  '金額算術': '發票上的金額、稅額、加總是否對得起來',
+  '重複請款': '有沒有同一批貨、同一筆錢被重複申請',
+  '跨文件勾稽': '發票、合約、銀行入帳三份文件講的是不是同一件事',
+  '鑑識會計': '金額分布是否符合正常營運模式的統計特徵',
+  '授信風險': '集中度、逾期、呆帳等會影響銀行判斷的指標',
+};
+
+async function runCheck() {
+  const tenant = $('#case-id').value.trim();
+  const el = $('#result');
+  if (!tenant) { el.innerHTML = '<div class="err">請先輸入案件編號</div>'; return; }
+  el.innerHTML = '<div class="empty">檢查中…</div>';
+  try {
+    const r = await fetch(`/api/crosscheck/${encodeURIComponent(tenant)}`);
+    if (!r.ok) {
+      const e = await r.json().catch(() => ({}));
+      el.innerHTML = `<div class="err">${esc(e.error || '找不到這個案件編號的資料')}</div>`;
+      return;
+    }
+    const d = await r.json();
+    const ready = d.submission_ready;
+    const failing = d.groups.filter(g => g.status !== 'good');
+
+    el.innerHTML = `
+      <div class="verdict ${ready ? 'ok' : 'bad'}">
+        <div class="big">${ready ? '✓ 可以送件了' : `還有 ${d.critical_failures} 項需要先處理`}</div>
+        <div class="sub">完整性 ${(d.integrity_score * 100).toFixed(0)}%　·
+          基準日 ${esc(d.as_of)}　·
+          發票 ${d.documents_examined.invoices ?? '—'} 張</div>
+      </div>
+      <div class="panel">
+        ${d.groups.map(g => `
+          <div class="cat">
+            <div class="row">
+              <div>
+                <div class="nm">${esc(g.name)}</div>
+                <div class="hint">${esc(CAT_HINT[g.name] || '')}</div>
+              </div>
+              <span class="badge ${g.status === 'good' ? 'good' : 'bad'}">${g.passed}/${g.total} 項通過</span>
+            </div>
+            ${g.status !== 'good' ? g.items.filter(i => !i.passed).map(i => `
+              <div class="issue">${esc(i.detail)}
+                ${(i.refs && i.refs.length) ? `<div>${i.refs.map(r => {
+                  const clean = String(r).split('(')[0].trim();
+                  return `<span class="ref-chip" onclick="showEvidence('${esc(tenant)}','${esc(clean)}')">🔍 ${esc(clean)}</span>`;
+                }).join('')}</div>` : ''}</div>`).join('') : ''}
+          </div>`).join('')}
+      </div>
+      <div class="actions">
+        <a class="dl-btn" href="report/${encodeURIComponent(tenant)}.pdf" target="_blank">下載完整自檢報告（PDF）</a>
+      </div>
+      ${failing.length ? `<div class="hint" style="text-align:center;margin-top:10px">
+        建議先處理上面標紅的項目後再送件，可以減少銀行退件、來回補件的次數</div>` : ''}
+    `;
+  } catch (e) {
+    el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`;
+  }
+}
+
+// 中文欄位名稱對照——原始 JSON 的 key 是英文（跟財政部電子發票規格對齊），
+// 但企業財務人員看的是中文，不該逼他們自己去猜 seller_ban 是什麼意思。
+const FIELD_LABEL = {
+  doc_type: '文件類型', invoice_number: '發票號碼', contract_number: '合約編號',
+  invoice_date: '開立日期', seller_ban: '賣方統編', seller_name: '賣方名稱',
+  buyer_ban: '買方統編', buyer_name: '買方名稱', sales_amount: '銷售額',
+  tax_amount: '稅額', total_amount: '總額', payment_terms_days: '帳期（天）',
+  due_date: '到期日', status: '狀態', paid_date: '實際收款日',
+  buyer_payment_behaviour: '買方付款行為', effective_date: '生效日',
+  expiry_date: '到期日', annual_commitment_amount: '年度承諾額', currency: '幣別',
+  recourse_note: '追索權說明', date: '日期', description: '摘要',
+  counterparty_ban: '對手統編', reference: '關聯憑證', amount: '金額',
+  balance: '餘額', source_note: '資料來源說明',
+};
+
+async function showEvidence(tenant, ref) {
+  const modal = $('#evidence-modal');
+  modal.classList.add('open');
+  $('#ev-title').textContent = `🔍 ${ref}`;
+  $('#ev-sub').textContent = '正在從原始檔案回查……';
+  $('#ev-body').innerHTML = '';
+  try {
+    const res = await fetch(`/api/cases/${encodeURIComponent(tenant)}/lookup/${encodeURIComponent(ref)}`);
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || String(res.status));
+    }
+    const d = await res.json();
+    $('#ev-sub').textContent = `在您上傳的資料裡找到 ${d.hits.length} 筆——底下是完整原始記錄，不是摘要。`;
+    $('#ev-body').innerHTML = d.hits.map(h => `
+      <div class="ev-hit">
+        <span class="kind">${esc(h.kind)}</span>
+        <table>${Object.entries(h.record).map(([k, v]) => `
+          <tr><td class="k">${esc(FIELD_LABEL[k] || k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}
+        </table>
+        <div class="src">來源檔案：<code>${esc(h.source_file)}</code></div>
+      </div>`).join('');
+  } catch (e) {
+    $('#ev-sub').textContent = '';
+    $('#ev-body').innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+}
+
+function closeEvidence() { $('#evidence-modal').classList.remove('open'); }
+
+async function uploadFiles() {
+  const tenant = $('#case-id').value.trim();
+  const msg = $('#upload-msg');
+  if (!tenant) { msg.textContent = '請先在上方輸入案件編號'; return; }
+  const fd = new FormData();
+  const map = { receivables: '#up-receivables', contracts: '#up-contracts',
+                payables: '#up-payables', bank_ledger: '#up-ledger' };
+  let any = false;
+  for (const [key, sel] of Object.entries(map)) {
+    const f = $(sel).files[0];
+    if (f) { fd.append(key, f); any = true; }
+  }
+  if (!any) { msg.textContent = '請至少選擇一個檔案'; return; }
+  msg.textContent = '上傳並檢查中…';
+  try {
+    const r = await fetch(`/api/cases/${encodeURIComponent(tenant)}/upload`,
+                          { method: 'POST', body: fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || '上傳失敗');
+    msg.textContent = `✓ 已匯入：發票 ${d.ingested.invoices} 筆、合約 ${d.ingested.contracts} 筆、流水 ${d.ingested.ledger} 筆`;
+    await runCheck();
+  } catch (e) { msg.textContent = `讀取失敗：${e.message}`; }
+}
+
+$('#run').onclick = runCheck;
+$('#case-id').onkeydown = e => { if (e.key === 'Enter') runCheck(); };
+$('#upload-btn').onclick = uploadFiles;
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{
+ "tenant": "CASE-9999",
+ "opening_balance": 0,
+ "input": {
+  "amount": 10000000.0,
+  "days": 10
+ },
+ "baseline": {
+  "curve": [
+   {
+    "date": "2026-10-06",
+    "balance": 1404081,
+    "amount": 1404081,
+    "type": "inflow",
+    "counterparty": "皓達機械股份有限公司"
+   }
+  ],
+  "gap_detected": false,
+  "gap_date": null,
+  "gap_amount": null,
+  "trough_balance": 1404081,
+  "trough_date": "2026-10-06"
+ },
+ "note": "本模擬重用 compute_cash_flow_projection() —— 與正式報告用的是同一套算法，不是另寫一份。",
+ "simulated": {
+  "curve": [
+   {
+    "date": "2026-09-29",
+    "balance": -10000000.0,
+    "amount": -10000000.0,
+    "type": "outflow",
+    "counterparty": "（模擬）新增應付款"
+   },
+   {
+    "date": "2026-10-06",
+    "balance": -8595919.0,
+    "amount": 1404081,
+    "type": "inflow",
+    "counterparty": "皓達機械股份有限公司"
+   }
+  ],
+  "gap_detected": true,
+  "gap_date": "2026-09-29",
+  "gap_amount": -10000000.0,
+  "trough_balance": -10000000,
+  "trough_date": "2026-09-29"
+ },
+ "delta": {
+  "trough_drop": 11404081,
+  "turns_negative": true,
+  "verdict": "這筆應付款會讓現金部位由正轉負"
+ },
+ "financing": [
+  {
+   "name": "信保基金 供應商融資信用保證",
+   "coverage": "保證成數最高九成",
+   "fee": "保證手續費年費率最低 0.375%（得視送保逾期情形酌增）",
+   "amount_hint": "以缺口 10,000,000 元計，九成保證約可支撐 9,000,000 元融資",
+   "requires": "中心廠商須經基金認可；需訂單／發票／支票等佐證交易真實性",
+   "speed": "須經金融機構送保，非當日撥款",
+   "source": "信保基金-供應商融資信用保證要點.md",
+   "caveat": "本表僅列公開文件載明的條件，**不含銀行實際核准利率**——那不在任何公開文件裡。"
+  },
+  {
+   "name": "應收帳款承購（Factoring）",
+   "coverage": "依買方信用核給額度，無追索權可移轉呆帳風險",
+   "fee": "承購管理費 + 資金成本（各行不同，公開文件未載明費率）",
+   "amount_hint": "需有金額達 10,000,000 元以上的合格應收帳款可轉讓",
+   "requires": "債權讓與須依民法通知債務人始生效力；買方需為合格對象",
+   "speed": "額度核給後可較快動撥",
+   "source": "玉山銀行-應收帳款承購.md／應收帳款暨融資業務（中國信託）.md",
+   "caveat": "各行條件不同，**本系統不合併成單一答案** —— 三份商品說明各有側重，應分別查閱。"
+  }
+ ]
+}

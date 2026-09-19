@@ -1,0 +1,40 @@
+{
+ "ref": "AB33763566",
+ "tenant": "CASE-0001",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB33763566",
+    "invoice_date": "2025-04-21",
+    "seller_ban": "20433212",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "82423880",
+    "buyer_name": "銘驊工業有限公司",
+    "sales_amount": 15750000,
+    "tax_amount": 787500,
+    "total_amount": 16537500,
+    "payment_terms_days": 30,
+    "due_date": "2025-05-21",
+    "status": "PAID",
+    "paid_date": "2025-07-04",
+    "buyer_payment_behaviour": "不穩定",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2025-07-04",
+    "description": "匯入-銘驊工業有限公司",
+    "counterparty_ban": "82423880",
+    "reference": "AB33763566",
+    "amount": 16537500.0,
+    "balance": "37114982"
+   }
+  }
+ ]
+}

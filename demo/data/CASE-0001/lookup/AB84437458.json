@@ -1,0 +1,28 @@
+{
+ "ref": "AB84437458",
+ "tenant": "CASE-0001",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB84437458",
+    "invoice_date": "2026-06-22",
+    "seller_ban": "20433212",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "91960013",
+    "buyer_name": "隆陞機械股份有限公司",
+    "sales_amount": 397442,
+    "tax_amount": 19872,
+    "total_amount": 417314,
+    "payment_terms_days": 60,
+    "due_date": "2026-08-21",
+    "status": "PENDING",
+    "paid_date": null,
+    "buyer_payment_behaviour": "偏慢",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  }
+ ]
+}

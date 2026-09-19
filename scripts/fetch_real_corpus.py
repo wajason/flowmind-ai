@@ -50,7 +50,7 @@ fetch_real_corpus.py — 真實企業交易資料抓取
   3. 兩者都不含發票影像，所以 OCR 那一層仍然只能靠 SROIE/FUNSD/CORD。
 
   把限制寫清楚，比宣稱「我們有真實資料」更有說服力 ——
-  評審裡一定有人知道政府採購資料長什麼樣子。
+  熟悉政府採購資料的人一眼就看得出來。
 
 Usage:
     python scripts/fetch_real_corpus.py --source pcc --keyword 精密機械 --pages 5
@@ -457,7 +457,7 @@ def main():
     print(f"  輸出目錄：{OUT}")
     print("  ⚠️  每份資料都附有 *_report.json，裡面明列已知限制。")
     print("      提案書引用這些資料時，請一併引用限制 ——")
-    print("      評審裡一定有人知道政府採購資料長什麼樣子。")
+    print("      熟悉政府採購資料的人一眼就看得出來。")
     print("═" * 74)
 
 

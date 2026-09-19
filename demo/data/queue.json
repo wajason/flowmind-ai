@@ -1,0 +1,47 @@
+[
+ {
+  "tenant_id": "CASE-9999",
+  "client_name": "台鑫國際有限公司",
+  "engagement_type": "應收帳款承購案",
+  "industry_code": "C29",
+  "status": "active",
+  "intake_date": "2026-08-07",
+  "aging_days": 43,
+  "light": "warning",
+  "alert_counts": {
+   "critical": 0,
+   "warning": 3,
+   "info": 0
+  }
+ },
+ {
+  "tenant_id": "CASE-0001",
+  "client_name": "誠信興業股份有限公司",
+  "engagement_type": "信保基金供應商融資送件",
+  "industry_code": "G45",
+  "status": "active",
+  "intake_date": "2026-08-07",
+  "aging_days": 43,
+  "light": "good",
+  "alert_counts": {
+   "critical": 0,
+   "warning": 0,
+   "info": 0
+  }
+ },
+ {
+  "tenant_id": "CASE-0002",
+  "client_name": "晶鴻精密工業股份有限公司",
+  "engagement_type": "信保基金送件",
+  "industry_code": "C29",
+  "status": "active",
+  "intake_date": "2026-08-07",
+  "aging_days": 43,
+  "light": "good",
+  "alert_counts": {
+   "critical": 0,
+   "warning": 0,
+   "info": 0
+  }
+ }
+]

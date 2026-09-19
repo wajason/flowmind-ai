@@ -1,0 +1,40 @@
+{
+ "ref": "AB21408960",
+ "tenant": "CASE-9999",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB21408960",
+    "invoice_date": "2026-06-15",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "29487570",
+    "buyer_name": "永陽工業股份有限公司",
+    "sales_amount": 6643954,
+    "tax_amount": 332198,
+    "total_amount": 6976152,
+    "payment_terms_days": 30,
+    "due_date": "2026-07-15",
+    "status": "PAID",
+    "paid_date": "2026-07-16",
+    "buyer_payment_behaviour": "準時",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2026-07-16",
+    "description": "匯入-永陽工業股份有限公司",
+    "counterparty_ban": "29487570",
+    "reference": "AB21408960",
+    "amount": 6976152.0,
+    "balance": "33810072"
+   }
+  }
+ ]
+}

@@ -224,7 +224,7 @@ def authenticated_session(token: str, tenant_id: str) -> Iterator[tuple]:
 def verify_auth_chain(user_a: str, pw_a: str,
                       allowed_tenant: str, denied_tenant: str) -> dict:
     """
-    可以在評審面前跑的認證鏈驗證。四個情境：
+    可以當場執行的認證鏈驗證。四個情境：
 
       1. 正確權杖 + 有授權的委任案      → 應成功
       2. 正確權杖 + **沒有授權**的委任案 → 應被拒（這是資訊隔離牆的核心）

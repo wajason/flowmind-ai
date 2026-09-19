@@ -1,0 +1,87 @@
+{
+ "tenant": "CASE-9999",
+ "light": "warning",
+ "counts": {
+  "critical": 0,
+  "warning": 3,
+  "info": 0
+ },
+ "alerts": [
+  {
+   "rule_id": "WATCH-04",
+   "severity": "warning",
+   "title": "1 筆發票的帳期與合約不符",
+   "detail": "其中 1 筆的實際帳期**長於**合約約定（容忍 3 天以吸收跨月結算與假日順延）。帳期被單方面拉長，通常比財報惡化更早出現。",
+   "evidence_n": 1,
+   "evidence": [
+    {
+     "buyer_ban": "23909964",
+     "diff_days": 60,
+     "buyer_name": "隆昇精密工業有限公司",
+     "issue_date": "2026-07-24",
+     "contract_id": "CT-2024-002",
+     "total_amount": "383017.00",
+     "invoice_terms": 90,
+     "contract_terms": 30,
+     "invoice_number": "AB13629581"
+    }
+   ],
+   "first_seen": "2026-08-08 12:28:54"
+  },
+  {
+   "rule_id": "WATCH-07",
+   "severity": "warning",
+   "title": "1 組疑似重複請款",
+   "detail": "同一買方、同一金額、7 日內開立多張發票。可能是分批請款的正常作業，也可能是重複請款 —— **需人工確認**。系統不替這件事下結論，只把它指出來。",
+   "evidence_n": 1,
+   "evidence": [
+    {
+     "n": 2,
+     "dates": [
+      "2024-11-29",
+      "2024-11-29"
+     ],
+     "invoices": [
+      "AB14223373",
+      "AB98849207"
+     ],
+     "buyer_ban": "69083011",
+     "buyer_name": "銘陽自動化科技股份有限公司",
+     "total_amount": "112415.00"
+    }
+   ],
+   "first_seen": "2026-08-08 12:28:54"
+  },
+  {
+   "rule_id": "WATCH-05",
+   "severity": "warning",
+   "title": "6 個買方有重複延遲付款紀錄",
+   "detail": "最嚴重：銘陽自動化科技股份有限公司 在 28 筆已付款發票中延遲 21 次，最久延遲 6 天。連續延遲（門檻 2 次）比單次延遲更值得警覺 ——單次可能是作業疏失，連續開始像對方資金狀況的問題。",
+   "evidence_n": 6,
+   "evidence": [
+    {
+     "late_cnt": 21,
+     "paid_cnt": 28,
+     "buyer_ban": "69083011",
+     "buyer_name": "銘陽自動化科技股份有限公司",
+     "worst_delay": 6
+    },
+    {
+     "late_cnt": 13,
+     "paid_cnt": 13,
+     "buyer_ban": "91948211",
+     "buyer_name": "群毅精機股份有限公司",
+     "worst_delay": 33
+    },
+    {
+     "late_cnt": 7,
+     "paid_cnt": 7,
+     "buyer_ban": "47865791",
+     "buyer_name": "偉翔自動化科技股份有限公司",
+     "worst_delay": 28
+    }
+   ],
+   "first_seen": "2026-08-08 12:28:54"
+  }
+ ]
+}

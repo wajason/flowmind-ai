@@ -1,0 +1,40 @@
+{
+ "ref": "AB25905184",
+ "tenant": "CASE-9999",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB25905184",
+    "invoice_date": "2025-06-10",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "47865791",
+    "buyer_name": "偉翔自動化科技有限公司",
+    "sales_amount": 85995,
+    "tax_amount": 4300,
+    "total_amount": 91295,
+    "payment_terms_days": 30,
+    "due_date": "2025-07-10",
+    "status": "PAID",
+    "paid_date": "2025-08-10",
+    "buyer_payment_behaviour": "偏慢",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2025-08-10",
+    "description": "匯入-偉翔自動化科技有限公司",
+    "counterparty_ban": "47865791",
+    "reference": "AB25905184",
+    "amount": 90295.0,
+    "balance": "19540619"
+   }
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+{
+ "ref": "AB77330181",
+ "tenant": "CASE-9999",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB77330181",
+    "invoice_date": "2026-02-02",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "86018953",
+    "buyer_name": "偉驊工業股份有限公司",
+    "sales_amount": 1070721,
+    "tax_amount": 53536,
+    "total_amount": 1124257,
+    "payment_terms_days": 60,
+    "due_date": "2026-04-03",
+    "status": "PAID",
+    "paid_date": "2026-04-06",
+    "buyer_payment_behaviour": "準時",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2026-04-06",
+    "description": "匯入-偉驊工業股份有限公司",
+    "counterparty_ban": "86018953",
+    "reference": "AB77330181",
+    "amount": 1124257.0,
+    "balance": "28327025"
+   }
+  }
+ ]
+}

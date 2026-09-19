@@ -1,0 +1,40 @@
+{
+ "ref": "AB78158369",
+ "tenant": "CASE-0002",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB78158369",
+    "invoice_date": "2026-03-04",
+    "seller_ban": "88778933",
+    "seller_name": "鴻達機電企業有限公司",
+    "buyer_ban": "14940320",
+    "buyer_name": "泰昇貿易企業社",
+    "sales_amount": 801765,
+    "tax_amount": 40088,
+    "total_amount": 841853,
+    "payment_terms_days": 30,
+    "due_date": "2026-04-03",
+    "status": "PAID",
+    "paid_date": "2026-04-06",
+    "buyer_payment_behaviour": "準時",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2026-04-06",
+    "description": "匯入-泰昇貿易企業社",
+    "counterparty_ban": "14940320",
+    "reference": "AB78158369",
+    "amount": 841853.0,
+    "balance": "15872078"
+   }
+  }
+ ]
+}

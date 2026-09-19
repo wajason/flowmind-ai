@@ -1,0 +1,40 @@
+{
+ "ref": "AB23209423",
+ "tenant": "CASE-0001",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB23209423",
+    "invoice_date": "2024-10-16",
+    "seller_ban": "20433212",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "13056414",
+    "buyer_name": "德宇機械股份有限公司",
+    "sales_amount": 7161245,
+    "tax_amount": 358062,
+    "total_amount": 7519307,
+    "payment_terms_days": 60,
+    "due_date": "2024-12-15",
+    "status": "PAID",
+    "paid_date": "2025-01-04",
+    "buyer_payment_behaviour": "不穩定",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2025-01-04",
+    "description": "匯入-德宇機械股份有限公司",
+    "counterparty_ban": "13056414",
+    "reference": "AB23209423",
+    "amount": 7519307.0,
+    "balance": "11470030"
+   }
+  }
+ ]
+}

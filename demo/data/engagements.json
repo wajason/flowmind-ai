@@ -1,0 +1,20 @@
+[
+ {
+  "tenant_id": "CASE-0001",
+  "client_name": "誠信興業股份有限公司",
+  "engagement_type": "信保基金供應商融資送件",
+  "status": "active"
+ },
+ {
+  "tenant_id": "CASE-0002",
+  "client_name": "晶鴻精密工業股份有限公司",
+  "engagement_type": "信保基金送件",
+  "status": "active"
+ },
+ {
+  "tenant_id": "CASE-9999",
+  "client_name": "台鑫國際有限公司",
+  "engagement_type": "應收帳款承購案",
+  "status": "active"
+ }
+]

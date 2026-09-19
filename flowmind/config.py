@@ -31,8 +31,22 @@ SYNTH_MODEL   = os.getenv("LLM_SYNTH_MODEL")   or ADVISOR_MODEL
 # 實測 gemma4:26b 冷啟動 123.7 秒 vs 熱啟動 9 秒 —— 差 13 倍，
 # 而 demo 或問答對話很容易出現超過 5 分鐘的停頓。
 # 設在這裡而不是靠 OLLAMA_KEEP_ALIVE 環境變數，是因為後者要求
-# Ollama 服務**啟動時**就帶著，在別人的機器上重現不了。
+# Ollama 服務**啟動時**就帶著，換一台機器就重現不了。
 OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
+
+# 卸載到 GPU 的層數上限。留空 = 交給 Ollama 自動判斷。
+# 實測 Ollama 0.34 在 8GB 顯存上會把 gemma4:26b 的 31 層全部塞進 GPU，
+# 然後在載入尾聲 CUDA out of memory；指定 24 層就穩定載入。
+# 這只影響速度與能不能載入，不影響輸出內容。
+_ng = os.getenv("OLLAMA_NUM_GPU", "").strip()
+OLLAMA_NUM_GPU = int(_ng) if _ng else None
+
+
+def ollama_options(**opts) -> dict:
+    """組 Ollama 原生 API 的 options，統一帶入 num_gpu 上限（若有設定）。"""
+    if OLLAMA_NUM_GPU is not None:
+        opts["num_gpu"] = OLLAMA_NUM_GPU
+    return opts
 
 # ── Embedding ─────────────────────────────────────────────────────────────
 EMBED_BACKEND = os.getenv("EMBED_BACKEND", "ollama").lower()

@@ -1,0 +1,28 @@
+{
+ "ref": "AB88561971",
+ "tenant": "CASE-9999",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB88561971",
+    "invoice_date": "2025-07-04",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "81276843",
+    "buyer_name": "銘陞機械有限公司",
+    "sales_amount": 5175,
+    "tax_amount": 259,
+    "total_amount": 5434,
+    "payment_terms_days": 60,
+    "due_date": "2025-09-02",
+    "status": "PAID",
+    "paid_date": "2025-09-04",
+    "buyer_payment_behaviour": "準時",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  }
+ ]
+}

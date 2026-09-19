@@ -1,0 +1,40 @@
+{
+ "ref": "AB72092104",
+ "tenant": "CASE-0002",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB72092104",
+    "invoice_date": "2025-11-29",
+    "seller_ban": "88778933",
+    "seller_name": "鴻達機電企業有限公司",
+    "buyer_ban": "71003302",
+    "buyer_name": "順澤貿易有限公司",
+    "sales_amount": 665497,
+    "tax_amount": 33275,
+    "total_amount": 698772,
+    "payment_terms_days": 30,
+    "due_date": "2025-12-29",
+    "status": "PAID",
+    "paid_date": "2026-01-18",
+    "buyer_payment_behaviour": "偏慢",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2026-01-18",
+    "description": "匯入-順澤貿易有限公司",
+    "counterparty_ban": "71003302",
+    "reference": "AB72092104",
+    "amount": 698772.0,
+    "balance": "12640802"
+   }
+  }
+ ]
+}

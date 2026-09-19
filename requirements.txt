@@ -13,7 +13,7 @@
 pymupdf4llm>=0.0.17          # PDF → Markdown（保留標題階層，供 parent-child chunking）
 PyMuPDF>=1.24.0
 python-docx>=1.1.0           # .docx 合約 / 商品說明書
-python-pptx>=0.6.23          # .pptx 銀行簡報
+python-pptx>=0.6.23          # .pptx 銀行報告
 openpyxl>=3.1.2              # .xlsx 統計表
 pandas>=2.2.0                # CSV/XLSX 結構化摘要（不逐列入庫）
 
@@ -39,7 +39,7 @@ rapidfuzz>=3.9.0             # 欄位比對用的決定性字串距離（非 LLM
 numpy>=1.26.0
 
 # ── CLI / Demo 呈現 ───────────────────────────────────────────────────────────
-rich>=13.7.0                 # 決賽 demo 的終端機儀表板
+rich>=13.7.0                 # 終端機儀表板
 tabulate>=0.9.0
 
 # ── 資料抓取 ──────────────────────────────────────────────────────────────────
@@ -56,4 +56,4 @@ python-multipart>=0.0.9      # 儀表板檔案上傳（新增案件的憑證上�
 reportlab>=4.2.0             # flowmind/report.py 產生 Bank-ready PDF
 
 # ── 開發工具（非執行期必要，但 scripts/capture_*.py 需要）──────────────────────
-playwright>=1.45.0           # 儀表板/簡報截圖，`python -m playwright install chromium`
+playwright>=1.45.0           # 儀表板截圖，`python -m playwright install chromium`

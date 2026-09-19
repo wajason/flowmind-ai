@@ -1,0 +1,28 @@
+{
+ "ref": "AB33966966",
+ "tenant": "CASE-0001",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB33966966",
+    "invoice_date": "2024-09-19",
+    "seller_ban": "20433212",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "21615593",
+    "buyer_name": "鴻澤工業有限公司",
+    "sales_amount": 504529,
+    "tax_amount": 25226,
+    "total_amount": 529755,
+    "payment_terms_days": 30,
+    "due_date": "2024-10-19",
+    "status": "WRITTEN_OFF",
+    "paid_date": null,
+    "buyer_payment_behaviour": "不穩定",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  }
+ ]
+}

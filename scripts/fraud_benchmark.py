@@ -140,6 +140,9 @@ def run(trials: int, seed: int, tiers: list[int]) -> dict:
     targets = [(d, t, f) for d, t, f in ALL_DEFECTS if t in tiers]
     per_defect: dict[str, dict] = {}
     tot = defaultdict(int)
+    # 誤報是哪些檢查項貢獻的——一個總數 70.4% 只能說「有誤報」，
+    # 拆到檢查項才知道誤報從哪裡來、下一步該修哪一條規則。
+    spurious_by_check: dict[str, int] = defaultdict(int)
 
     print(f"▶ 逐樣態評測（{len(targets)} 種 × {trials} 次獨立試驗）\n")
     print(f"  {'ID':<5}{'Tier':<6}{'樣態':<20}{'命中':<8}{'預期檢查':<14}結果")
@@ -164,6 +167,7 @@ def run(trials: int, seed: int, tiers: list[int]) -> dict:
         spurious = 0            # 真正的連帶誤報
         silent_ok = 0           # 正確保持沉默
         name, expected = did, None
+        own_spurious: dict[str, int] = defaultdict(int)
 
         for k in range(trials):
             # 統計性樣態會大量改動資料，單獨注入以免互相干擾
@@ -179,6 +183,9 @@ def run(trials: int, seed: int, tiers: list[int]) -> dict:
             # 扣掉「乾淨資料本來就會報的」與「這次注入的目標」
             extra = failed - clean_failed - ({expected} if expected else set())
             spurious += len(extra)
+            for cid in extra:
+                own_spurious[cid] += 1
+                spurious_by_check[cid] += 1
             silent_ok += n_checks - len(failed | clean_failed)
 
         detectable = expected is not None
@@ -188,6 +195,7 @@ def run(trials: int, seed: int, tiers: list[int]) -> dict:
             "detectable_by_design": detectable,
             "trials": trials, "hits": hits, "detection_rate": round(rate, 4),
             "avg_spurious_alerts": round(spurious / max(1, trials), 2),
+            "spurious_by_check": dict(sorted(own_spurious.items())),
         }
 
         if detectable:
@@ -213,6 +221,8 @@ def run(trials: int, seed: int, tiers: list[int]) -> dict:
         "trials_per_defect": trials, "seed": seed, "tiers": tiers,
         "invoices_per_trial": len(inv0),
         "checks_per_run": n_checks,
+        "spurious_by_check": dict(sorted(spurious_by_check.items(),
+                                         key=lambda kv: -kv[1])),
         "baseline_findings": sorted(clean_failed),
         "per_defect": per_defect,
         "metrics_detectable_only": detectable_m,
@@ -254,6 +264,12 @@ def render(r: dict) -> str:
         pct = key != "mcc"
         L.append(f"  {label:<28}{fmt(a[key], pct):>18}{fmt(b[key], pct):>20}")
 
+    if r.get("spurious_by_check"):
+        total_fp = sum(r["spurious_by_check"].values())
+        L += ["", f"  誤報來源拆解（FP 共 {total_fp} 次，依檢查項）："]
+        for cid, n in r["spurious_by_check"].items():
+            L.append(f"    {cid:<14}{n:>4} 次  {n / total_fp:>6.1%}")
+        L.append("    ↳ 誤報不是均勻分布的；集中在少數規則，代表下一步該調的是那幾條規則的門檻，不是整體。")
     L += [
         "─" * 92,
         f"  成本加權（漏抓:誤報 = {a['cost_ratio']}）"

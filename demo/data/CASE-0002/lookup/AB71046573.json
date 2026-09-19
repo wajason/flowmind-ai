@@ -1,0 +1,40 @@
+{
+ "ref": "AB71046573",
+ "tenant": "CASE-0002",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB71046573",
+    "invoice_date": "2025-01-04",
+    "seller_ban": "88778933",
+    "seller_name": "鴻達機電企業有限公司",
+    "buyer_ban": "38792170",
+    "buyer_name": "晶陽機電股份有限公司",
+    "sales_amount": 474871,
+    "tax_amount": 23744,
+    "total_amount": 498615,
+    "payment_terms_days": 60,
+    "due_date": "2025-03-05",
+    "status": "PAID",
+    "paid_date": "2025-03-19",
+    "buyer_payment_behaviour": "偏慢",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2025-03-19",
+    "description": "匯入-晶陽機電股份有限公司",
+    "counterparty_ban": "38792170",
+    "reference": "AB71046573",
+    "amount": 498615.0,
+    "balance": "5563331"
+   }
+  }
+ ]
+}

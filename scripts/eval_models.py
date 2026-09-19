@@ -15,7 +15,7 @@ eval_models.py — 本地 Ollama 模型選型實測
   T3 中文金融語感 (Domain Fluency)
      用供應鏈金融術語提問，看它是否知道「有追索權/無追索權承購」的差別。
 
-同時量測 first-token 延遲與 tokens/sec —— 決賽 demo 現場等 40 秒是會失分的。
+同時量測 first-token 延遲與 tokens/sec —— 互動使用時等 40 秒是不可接受的。
 
 Usage:
     python scripts/eval_models.py

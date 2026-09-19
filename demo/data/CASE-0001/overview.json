@@ -1,0 +1,10 @@
+{
+ "tenant": "CASE-0001",
+ "light": "good",
+ "counts": {
+  "critical": 0,
+  "warning": 0,
+  "info": 0
+ },
+ "alerts": []
+}

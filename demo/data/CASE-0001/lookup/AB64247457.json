@@ -1,0 +1,28 @@
+{
+ "ref": "AB64247457",
+ "tenant": "CASE-0001",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB64247457",
+    "invoice_date": "2024-11-20",
+    "seller_ban": "20433212",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "29283272",
+    "buyer_name": "銓麒自動化科技股份有限公司",
+    "sales_amount": 18844,
+    "tax_amount": 942,
+    "total_amount": 19786,
+    "payment_terms_days": 30,
+    "due_date": "2024-12-20",
+    "status": "WRITTEN_OFF",
+    "paid_date": null,
+    "buyer_payment_behaviour": "準時",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  }
+ ]
+}

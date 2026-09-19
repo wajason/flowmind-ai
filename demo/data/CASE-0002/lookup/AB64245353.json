@@ -1,0 +1,40 @@
+{
+ "ref": "AB64245353",
+ "tenant": "CASE-0002",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB64245353",
+    "invoice_date": "2025-11-30",
+    "seller_ban": "88778933",
+    "seller_name": "鴻達機電企業有限公司",
+    "buyer_ban": "14940320",
+    "buyer_name": "泰昇貿易企業社",
+    "sales_amount": 629035,
+    "tax_amount": 31452,
+    "total_amount": 660487,
+    "payment_terms_days": 30,
+    "due_date": "2025-12-30",
+    "status": "PAID",
+    "paid_date": "2026-01-02",
+    "buyer_payment_behaviour": "準時",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2026-01-02",
+    "description": "匯入-泰昇貿易企業社",
+    "counterparty_ban": "14940320",
+    "reference": "AB64245353",
+    "amount": 660487.0,
+    "balance": "10651508"
+   }
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+{
+ "ref": "AB56103373",
+ "tenant": "CASE-0002",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB56103373",
+    "invoice_date": "2026-01-17",
+    "seller_ban": "88778933",
+    "seller_name": "鴻達機電企業有限公司",
+    "buyer_ban": "38792170",
+    "buyer_name": "晶陽機電股份有限公司",
+    "sales_amount": 715490,
+    "tax_amount": 35774,
+    "total_amount": 751264,
+    "payment_terms_days": 60,
+    "due_date": "2026-03-18",
+    "status": "PAID",
+    "paid_date": "2026-03-16",
+    "buyer_payment_behaviour": "偏慢",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2026-03-16",
+    "description": "匯入-晶陽機電股份有限公司",
+    "counterparty_ban": "38792170",
+    "reference": "AB56103373",
+    "amount": 751264.0,
+    "balance": "13867752"
+   }
+  }
+ ]
+}

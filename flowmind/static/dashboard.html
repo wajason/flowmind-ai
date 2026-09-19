@@ -734,7 +734,7 @@ function renderTurn(d) {
     <div class="ans">
       ${d.abstained
         ? `<b style="color:var(--critical)">⛔ 系統選擇不回答</b>
-           <p class="ans-p">${esc(d.abstain_reason)}</p>`
+           ${renderAnswer(d.abstain_reason)}`
         : renderAnswer(d.answer)}
     </div>
     ${d.claims.length ? `<div class="scroll"><table>

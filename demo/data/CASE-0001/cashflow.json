@@ -1,0 +1,50 @@
+{
+ "tenant": "CASE-0001",
+ "opening_balance": 75901600,
+ "avg_daily_outflow": 25876,
+ "points": [
+  {
+   "date": "2026-07-19",
+   "inflow": 3150.0,
+   "invoices": 1,
+   "balance": 75904750
+  },
+  {
+   "date": "2026-08-21",
+   "inflow": 417314.0,
+   "invoices": 1,
+   "balance": 75468142
+  },
+  {
+   "date": "2026-08-29",
+   "inflow": 1109302.0,
+   "invoices": 1,
+   "balance": 76370433
+  },
+  {
+   "date": "2026-09-04",
+   "inflow": 11812500.0,
+   "invoices": 1,
+   "balance": 88027675
+  },
+  {
+   "date": "2026-09-07",
+   "inflow": 21391.0,
+   "invoices": 1,
+   "balance": 87971436
+  },
+  {
+   "date": "2026-09-25",
+   "inflow": 61313.0,
+   "invoices": 1,
+   "balance": 87566974
+  },
+  {
+   "date": "2026-10-03",
+   "inflow": 7214.0,
+   "invoices": 1,
+   "balance": 87367177
+  }
+ ],
+ "note": "支出以過去 90 天實際淨流出的每日平均推算，屬歷史平均而非預測值。"
+}

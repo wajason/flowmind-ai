@@ -1,0 +1,40 @@
+{
+ "ref": "AB30106149",
+ "tenant": "CASE-9999",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB30106149",
+    "invoice_date": "2025-02-25",
+    "seller_ban": "62601812",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "24710494",
+    "buyer_name": "皓澤自動化科技有限公司",
+    "sales_amount": 1094784,
+    "tax_amount": 54739,
+    "total_amount": 1149523,
+    "payment_terms_days": 60,
+    "due_date": "2025-04-26",
+    "status": "PAID",
+    "paid_date": "2025-04-29",
+    "buyer_payment_behaviour": "準時",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2025-04-29",
+    "description": "匯入-皓澤自動化科技有限公司",
+    "counterparty_ban": "24710494",
+    "reference": "AB30106149",
+    "amount": 1149523.0,
+    "balance": "13311132"
+   }
+  }
+ ]
+}

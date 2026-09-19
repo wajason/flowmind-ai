@@ -74,9 +74,7 @@ docs/*.log
 # 與 skills/ 底下的正本同名但內容不同 —— 沒有人知道該看哪一份。
 out/
 
-# ── 不納入版控的本機文件 ────────────────────────────────────────────────
-# 這些是團隊內部作業文件與尚在修訂中的產出，僅保留於本機。
-# 排除清單本身不說明各檔用途——說明「藏了什麼」等於沒藏。
+# ── 本機工作檔（不納入版控）──────────────────────────────────────────────
 HANDOVER.md
 ONE_PAGER.md
 NEXT_SESSION_PROMPT.md
@@ -98,3 +96,6 @@ scripts/check_slide_overflow.py
 
 # 私有詞彙清單，供 scripts/check_public_safe.py 比對用（見該檔說明）
 .private-terms
+
+README_FULL_local.md
+0919更新/

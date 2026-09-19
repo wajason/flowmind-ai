@@ -12,7 +12,7 @@ flowmind.llm — LLM 呼叫層（角色分工 + 受約束解碼）
    這不是 prompt 技巧，是 grammar-constrained decoding：
    解碼時直接把不合法 JSON 的 token 機率壓成 0，所以輸出「必然」是合法 JSON。
    文件抽取這一段不能靠「請你只輸出 JSON，謝謝」然後再寫正則去救，
-   那在 demo 現場就是一顆定時炸彈。
+   那在正式環境就是一顆定時炸彈。
 
 順帶處理 thinking 類模型：部分本地模型會吐 <think>…</think>，
 在 JSON 模式下會直接破格。這裡統一剝除。
@@ -159,12 +159,12 @@ def extract_json(
         "stream": False,
         # temperature=0：抽取必須可重現。同一份發票跑兩次得到不同統編，
         # 在會被稽核的場域是不可接受的。
-        "options": {"temperature": 0.0, "num_ctx": num_ctx},
+        "options": config.ollama_options(temperature=0.0, num_ctx=num_ctx),
         "format": schema if schema else "json",
         "think": False,
         # 實測：gemma4:26b 冷啟動載入要 123.7 秒，熱啟動只要 9 秒。
-        # Ollama 預設閒置 5 分鐘就卸載模型 —— demo 現場只要停下來講兩句話，
-        # 下一題就要當著評審的面等兩分鐘。keep_alive 從設定檔帶入。
+        # Ollama 預設閒置 5 分鐘就卸載模型 —— 操作中只要停下來幾分鐘，
+        # 下一題就要等兩分鐘。keep_alive 從設定檔帶入。
         "keep_alive": config.OLLAMA_KEEP_ALIVE,
     }
     if system:
@@ -240,9 +240,9 @@ def chat_local(
         "messages": messages,
         "stream": False,
         "think": False,
-        "options": {"temperature": temperature,
-                    "num_ctx": num_ctx,
-                    "num_predict": num_predict},
+        "options": config.ollama_options(temperature=temperature,
+                                         num_ctx=num_ctx,
+                                         num_predict=num_predict),
         "keep_alive": config.OLLAMA_KEEP_ALIVE,   # 理由同 extract_json()
     }
     r = httpx.post(f"{config.OLLAMA_BASE_URL}/api/chat", json=payload, timeout=timeout)

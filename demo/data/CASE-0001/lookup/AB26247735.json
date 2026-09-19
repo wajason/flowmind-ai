@@ -1,0 +1,40 @@
+{
+ "ref": "AB26247735",
+ "tenant": "CASE-0001",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB26247735",
+    "invoice_date": "2025-06-26",
+    "seller_ban": "20433212",
+    "seller_name": "宏昇機械股份有限公司",
+    "buyer_ban": "41647524",
+    "buyer_name": "偉宇工業股份有限公司",
+    "sales_amount": 1174406,
+    "tax_amount": 58720,
+    "total_amount": 1233126,
+    "payment_terms_days": 60,
+    "due_date": "2025-08-25",
+    "status": "PAID",
+    "paid_date": "2025-09-02",
+    "buyer_payment_behaviour": "偏慢",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  },
+  {
+   "kind": "銀行流水",
+   "source_file": "bank_ledger.csv",
+   "record": {
+    "date": "2025-09-02",
+    "description": "匯入-偉宇工業股份有限公司",
+    "counterparty_ban": "41647524",
+    "reference": "AB26247735",
+    "amount": 1233126.0,
+    "balance": "37829297"
+   }
+  }
+ ]
+}

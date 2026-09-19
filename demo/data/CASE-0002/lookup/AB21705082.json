@@ -1,0 +1,28 @@
+{
+ "ref": "AB21705082",
+ "tenant": "CASE-0002",
+ "hits": [
+  {
+   "kind": "發票",
+   "source_file": "receivables.json",
+   "record": {
+    "doc_type": "AR_INVOICE",
+    "invoice_number": "AB21705082",
+    "invoice_date": "2026-08-04",
+    "seller_ban": "88778933",
+    "seller_name": "鴻達機電企業有限公司",
+    "buyer_ban": "82837832",
+    "buyer_name": "銘麒工業社有限公司",
+    "sales_amount": 284800,
+    "tax_amount": 14240,
+    "total_amount": 299040,
+    "payment_terms_days": 30,
+    "due_date": "2026-09-03",
+    "status": "PENDING",
+    "paid_date": null,
+    "buyer_payment_behaviour": "不穩定",
+    "source_note": "synthetic - schema aligned to 財政部電子發票 B2B 訊息規格 (InvoiceNumber/SellerBAN/BuyerBAN/SalesAmount/TaxAmount/TotalAmount)"
+   }
+  }
+ ]
+}

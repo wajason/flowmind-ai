@@ -13,7 +13,7 @@ flowmind.db — RLS 感知的資料庫存取層
 即使某支程式的 SQL 忘了加條件、甚至被 SQL injection 打穿，
 資料庫層仍然只會回傳這個 engagement 看得到的列。
 
-`verify_isolation()` 把這件事變成可以在評審面前跑一次的證明，而不是投影片上的一句話。
+`verify_isolation()` 把這件事變成可以當場跑一次的證明，而不是文件上的一句話。
 """
 
 from __future__ import annotations
@@ -213,7 +213,7 @@ def verify_isolation(tenant_a: str, tenant_b: str) -> dict:
     #   inconclusive → 對照組根本沒資料，這個測試什麼也沒證明（不是隔離壞了）
     #   failed       → 真的看到了別人的資料，或寫得進去
     #   passed       → 對照組有資料、看不到、也寫不進去
-    # 把 inconclusive 誤報成 failed，在評審面前是會出事的。
+    # 把 inconclusive 誤報成 failed，會讓人做出錯誤判斷。
     if result["b_rows_actually_exist"] == 0:
         result["verdict"] = "inconclusive"
         result["passed"] = False
