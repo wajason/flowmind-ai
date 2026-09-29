@@ -76,7 +76,7 @@ header p { color: var(--ink-2); margin: 0; font-size: 21px; }
 
 /* ── 證據回查：憑證編號可直接點開看原始那筆資料 ─────────────────────── */
 .ref-chip { display: inline-block; margin: 6px 6px 0 0; padding: 3px 10px;
-            border-radius: 999px; font-size: 17px; font-family: ui-monospace, monospace;
+            border-radius: 999px; font-size: 17px; font-family: Consolas, ui-monospace, Menlo, monospace;
             background: var(--surface-1); border: 1px solid var(--brand); color: var(--brand);
             cursor: pointer; }
 .ref-chip:hover { background: var(--brand); color: #fff; }
@@ -116,7 +116,7 @@ header p { color: var(--ink-2); margin: 0; font-size: 21px; }
 <div class="wrap">
   <header>
     <h1>FlowMind 送件前自檢</h1>
-    <p>在正式送交銀行或信保基金之前，先確認您的發票、合約、銀行流水彼此對得起來</p>
+    <p>送交銀行或信保基金之前，先確認發票、合約與銀行流水彼此一致。</p>
   </header>
 
   <div class="panel">
@@ -124,19 +124,17 @@ header p { color: var(--ink-2); margin: 0; font-size: 21px; }
       <input id="case-id" placeholder="輸入您的案件編號（例如 CASE-0001）">
       <button id="run">開始自檢</button>
     </div>
-    <div class="hint">案件編號由承辦的銀行或信保機構提供，用來對應您上傳的憑證資料</div>
+    <div class="hint">案件編號由承辦的銀行或信保機構提供，用來對應您上傳的憑證資料。</div>
   </div>
 
   <div class="panel">
     <div class="ph">上傳／更新憑證資料</div>
-    <div class="hint">支援結構化格式（JSON／CSV）——本系統尚未接入 OCR，
-      上傳掃描件照片不會被自動解析成欄位，這是誠實揭露的已知限制，不是漏做。
-      可以只上傳其中幾項，之後仍可以重新上傳覆蓋，上傳完會立即重新檢查一次。</div>
+    <div class="hint">支援電子發票、ERP 匯出檔與銀行流水（JSON／CSV）。可以只上傳其中幾項，之後仍可以重新上傳覆蓋，上傳完會立即重新檢查一次。</div>
     <div class="upload-grid">
-      <label>應收帳款發票 <span class="tag">receivables.json</span><input type="file" id="up-receivables" accept=".json"></label>
-      <label>合約 <span class="tag">contracts.json</span><input type="file" id="up-contracts" accept=".json"></label>
-      <label>應付帳款 <span class="tag">payables.json</span><input type="file" id="up-payables" accept=".json"></label>
-      <label>銀行流水 <span class="tag">bank_ledger.csv</span><input type="file" id="up-ledger" accept=".csv"></label>
+      <label>應收帳款發票 <span class="tag">JSON</span><input type="file" id="up-receivables" accept=".json"></label>
+      <label>合約 <span class="tag">JSON</span><input type="file" id="up-contracts" accept=".json"></label>
+      <label>應付帳款 <span class="tag">JSON</span><input type="file" id="up-payables" accept=".json"></label>
+      <label>銀行流水 <span class="tag">CSV</span><input type="file" id="up-ledger" accept=".csv"></label>
     </div>
     <button id="upload-btn" class="dl-btn" style="border:none">上傳並立即檢查</button>
     <span class="hint" id="upload-msg"></span>
@@ -145,7 +143,7 @@ header p { color: var(--ink-2); margin: 0; font-size: 21px; }
   <div id="result"></div>
 
   <div class="foot">
-    FlowMind AI —— 這份自檢報告與您之後送給銀行的版本使用同一套規則計算，數字不會不一樣
+    這份自檢結果與銀行端審查採用同一套規則，數字一致。
   </div>
 </div>
 
@@ -176,10 +174,28 @@ const CAT_HINT = {
   '授信風險': '集中度、逾期、呆帳等會影響銀行判斷的指標',
 };
 
+// 顯示用：列舉值翻成中文、金額加千分位、原始檔名換成一般說法。
+const STATUS_TXT = {PAID: '已收款', PENDING: '未收款', OVERDUE: '逾期未收', WRITTEN_OFF: '已沖銷'};
+const SRC_NAME = {'receivables.json': '應收帳款發票', 'contracts.json': '買賣合約',
+                  'payables.json': '應付帳款', 'bank_ledger.csv': '銀行流水'};
+const VERDICT_TXT = {exact: '逐字相符', near: '近似相符'};
+// 不是憑證內容的內部欄位（文件型別代碼、資料來源註記、產生資料時設定的買方屬性），回查時不顯示
+const HIDDEN_FIELDS = new Set(['doc_type', 'source_note', 'buyer_payment_behaviour']);
+function pretty(k, v) {
+  if (Array.isArray(v)) return v.join('、');
+  if (k === 'status' && STATUS_TXT[v]) return STATUS_TXT[v];
+  if (k === 'currency' && v === 'TWD') return '新台幣';
+  if (/amount|balance|^amt$/.test(k) && v !== '' && v != null && !isNaN(Number(v)))
+    return Number(v).toLocaleString('zh-TW');
+  return v;
+}
+// 知識庫文件顯示文件名，不顯示副檔名
+const docName = s => String(s ?? '').replace(/\.(md|txt)(?=[\s、，。）)]|$)/g, '');
+
 async function runCheck() {
   const tenant = $('#case-id').value.trim();
   const el = $('#result');
-  if (!tenant) { el.innerHTML = '<div class="err">請先輸入案件編號</div>'; return; }
+  if (!tenant) { el.innerHTML = '<div class="err">請先輸入案件編號。</div>'; return; }
   el.innerHTML = '<div class="empty">檢查中…</div>';
   try {
     const r = await fetch(`/api/crosscheck/${encodeURIComponent(tenant)}`);
@@ -195,7 +211,7 @@ async function runCheck() {
     el.innerHTML = `
       <div class="verdict ${ready ? 'ok' : 'bad'}">
         <div class="big">${ready ? '✓ 可以送件了' : `還有 ${d.critical_failures} 項需要先處理`}</div>
-        <div class="sub">完整性 ${(d.integrity_score * 100).toFixed(0)}%　·
+        <div class="sub">完整性 ${(d.integrity_score * 100).toFixed(1)}%　·
           基準日 ${esc(d.as_of)}　·
           發票 ${d.documents_examined.invoices ?? '—'} 張</div>
       </div>
@@ -221,7 +237,7 @@ async function runCheck() {
         <a class="dl-btn" href="report/${encodeURIComponent(tenant)}.pdf" target="_blank">下載完整自檢報告（PDF）</a>
       </div>
       ${failing.length ? `<div class="hint" style="text-align:center;margin-top:10px">
-        建議先處理上面標紅的項目後再送件，可以減少銀行退件、來回補件的次數</div>` : ''}
+        建議先處理上面標紅的項目後再送件，可以減少銀行退件、來回補件的次數。</div>` : ''}
     `;
   } catch (e) {
     el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`;
@@ -256,14 +272,14 @@ async function showEvidence(tenant, ref) {
       throw new Error(e.error || String(res.status));
     }
     const d = await res.json();
-    $('#ev-sub').textContent = `在您上傳的資料裡找到 ${d.hits.length} 筆——底下是完整原始記錄，不是摘要。`;
+    $('#ev-sub').textContent = `找到 ${d.hits.length} 筆相關的原始記錄。`;
     $('#ev-body').innerHTML = d.hits.map(h => `
       <div class="ev-hit">
         <span class="kind">${esc(h.kind)}</span>
-        <table>${Object.entries(h.record).map(([k, v]) => `
-          <tr><td class="k">${esc(FIELD_LABEL[k] || k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}
+        <table>${Object.entries(h.record).filter(([k]) => !HIDDEN_FIELDS.has(k)).map(([k, v]) => `
+          <tr><td class="k">${esc(FIELD_LABEL[k] || k)}</td><td class="v">${esc(pretty(k, v))}</td></tr>`).join('')}
         </table>
-        <div class="src">來源檔案：<code>${esc(h.source_file)}</code></div>
+        <div class="src">來源：${esc(SRC_NAME[h.source_file] || h.source_file)}</div>
       </div>`).join('');
   } catch (e) {
     $('#ev-sub').textContent = '';
@@ -275,7 +291,6 @@ function closeEvidence() { $('#evidence-modal').classList.remove('open'); $('.ev
 
 // 並排比對：跨文件不一致的兩份（或幾份）記錄放在一起看，值不一樣的共同欄位標紅。
 // 與銀行端工作台同一套邏輯——企業自己看到的，就是銀行會看到的。
-const CMP_SKIP = new Set(['doc_type', 'source_note']);
 function compareChip(tenant, item) {
   if (item.passed || !item.refs || item.refs.length < 2 || item.refs.length > 4) return '';
   const refs = item.refs.map(r => String(r).split('(')[0].trim());
@@ -295,7 +310,7 @@ async function compareEvidence(tenant, refs) {
       return d.hits[0] ? { ref: r, ...d.hits[0] } : null;
     }));
     const cols = hits.filter(Boolean);
-    const keys = [...new Set(cols.flatMap(c => Object.keys(c.record)))].filter(k => !CMP_SKIP.has(k));
+    const keys = [...new Set(cols.flatMap(c => Object.keys(c.record)))].filter(k => !HIDDEN_FIELDS.has(k));
     let ndiff = 0;
     const rows = keys.map(k => {
       const vals = cols.map(c => c.record[k]);
@@ -303,11 +318,11 @@ async function compareEvidence(tenant, refs) {
       const diff = present.length >= 2 && new Set(present.map(String)).size > 1;
       if (diff) ndiff++;
       return `<tr class="${diff ? 'diff' : ''}"><td class="k">${esc(FIELD_LABEL[k] || k)}</td>${
-        vals.map(v => `<td>${v == null ? '<span style="color:var(--ink-muted)">—</span>' : esc(v)}</td>`).join('')}</tr>`;
+        vals.map(v => `<td>${v == null ? '<span style="color:var(--ink-muted)">—</span>' : esc(pretty(k, v))}</td>`).join('')}</tr>`;
     });
     $('#ev-sub').textContent = ndiff
-      ? `${cols.length} 份原始記錄並排；紅色列是兩邊都有、但值不一樣的欄位（共 ${ndiff} 個）——送件前先確認這裡。`
-      : `${cols.length} 份原始記錄並排；共同欄位沒有不一致。`;
+      ? `${cols.length} 份原始記錄並排比對，紅色標示的是不一致的欄位（共 ${ndiff} 處），送件前請先確認。`
+      : `${cols.length} 份原始記錄並排比對，共同欄位沒有不一致。`;
     $('#ev-body').innerHTML = `<div style="overflow-x:auto"><table class="ev-cmp"><thead><tr><th></th>${
       cols.map(c => `<th><span class="kind">${esc(c.kind)}</span>${esc(c.ref)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`;
   } catch (e) {
@@ -335,7 +350,7 @@ async function uploadFiles() {
                           { method: 'POST', body: fd });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || '上傳失敗');
-    msg.textContent = `✓ 已匯入：發票 ${d.ingested.invoices} 筆、合約 ${d.ingested.contracts} 筆、流水 ${d.ingested.ledger} 筆`;
+    msg.textContent = `✓ 已匯入：發票 ${d.ingested.invoices} 筆、合約 ${d.ingested.contracts} 筆、銀行流水 ${d.ingested.ledger} 筆。`;
     await runCheck();
   } catch (e) { msg.textContent = `讀取失敗：${e.message}`; }
 }

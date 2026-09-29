@@ -1,6 +1,8 @@
 {
  "tenant": "CASE-0001",
- "opening_balance": 0,
+ "as_of": "2026-09-30",
+ "horizon_end": "2026-12-29",
+ "opening_balance": 75901600,
  "input": {
   "amount": 5000000.0,
   "days": 30
@@ -8,82 +10,158 @@
  "baseline": {
   "curve": [
    {
-    "date": "2026-09-25",
-    "balance": 61313,
-    "amount": 61313,
+    "date": "2026-09-30",
+    "balance": 75901600,
+    "amount": 0,
+    "type": "opening",
+    "counterparty": "期初餘額"
+   },
+   {
+    "date": "2026-09-30",
+    "balance": 75812885,
+    "amount": -88715,
+    "type": "outflow",
+    "counterparty": "泰包材股份有限公司"
+   },
+   {
+    "date": "2026-09-30",
+    "balance": 75571622,
+    "amount": -241263,
+    "type": "outflow",
+    "counterparty": "泰五金有限公司"
+   },
+   {
+    "date": "2026-09-30",
+    "balance": 75549359,
+    "amount": -22263,
+    "type": "outflow",
+    "counterparty": "皓零件有限公司"
+   },
+   {
+    "date": "2026-09-30",
+    "balance": 75543851,
+    "amount": -5508,
+    "type": "outflow",
+    "counterparty": "群模具股份有限公司"
+   },
+   {
+    "date": "2026-10-03",
+    "balance": 75551065,
+    "amount": 7214,
     "type": "inflow",
     "counterparty": "隆陞機械股份有限公司"
    },
    {
-    "date": "2026-10-03",
-    "balance": 68527,
-    "amount": 7214,
-    "type": "inflow",
-    "counterparty": "隆陞機械股份有限公司"
+    "date": "2026-10-05",
+    "balance": 75312565,
+    "amount": -238500,
+    "type": "fixed",
+    "counterparty": "固定營運支出(人事/房租/水電)"
+   },
+   {
+    "date": "2026-11-05",
+    "balance": 75074065,
+    "amount": -238500,
+    "type": "fixed",
+    "counterparty": "固定營運支出(人事/房租/水電)"
+   },
+   {
+    "date": "2026-12-05",
+    "balance": 74835565,
+    "amount": -238500,
+    "type": "fixed",
+    "counterparty": "固定營運支出(人事/房租/水電)"
    }
   ],
   "gap_detected": false,
   "gap_date": null,
   "gap_amount": null,
-  "trough_balance": 61313,
-  "trough_date": "2026-09-25"
+  "trough_balance": 74835565,
+  "trough_date": "2026-12-05"
  },
- "note": "本模擬重用 compute_cash_flow_projection() —— 與正式報告用的是同一套算法，不是另寫一份。",
+ "note": "試算與現金流時間軸、授信報告採用同一套推估方式。",
  "simulated": {
   "curve": [
    {
-    "date": "2026-09-25",
-    "balance": 61313,
-    "amount": 61313,
-    "type": "inflow",
-    "counterparty": "隆陞機械股份有限公司"
+    "date": "2026-09-30",
+    "balance": 75901600,
+    "amount": 0,
+    "type": "opening",
+    "counterparty": "期初餘額"
+   },
+   {
+    "date": "2026-09-30",
+    "balance": 75812885,
+    "amount": -88715,
+    "type": "outflow",
+    "counterparty": "泰包材股份有限公司"
+   },
+   {
+    "date": "2026-09-30",
+    "balance": 75571622,
+    "amount": -241263,
+    "type": "outflow",
+    "counterparty": "泰五金有限公司"
+   },
+   {
+    "date": "2026-09-30",
+    "balance": 75549359,
+    "amount": -22263,
+    "type": "outflow",
+    "counterparty": "皓零件有限公司"
+   },
+   {
+    "date": "2026-09-30",
+    "balance": 75543851,
+    "amount": -5508,
+    "type": "outflow",
+    "counterparty": "群模具股份有限公司"
    },
    {
     "date": "2026-10-03",
-    "balance": 68527,
+    "balance": 75551065,
     "amount": 7214,
     "type": "inflow",
     "counterparty": "隆陞機械股份有限公司"
    },
    {
-    "date": "2026-10-20",
-    "balance": -4931473.0,
-    "amount": -5000000.0,
-    "type": "outflow",
+    "date": "2026-10-05",
+    "balance": 75312565,
+    "amount": -238500,
+    "type": "fixed",
+    "counterparty": "固定營運支出(人事/房租/水電)"
+   },
+   {
+    "date": "2026-10-30",
+    "balance": 70312565,
+    "amount": -5000000,
+    "type": "scenario",
     "counterparty": "（模擬）新增應付款"
+   },
+   {
+    "date": "2026-11-05",
+    "balance": 70074065,
+    "amount": -238500,
+    "type": "fixed",
+    "counterparty": "固定營運支出(人事/房租/水電)"
+   },
+   {
+    "date": "2026-12-05",
+    "balance": 69835565,
+    "amount": -238500,
+    "type": "fixed",
+    "counterparty": "固定營運支出(人事/房租/水電)"
    }
   ],
-  "gap_detected": true,
-  "gap_date": "2026-10-20",
-  "gap_amount": -4931473.0,
-  "trough_balance": -4931473,
-  "trough_date": "2026-10-20"
+  "gap_detected": false,
+  "gap_date": null,
+  "gap_amount": null,
+  "trough_balance": 69835565,
+  "trough_date": "2026-12-05"
  },
  "delta": {
-  "trough_drop": 4992786,
-  "turns_negative": true,
-  "verdict": "這筆應付款會讓現金部位由正轉負"
- },
- "financing": [
-  {
-   "name": "信保基金 供應商融資信用保證",
-   "coverage": "保證成數最高九成",
-   "fee": "保證手續費年費率最低 0.375%（得視送保逾期情形酌增）",
-   "amount_hint": "以缺口 4,931,473 元計，九成保證約可支撐 4,438,326 元融資",
-   "requires": "中心廠商須經基金認可；需訂單／發票／支票等佐證交易真實性",
-   "speed": "須經金融機構送保，非當日撥款",
-   "source": "信保基金-供應商融資信用保證要點.md",
-   "caveat": "本表僅列公開文件載明的條件，**不含銀行實際核准利率**——那不在任何公開文件裡。"
-  },
-  {
-   "name": "應收帳款承購（Factoring）",
-   "coverage": "依買方信用核給額度，無追索權可移轉呆帳風險",
-   "fee": "承購管理費 + 資金成本（各行不同，公開文件未載明費率）",
-   "amount_hint": "需有金額達 4,931,473 元以上的合格應收帳款可轉讓",
-   "requires": "債權讓與須依民法通知債務人始生效力；買方需為合格對象",
-   "speed": "額度核給後可較快動撥",
-   "source": "玉山銀行-應收帳款承購.md／應收帳款暨融資業務（中國信託）.md",
-   "caveat": "各行條件不同，**本系統不合併成單一答案** —— 三份商品說明各有側重，應分別查閱。"
-  }
- ]
+  "trough_drop": 5000000,
+  "turns_negative": false,
+  "verdict": "付款後最低餘額仍有 69,835,565 元（2026-12-05），不會出現資金缺口"
+ }
 }

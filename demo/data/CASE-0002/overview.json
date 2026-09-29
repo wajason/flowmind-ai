@@ -1,10 +1,93 @@
 {
  "tenant": "CASE-0002",
- "light": "good",
+ "light": "critical",
  "counts": {
-  "critical": 0,
-  "warning": 0,
+  "critical": 1,
+  "warning": 2,
   "info": 0
  },
- "alerts": []
+ "crosscheck_critical": 0,
+ "alerts": [
+  {
+   "rule_id": "WATCH-02",
+   "severity": "critical",
+   "title": "7 筆應收已逾期，最久 99 天",
+   "detail": "逾期金額合計 2,693,995 元。逾期最久：銘麒工業社有限公司 AB86461686（99 天）。逾期超過 90 天，已達一般呆帳認列分界。",
+   "evidence_n": 7,
+   "evidence": [
+    {
+     "due_date": "2026-06-23",
+     "buyer_ban": "82837832",
+     "buyer_name": "銘麒工業社有限公司",
+     "days_overdue": 99,
+     "total_amount": "497867.00",
+     "invoice_number": "AB86461686"
+    },
+    {
+     "due_date": "2026-07-28",
+     "buyer_ban": "38792170",
+     "buyer_name": "晶陽機電股份有限公司",
+     "days_overdue": 64,
+     "total_amount": "526917.00",
+     "invoice_number": "AB36882721"
+    },
+    {
+     "due_date": "2026-08-16",
+     "buyer_ban": "38792170",
+     "buyer_name": "晶陽機電股份有限公司",
+     "days_overdue": 45,
+     "total_amount": "268272.00",
+     "invoice_number": "AB15302658"
+    }
+   ],
+   "first_seen": "2026-09-29 19:01:00"
+  },
+  {
+   "rule_id": "WATCH-03",
+   "severity": "warning",
+   "title": "買方集中度過高：晶陽機電股份有限公司 占未收餘額 42.5%",
+   "detail": "單一買方占比達 42.5%（門檻 40.0%，取自徵信實務慣例）。該買方一旦延遲或倒帳，會直接衝擊整體應收部位。",
+   "evidence_n": 1,
+   "evidence": [
+    {
+     "amt": "1144691.00",
+     "pct": "42.49",
+     "buyer_ban": "38792170",
+     "buyer_name": "晶陽機電股份有限公司"
+    }
+   ],
+   "first_seen": "2026-09-29 19:01:00"
+  },
+  {
+   "rule_id": "WATCH-05",
+   "severity": "warning",
+   "title": "9 個買方有重複延遲付款紀錄",
+   "detail": "最嚴重：晶陽機電股份有限公司 在 27 筆已付款發票中延遲 24 次，最久延遲 33 天。連續延遲比單次更值得注意：單次可能是作業疏失，連續則可能反映對方資金狀況。",
+   "evidence_n": 9,
+   "evidence": [
+    {
+     "late_cnt": 24,
+     "paid_cnt": 27,
+     "buyer_ban": "38792170",
+     "buyer_name": "晶陽機電股份有限公司",
+     "worst_delay": 33
+    },
+    {
+     "late_cnt": 10,
+     "paid_cnt": 14,
+     "buyer_ban": "85793832",
+     "buyer_name": "祥昇機電股份有限公司",
+     "worst_delay": 8
+    },
+    {
+     "late_cnt": 8,
+     "paid_cnt": 9,
+     "buyer_ban": "77929081",
+     "buyer_name": "鴻昇機械有限公司",
+     "worst_delay": 4
+    }
+   ],
+   "first_seen": "2026-09-29 19:01:00"
+  }
+ ]
 }

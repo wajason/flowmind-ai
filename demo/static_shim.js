@@ -24,8 +24,8 @@
     return Promise.resolve(jsonResponse({ error: msg }, 400));
   }
 
-  const NOT_IN_SNAPSHOT = '靜態展示版只收錄預設的問題與參數組合；自由輸入需在本機執行完整系統（見 GitHub）。';
-  const NO_WRITE = '靜態展示版不支援上傳與新增案件；本機執行完整系統即可使用這個功能（見 GitHub）。';
+  const NOT_IN_SNAPSHOT = '線上展示版僅提供預設的問題與參數；自由輸入需安裝完整系統。';
+  const NO_WRITE = '線上展示版不提供上傳與新增案件；安裝完整系統即可使用這項功能。';
 
   // /api/... → data/... 的對應。回傳 null 代表不是 API 請求，原樣放行。
   function mapToSnapshot(url, method) {
@@ -113,9 +113,10 @@
     const banner = el('div', {
       style: 'background:#fef3c7;color:#78350f;border-bottom:1px solid #f59e0b;'
            + 'padding:8px 16px;font-size:13px;line-height:1.5;',
-    }, `<b>線上展示版</b>　畫面與資料為 ${meta.captured_at || ''} 從實際系統擷取的快照`
-       + `（示範委任案為合成資料）。上傳、新增案件與自由提問需在本機執行完整系統：`
+    }, `<b>線上展示版</b>　以示範案件呈現，畫面與數字於 ${meta.captured_at || ''} 擷取自實際系統。`
+       + `上傳憑證、新增案件與自由提問需安裝完整系統：`
        + `<a href="${meta.repo || 'https://github.com/wajason/flowmind-ai'}" style="color:#78350f;font-weight:600">GitHub</a>`
+       + `　·　<a href="FlowMind_demo.mp4" target="_blank" style="color:#78350f;font-weight:600">▶ 1 分鐘操作影片</a>`
        + (isSelfCheck
           ? `　·　<a href="index.html" style="color:#78350f;font-weight:600">銀行端審查工作台 →</a>`
           : `　·　<a href="self-check.html" style="color:#78350f;font-weight:600">中小企業送件前自檢 →</a>`));
@@ -132,7 +133,7 @@
     // 自由提問欄改成提示，預設問題（.ex 連結）照常可點
     const q = document.querySelector('#q');
     if (q) {
-      q.placeholder = '線上展示版：請點下方預設問題（自由提問需本機執行）';
+      q.placeholder = '線上展示版：請點選下方的預設問題';
     }
 
     // 自檢頁：案件編號改成下拉，只列快照裡有的委任案

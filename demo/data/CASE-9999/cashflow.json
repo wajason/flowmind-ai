@@ -1,56 +1,109 @@
 {
  "tenant": "CASE-9999",
- "opening_balance": 14994288,
- "avg_daily_outflow": 14882,
- "points": [
+ "as_of": "2026-09-30",
+ "horizon_end": "2026-12-29",
+ "horizon_days": 90,
+ "opening_balance": 34098045,
+ "ledger_date": "2026-08-09",
+ "fixed_costs": [
   {
-   "date": "2026-08-12",
-   "inflow": 337418.0,
-   "invoices": 1,
-   "balance": 15331706
-  },
-  {
-   "date": "2026-08-18",
-   "inflow": 194640.0,
-   "invoices": 1,
-   "balance": 15437055
-  },
-  {
-   "date": "2026-08-25",
-   "inflow": 203841.0,
-   "invoices": 1,
-   "balance": 15536724
-  },
-  {
-   "date": "2026-08-26",
-   "inflow": 437912.0,
-   "invoices": 1,
-   "balance": 15959754
-  },
-  {
-   "date": "2026-09-06",
-   "inflow": 93954.0,
-   "invoices": 1,
-   "balance": 15890008
-  },
-  {
-   "date": "2026-10-01",
-   "inflow": 372028.0,
-   "invoices": 1,
-   "balance": 15889992
-  },
-  {
-   "date": "2026-10-03",
-   "inflow": 264040.0,
-   "invoices": 1,
-   "balance": 16124268
-  },
-  {
-   "date": "2026-10-22",
-   "inflow": 383017.0,
-   "invoices": 1,
-   "balance": 16224531
+   "description": "固定營運支出(人事/房租/水電)",
+   "amount": 238500,
+   "day": 5
   }
  ],
- "note": "支出以過去 90 天實際淨流出的每日平均推算，屬歷史平均而非預測值。"
+ "timeline": [
+  {
+   "date": "2026-09-30",
+   "amount": -241823,
+   "type": "outflow",
+   "counterparty": "順零件有限公司",
+   "reference": "AP86037035",
+   "balance": 33856222
+  },
+  {
+   "date": "2026-10-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 33617722
+  },
+  {
+   "date": "2026-10-06",
+   "amount": 1404081,
+   "type": "inflow",
+   "counterparty": "皓達機械股份有限公司",
+   "reference": "AB44841887",
+   "balance": 35021803
+  },
+  {
+   "date": "2026-11-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 34783303
+  },
+  {
+   "date": "2026-12-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 34544803
+  }
+ ],
+ "trough_balance": 33617722,
+ "trough_date": "2026-10-05",
+ "gap_detected": false,
+ "gap_date": null,
+ "gap_amount": null,
+ "overdue_receivables": {
+  "count": 4,
+  "total": 3063873
+ },
+ "points": [
+  {
+   "date": "2026-09-30",
+   "amount": -241823,
+   "type": "outflow",
+   "counterparty": "順零件有限公司",
+   "reference": "AP86037035",
+   "balance": 33856222
+  },
+  {
+   "date": "2026-10-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 33617722
+  },
+  {
+   "date": "2026-10-06",
+   "amount": 1404081,
+   "type": "inflow",
+   "counterparty": "皓達機械股份有限公司",
+   "reference": "AB44841887",
+   "balance": 35021803
+  },
+  {
+   "date": "2026-11-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 34783303
+  },
+  {
+   "date": "2026-12-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 34544803
+  }
+ ],
+ "note": "期初為最新銀行餘額；計入未到期應收、未付應付與每月固定支出：固定營運支出(人事/房租/水電)（每月 5 日約 238,500 元）。逾期應收不計入（目前 4 筆，合計 3,063,873 元）。"
 }

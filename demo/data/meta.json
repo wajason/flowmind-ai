@@ -1,10 +1,10 @@
 {
- "captured_at": "2026-09-20 00:45 (UTC+8)",
+ "captured_at": "2026-09-30 03:36 (UTC+8)",
  "repo": "https://github.com/wajason/flowmind-ai",
  "tenants": [
   "CASE-9999",
-  "CASE-0001",
-  "CASE-0002"
+  "CASE-0002",
+  "CASE-0001"
  ],
  "simulate": {
   "amounts": [

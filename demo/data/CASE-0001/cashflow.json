@@ -1,50 +1,157 @@
 {
  "tenant": "CASE-0001",
+ "as_of": "2026-09-30",
+ "horizon_end": "2026-12-29",
+ "horizon_days": 90,
  "opening_balance": 75901600,
- "avg_daily_outflow": 25876,
- "points": [
+ "ledger_date": "2026-08-10",
+ "fixed_costs": [
   {
-   "date": "2026-07-19",
-   "inflow": 3150.0,
-   "invoices": 1,
-   "balance": 75904750
+   "description": "固定營運支出(人事/房租/水電)",
+   "amount": 238500,
+   "day": 5
+  }
+ ],
+ "timeline": [
+  {
+   "date": "2026-09-30",
+   "amount": -88715,
+   "type": "outflow",
+   "counterparty": "泰包材股份有限公司",
+   "reference": "AP61632653",
+   "balance": 75812885
   },
   {
-   "date": "2026-08-21",
-   "inflow": 417314.0,
-   "invoices": 1,
-   "balance": 75468142
+   "date": "2026-09-30",
+   "amount": -241263,
+   "type": "outflow",
+   "counterparty": "泰五金有限公司",
+   "reference": "AP30739712",
+   "balance": 75571622
   },
   {
-   "date": "2026-08-29",
-   "inflow": 1109302.0,
-   "invoices": 1,
-   "balance": 76370433
+   "date": "2026-09-30",
+   "amount": -22263,
+   "type": "outflow",
+   "counterparty": "皓零件有限公司",
+   "reference": "AP58678896",
+   "balance": 75549359
   },
   {
-   "date": "2026-09-04",
-   "inflow": 11812500.0,
-   "invoices": 1,
-   "balance": 88027675
-  },
-  {
-   "date": "2026-09-07",
-   "inflow": 21391.0,
-   "invoices": 1,
-   "balance": 87971436
-  },
-  {
-   "date": "2026-09-25",
-   "inflow": 61313.0,
-   "invoices": 1,
-   "balance": 87566974
+   "date": "2026-09-30",
+   "amount": -5508,
+   "type": "outflow",
+   "counterparty": "群模具股份有限公司",
+   "reference": "AP45896226",
+   "balance": 75543851
   },
   {
    "date": "2026-10-03",
-   "inflow": 7214.0,
-   "invoices": 1,
-   "balance": 87367177
+   "amount": 7214,
+   "type": "inflow",
+   "counterparty": "隆陞機械股份有限公司",
+   "reference": "AB43446826",
+   "balance": 75551065
+  },
+  {
+   "date": "2026-10-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 75312565
+  },
+  {
+   "date": "2026-11-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 75074065
+  },
+  {
+   "date": "2026-12-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 74835565
   }
  ],
- "note": "支出以過去 90 天實際淨流出的每日平均推算，屬歷史平均而非預測值。"
+ "trough_balance": 74835565,
+ "trough_date": "2026-12-05",
+ "gap_detected": false,
+ "gap_date": null,
+ "gap_amount": null,
+ "overdue_receivables": {
+  "count": 6,
+  "total": 13424970
+ },
+ "points": [
+  {
+   "date": "2026-09-30",
+   "amount": -88715,
+   "type": "outflow",
+   "counterparty": "泰包材股份有限公司",
+   "reference": "AP61632653",
+   "balance": 75812885
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -241263,
+   "type": "outflow",
+   "counterparty": "泰五金有限公司",
+   "reference": "AP30739712",
+   "balance": 75571622
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -22263,
+   "type": "outflow",
+   "counterparty": "皓零件有限公司",
+   "reference": "AP58678896",
+   "balance": 75549359
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -5508,
+   "type": "outflow",
+   "counterparty": "群模具股份有限公司",
+   "reference": "AP45896226",
+   "balance": 75543851
+  },
+  {
+   "date": "2026-10-03",
+   "amount": 7214,
+   "type": "inflow",
+   "counterparty": "隆陞機械股份有限公司",
+   "reference": "AB43446826",
+   "balance": 75551065
+  },
+  {
+   "date": "2026-10-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 75312565
+  },
+  {
+   "date": "2026-11-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 75074065
+  },
+  {
+   "date": "2026-12-05",
+   "amount": -238500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 74835565
+  }
+ ],
+ "note": "期初為最新銀行餘額；計入未到期應收、未付應付與每月固定支出：固定營運支出(人事/房租/水電)（每月 5 日約 238,500 元）。逾期應收不計入（目前 6 筆，合計 13,424,970 元）。"
 }

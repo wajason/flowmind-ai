@@ -1,7 +1,141 @@
 {
  "tenant": "CASE-0002",
- "opening_balance": 0,
- "avg_daily_outflow": 0,
- "points": [],
- "note": "支出以過去 90 天實際淨流出的每日平均推算，屬歷史平均而非預測值。"
+ "as_of": "2026-09-30",
+ "horizon_end": "2026-12-29",
+ "horizon_days": 90,
+ "opening_balance": 21396164,
+ "ledger_date": "2026-08-05",
+ "fixed_costs": [
+  {
+   "description": "固定營運支出(人事/房租/水電)",
+   "amount": 382500,
+   "day": 5
+  }
+ ],
+ "timeline": [
+  {
+   "date": "2026-09-30",
+   "amount": -145441,
+   "type": "outflow",
+   "counterparty": "隆模具有限公司",
+   "reference": "AP54016615",
+   "balance": 21250723
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -130124,
+   "type": "outflow",
+   "counterparty": "鴻五金有限公司",
+   "reference": "AP50904804",
+   "balance": 21120599
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -194478,
+   "type": "outflow",
+   "counterparty": "祥包材有限公司",
+   "reference": "AP36167144",
+   "balance": 20926121
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -46819,
+   "type": "outflow",
+   "counterparty": "鴻五金有限公司",
+   "reference": "AP36836119",
+   "balance": 20879302
+  },
+  {
+   "date": "2026-10-05",
+   "amount": -382500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 20496802
+  },
+  {
+   "date": "2026-11-05",
+   "amount": -382500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 20114302
+  },
+  {
+   "date": "2026-12-05",
+   "amount": -382500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 19731802
+  }
+ ],
+ "trough_balance": 19731802,
+ "trough_date": "2026-12-05",
+ "gap_detected": false,
+ "gap_date": null,
+ "gap_amount": null,
+ "overdue_receivables": {
+  "count": 7,
+  "total": 2693995
+ },
+ "points": [
+  {
+   "date": "2026-09-30",
+   "amount": -145441,
+   "type": "outflow",
+   "counterparty": "隆模具有限公司",
+   "reference": "AP54016615",
+   "balance": 21250723
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -130124,
+   "type": "outflow",
+   "counterparty": "鴻五金有限公司",
+   "reference": "AP50904804",
+   "balance": 21120599
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -194478,
+   "type": "outflow",
+   "counterparty": "祥包材有限公司",
+   "reference": "AP36167144",
+   "balance": 20926121
+  },
+  {
+   "date": "2026-09-30",
+   "amount": -46819,
+   "type": "outflow",
+   "counterparty": "鴻五金有限公司",
+   "reference": "AP36836119",
+   "balance": 20879302
+  },
+  {
+   "date": "2026-10-05",
+   "amount": -382500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 20496802
+  },
+  {
+   "date": "2026-11-05",
+   "amount": -382500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 20114302
+  },
+  {
+   "date": "2026-12-05",
+   "amount": -382500,
+   "type": "fixed",
+   "counterparty": "固定營運支出(人事/房租/水電)",
+   "reference": "",
+   "balance": 19731802
+  }
+ ],
+ "note": "期初為最新銀行餘額；計入未到期應收、未付應付與每月固定支出：固定營運支出(人事/房租/水電)（每月 5 日約 382,500 元）。逾期應收不計入（目前 7 筆，合計 2,693,995 元）。"
 }

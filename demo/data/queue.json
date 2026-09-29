@@ -4,44 +4,50 @@
   "client_name": "台鑫國際有限公司",
   "engagement_type": "應收帳款承購案",
   "industry_code": "C29",
+  "industry_name": "機械設備製造業",
   "status": "active",
-  "intake_date": "2026-08-07",
-  "aging_days": 44,
-  "light": "warning",
+  "intake_date": "2026-09-18",
+  "aging_days": 12,
+  "light": "critical",
   "alert_counts": {
    "critical": 0,
-   "warning": 3,
-   "info": 0
-  }
- },
- {
-  "tenant_id": "CASE-0001",
-  "client_name": "誠信興業股份有限公司",
-  "engagement_type": "信保基金供應商融資送件",
-  "industry_code": "G45",
-  "status": "active",
-  "intake_date": "2026-08-07",
-  "aging_days": 44,
-  "light": "good",
-  "alert_counts": {
-   "critical": 0,
-   "warning": 0,
-   "info": 0
-  }
+   "warning": 5,
+   "info": 1
+  },
+  "crosscheck_critical": 4
  },
  {
   "tenant_id": "CASE-0002",
   "client_name": "晶鴻精密工業股份有限公司",
   "engagement_type": "信保基金送件",
   "industry_code": "C29",
+  "industry_name": "機械設備製造業",
   "status": "active",
-  "intake_date": "2026-08-07",
-  "aging_days": 44,
-  "light": "good",
+  "intake_date": "2026-09-24",
+  "aging_days": 6,
+  "light": "critical",
+  "alert_counts": {
+   "critical": 1,
+   "warning": 2,
+   "info": 0
+  },
+  "crosscheck_critical": 0
+ },
+ {
+  "tenant_id": "CASE-0001",
+  "client_name": "誠信興業股份有限公司",
+  "engagement_type": "信保基金供應商融資送件",
+  "industry_code": "G45",
+  "industry_name": "批發業",
+  "status": "active",
+  "intake_date": "2026-09-21",
+  "aging_days": 9,
+  "light": "warning",
   "alert_counts": {
    "critical": 0,
-   "warning": 0,
-   "info": 0
-  }
+   "warning": 3,
+   "info": 1
+  },
+  "crosscheck_critical": 0
  }
 ]
