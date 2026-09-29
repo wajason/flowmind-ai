@@ -3,7 +3,7 @@
 **供應鏈融資的可驗證證據層** — 把中小企業的發票、合約、銀行流水，
 整理成銀行授信人員可以逐項回查的證據包。
 
-[![tests](https://img.shields.io/badge/tests-201%2F201-brightgreen)](tests/test_core.py)
+[![tests](https://img.shields.io/badge/tests-219%2F219-brightgreen)](tests/test_core.py)
 [![python](https://img.shields.io/badge/python-3.11-blue)]()
 [![db](https://img.shields.io/badge/PostgreSQL-17%20%2B%20pgvector-336791)]()
 [![llm](https://img.shields.io/badge/LLM-本地%20Ollama-7c3aed)]()
@@ -11,6 +11,7 @@
 
 **🔗 線上展示：<https://wajason.github.io/flowmind-ai/>**（不需安裝，直接開）
 　·　[中小企業送件前自檢](https://wajason.github.io/flowmind-ai/self-check.html)
+　·　[▶ 1 分鐘操作影片](https://wajason.github.io/flowmind-ai/FlowMind_demo.mp4)
 
 ![憑證交叉驗證](docs/images/dashboard-crosscheck.png)
 
@@ -75,7 +76,7 @@ ollama pull gemma4:26b && ollama pull bge-m3
 docker compose up -d                 # PostgreSQL 17 + pgvector，port 5433
 cp .env.example .env
 python -m flowmind.cli doctor        # 環境自檢
-python tests/test_core.py --core-only   # 111 項核心測試，不需資料庫
+python tests/test_core.py --core-only   # 120 項核心測試，不需資料庫
 ```
 
 建好示範資料後（見 SETUP.md §3）：
@@ -100,7 +101,7 @@ python -m flowmind.report --tenant CASE-9999                    # 授信證據�
 | 法規問答（105 題） | 事實正確 91.4% · 應拒答題正確拒答 90% · 嚴格四項全中 78.1% |
 | 檢索可重現性 | 同一查詢重跑結果完全一致（排序含決勝鍵） |
 | 跨委任案隔離 · 稽核雜湊鏈 · 認證四情境 | 全數通過，可現場重跑 |
-| 回歸測試 | 201 / 201 |
+| 回歸測試 | 219 / 219 |
 
 指標定義、重跑指令與完整輸出見 [docs/DEMO_RESULTS.md](docs/DEMO_RESULTS.md)；
 評測指標為何這樣設計（HPES 讓亂猜在數學上不划算、反事實穩健度）見 [docs/SDD.md](docs/SDD.md) §7。
@@ -143,7 +144,7 @@ python -m flowmind.report --tenant CASE-9999                    # 授信證據�
 flowmind/          核心套件：crosscheck（交叉驗證）· evidence（引用驗證）· retrieval · db（RLS）
                    metrics · watchtower（主動監控）· dashboard（FastAPI）· report（PDF）· llm
 scripts/           資料抓取、評測執行器、模型選型、儀表板截圖、靜態展示打包
-tests/test_core.py 201 項回歸測試
+tests/test_core.py 219 項回歸測試
 sql/init/          schema 與 RLS policy
 data/raw/          SHARED（公開資料）與各委任案（合成資料）
 docs/              設計文件、評測結果、模型選型

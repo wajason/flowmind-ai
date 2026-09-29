@@ -134,8 +134,39 @@ def _styles(font: str) -> dict:
     }
 
 
-def _fmt(v: Any) -> str:
-    return f"{v:,.0f}" if isinstance(v, (int, float)) else str(v)
+def _fmt(v: Any, key: str = "") -> str:
+    """證據欄位的顯示格式：日期、清單、金額、比例都轉成人看的寫法。"""
+    from decimal import Decimal                            # noqa: PLC0415
+    if isinstance(v, (list, tuple)):
+        return "、".join(_fmt(x, key) for x in v)
+    if isinstance(v, (date, datetime)):
+        return v.isoformat()[:10]
+    if isinstance(v, (int, float, Decimal)):
+        if key in ("pct", "change_pct"):
+            return f"{float(v):.1f}%"
+        return f"{float(v):,.0f}" if float(v) == int(float(v)) or abs(v) >= 100 \
+            else f"{float(v):,.1f}"
+    return str(v)
+
+
+# 監控警示證據欄位的中文名稱（與審查工作台一致）
+_EVIDENCE_LABEL = {
+    "invoice_number": "發票號碼", "buyer_name": "買方名稱", "buyer_ban": "買方統編",
+    "due_date": "到期日", "issue_date": "開立日期", "total_amount": "總額",
+    "days_overdue": "逾期天數", "contract_id": "合約編號",
+    "invoice_terms": "發票帳期（天）", "contract_terms": "合約帳期（天）",
+    "diff_days": "相差天數", "late_cnt": "延遲次數", "paid_cnt": "已付款張數",
+    "worst_delay": "最久延遲（天）", "amt": "未收金額", "pct": "占比",
+    "invoices": "發票號碼", "dates": "開立日期", "n": "張數",
+    "recent_dso": "近 90 天收款天數", "prior_dso": "前期收款天數",
+    "change_pct": "變化", "n_recent": "近期樣本數",
+}
+
+
+def _md(s: str) -> str:
+    """說明文字裡的 **粗體** 標記轉成 ReportLab 的 <b>。"""
+    import re                                              # noqa: PLC0415
+    return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", s)
 
 
 def build(tenant_id: str, out_path: str | Path,
@@ -197,10 +228,12 @@ def build(tenant_id: str, out_path: str | Path,
     F.append(Paragraph("Verifiable Credit Evidence Report", S["subtitle"]))
 
     # ── 封面資訊 ─────────────────────────────────────────────────────
+    de = rep["documents_examined"]
     head = [
         ["委任案編號", tenant_id, "報告基準日", str(as_of)],
         ["受查企業", client, "委任類型", etype],
-        ["檢視文件", str(rep["documents_examined"]), "產製時間",
+        ["檢視文件", f"發票 {de['invoices']} 張、合約 {de['contracts']} 份、"
+                     f"銀行流水 {de['bank_transactions']} 筆", "產製時間",
          datetime.now().strftime("%Y-%m-%d %H:%M")],
     ]
     t = Table([[Paragraph(c, S["cell"]) for c in r] for r in head],
@@ -233,7 +266,8 @@ def build(tenant_id: str, out_path: str | Path,
     ready = rep["submission_ready"]
     F.append(Paragraph("一、結論摘要", S["h1"]))
     summary = [
-        ["文件完整性分數", f"{rep['integrity_score']:.1f}%"],
+        # integrity_score 是 0~1 的比例；曾經直接加上 % 印成「1.0%」（實際 95.7%）
+        ["文件完整性分數", f"{rep['integrity_score']:.1%}"],
         ["重大缺失項數", str(rep["critical_failures"])],
         ["送件建議", "可送件" if ready else "建議先補正重大缺失"],
         ["主動監控警示",
@@ -252,11 +286,11 @@ def build(tenant_id: str, out_path: str | Path,
     ]))
     F.append(t)
 
-    # ── 二、決定性檢查逐項結果 ───────────────────────────────────────
-    F.append(Paragraph("二、決定性檢查逐項結果", S["h1"]))
+    # ── 二、交叉查核逐項結果 ─────────────────────────────────────────
+    F.append(Paragraph("二、交叉查核逐項結果", S["h1"]))
     F.append(Paragraph(
-        f"共 {len(rep['findings'])} 項檢查，全部為程式計算，零語言模型參與。"
-        "「結果」欄位的判定規則公開於原始碼，可獨立重算。", S["small"]))
+        f"共 {len(rep['findings'])} 項檢查，全部由程式依公開規則計算，未經語言模型判斷；"
+        "每一項的判定規則都可由第三方獨立重算。", S["small"]))
     F.append(Spacer(1, 4))
 
     rows = [[Paragraph(f"<b>{h}</b>", S["cell"]) for h in
@@ -297,7 +331,7 @@ def build(tenant_id: str, out_path: str | Path,
         F.append(Paragraph("本次掃描未發現需要注意的事項。", S["body"]))
     else:
         F.append(Paragraph(
-            "以下警示由決定性 SQL 產生，"
+            "以下警示由系統依固定規則自動產生，"
             "每一條均附上觸發它的實際資料列，可逐列複查。", S["small"]))
         F.append(Spacer(1, 4))
         for a in alerts:
@@ -308,12 +342,13 @@ def build(tenant_id: str, out_path: str | Path,
             block = [Paragraph(
                 f'<font color="{hexc}"><b>[{label}] {a.title}</b></font>'
                 f'　<font size="7.5" color="#888888">{a.rule_id}</font>', S["cell"]),
-                Paragraph(a.detail, S["cellm"])]
+                Paragraph(_md(a.detail), S["cellm"])]
             if a.evidence:
                 head = list(a.evidence[0].keys())[:5]
-                ev = [[Paragraph(f"<b>{h}</b>", S["cellm"]) for h in head]]
+                ev = [[Paragraph(f"<b>{_EVIDENCE_LABEL.get(h, h)}</b>", S["cellm"])
+                       for h in head]]
                 for e in a.evidence[:5]:
-                    ev.append([Paragraph(_fmt(e.get(h, "")), S["cellm"])
+                    ev.append([Paragraph(_fmt(e.get(h, ""), h), S["cellm"])
                                for h in head])
                 et = Table(ev, colWidths=[170 / len(head) * mm] * len(head))
                 et.setStyle(TableStyle([
@@ -334,7 +369,8 @@ def build(tenant_id: str, out_path: str | Path,
     # ── 四、方法與可重現性 ───────────────────────────────────────────
     F.append(Paragraph("四、方法與可重現性", S["h1"]))
     F.append(Paragraph(
-        "本報告的每一個數字都可由第三方以相同規則重算。重現指令：", S["body"]))
+        "本報告的每一個數字都可由第三方以相同規則重算。"
+        "稽核人員可在系統中執行下列指令，重新產生各節結果：", S["body"]))
     for cmd, desc in [
         (f"python -m flowmind.cli crosscheck --tenant {tenant_id}",
          "第二節的逐項檢查結果"),
@@ -349,9 +385,8 @@ def build(tenant_id: str, out_path: str | Path,
         F.append(Paragraph(f"　→ {desc}", S["small"]))
     F.append(Spacer(1, 6))
     F.append(Paragraph(
-        "<b>檢查規則不會因為報告而改變。</b> 同一批資料在任何時間、"
-        "由任何人執行，都會得到相同結果 —— 這是本系統與"
-        "「請語言模型看一遍」最根本的差別。", S["body"]))
+        "<b>檢查規則不會因為報告而改變。</b>同一批資料在任何時間、"
+        "由任何人執行，都會得到相同結果。", S["body"]))
 
     doc.build(F, onFirstPage=_chrome, onLaterPages=_chrome)
     return out_path

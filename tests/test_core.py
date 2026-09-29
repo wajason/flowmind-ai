@@ -305,7 +305,15 @@ def test_report_pdf() -> None:
         text = "\n".join(p.extract_text() or "" for p in rd.pages)
         cjk = len(re.findall(r"[一-鿿]", text))
         check("中文確實畫得出來（非黑方塊）", cjk > 300, f"{cjk} 個中文字")
-        check("報告含逐項檢查結果", "決定性檢查逐項結果" in text)
+        check("報告含逐項檢查結果", "交叉查核逐項結果" in text)
+        # integrity_score 是 0~1 的比例，曾經直接加上 % 印成「1.0%」（實際 95.7%）
+        from flowmind import crosscheck as _cc, metrics as _mt   # noqa: PLC0415
+        _d = _mt.load_engagement_files("CASE-9999")
+        _score = _cc.run_all(_d["invoices"], _d["contracts"], _d["ledger"])["integrity_score"]
+        check("完整性分數以百分比正確印出（不是把比例直接加 %）",
+              f"{_score:.1%}" in text and f"{_score:.1f}%" not in text, f"{_score:.1%}")
+        check("檢視文件以文字呈現，不是程式的原始資料結構",
+              "{'invoices'" not in text and "銀行流水" in text)
         # 產品邊界必須印在報告上，不能只寫在 README
         check("報告印出產品邊界（不構成授信決策）",
               "不構成授信決策" in text)
@@ -383,7 +391,22 @@ def test_dashboard() -> None:
     r = c.get("/api/cashflow/CASE-9999")
     d = r.json()
     check("現金流時間軸回傳資料點", r.status_code == 200 and len(d["points"]) > 0)
-    check("明確標示支出是歷史平均而非預測", "非預測" in d.get("note", ""), d.get("note"))
+    check("明確標示逾期應收不計入推估", "逾期應收不計入" in d.get("note", ""), d.get("note"))
+    # CSV 讀進來的餘額是字串，曾經被當成 0：每一次情境模擬都從零元起算，
+    # 得出「由正轉負」的錯誤結論。期初必須等於銀行流水最後一筆餘額。
+    from flowmind import metrics as _mx                     # noqa: PLC0415
+    bal, _ = _mx.latest_balance(_mx.load_engagement_files("CASE-9999")["ledger"])
+    check("現金流期初餘額等於銀行流水最後一筆餘額（不是 0）",
+          bal > 0 and d["opening_balance"] == round(bal), (d.get("opening_balance"), bal))
+    sim = c.get("/api/simulate?tenant=CASE-9999&amount=3000000&days=20").json()
+    check("情境模擬與現金流時間軸的期初、最低點一致（同一支推估）",
+          sim["opening_balance"] == d["opening_balance"]
+          and sim["baseline"]["trough_balance"] == d["trough_balance"],
+          (sim.get("opening_balance"), sim["baseline"].get("trough_balance"), d.get("trough_balance")))
+    check("情境模擬的推估線從基準日的期初餘額畫起",
+          sim["baseline"]["curve"][0]["date"] == d["as_of"]
+          and sim["baseline"]["curve"][0]["balance"] == d["opening_balance"],
+          sim["baseline"]["curve"][:1])
 
     r = c.get("/api/confidence")
     d = r.json()
@@ -398,6 +421,10 @@ def test_dashboard() -> None:
     ranks = [order.get(x["light"], 3) for x in d]
     check("佇列依燈號嚴重度排序（critical 在前）", ranks == sorted(ranks), ranks)
     check("每筆案件都算得出受理天數", all(x.get("aging_days") is not None for x in d), d)
+    # 只看監控警示時，有自我交易、統編不存在的案件只亮黃燈。燈號要納入交叉查核重大缺失。
+    neg = next((x for x in d if x["tenant_id"] == "CASE-9999"), None)
+    check("有交叉查核重大缺失的案件在佇列亮紅燈（不只看監控警示）",
+          neg is not None and neg["crosscheck_critical"] > 0 and neg["light"] == "critical", neg)
 
     r = c.get("/self-check")
     check("中小企業自檢入口是獨立頁面（不是同一份 dashboard.html）",
@@ -688,6 +715,39 @@ def test_watchtower() -> None:
         bad = [a for a in al if a.rule_id == "WATCH-XX"]
         check("規則執行失敗會變成 critical 警示，不會靜默吞掉",
               bool(bad) and bad[0].severity == "critical")
+    finally:
+        watchtower.RULES[:] = orig
+
+    # ── 條件消失的警示要自動解除 ──────────────────────────────────────
+    # 先前的寫入只新增、從不解除：資料修正之後，舊警示仍然掛在畫面上，
+    # 使用者分不出哪些是現在的問題。
+    overdue_row = ("I1", "遲付方", "11111111", today - timedelta(200),
+                   today - timedelta(120), 500000, "PENDING", None)
+    with db.tenant_session(T) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM fin_alerts")
+        conn.commit()
+    seed([overdue_row])
+    watchtower.scan(T, today=today)
+    check("寫入後讀得到未解除的逾期警示",
+          any(a["rule_id"] == "WATCH-02" for a in watchtower.open_alerts(T)))
+    seed([overdue_row[:6] + ("PAID", today - timedelta(100))])
+    watchtower.scan(T, today=today)
+    check("觸發條件消失後，舊警示自動解除",
+          not any(a["rule_id"] == "WATCH-02" for a in watchtower.open_alerts(T)),
+          [a["title"] for a in watchtower.open_alerts(T)])
+
+    # 規則執行失敗時不能把它的舊警示當成已解除：沒檢查不等於沒問題
+    seed([overdue_row])
+    watchtower.scan(T, today=today)
+    orig = watchtower.RULES[:]
+    try:
+        watchtower.RULES[:] = [(rid, boom if rid == "WATCH-02" else fn, nt)
+                               for rid, fn, nt in orig]
+        watchtower.scan(T, today=today)
+        kept = [a for a in watchtower.open_alerts(T)
+                if a["rule_id"] == "WATCH-02" and "執行失敗" not in a["title"]]
+        check("規則執行失敗時，不解除該規則原有的警示", bool(kept))
     finally:
         watchtower.RULES[:] = orig
 
@@ -1172,6 +1232,65 @@ def test_table_label_index() -> None:
     check("真實統計題仍正確觸發", "statistics" in metrics_route(q_real))
 
 
+def test_cash_projection() -> None:
+    """
+    現金流推估。儀表板的現金流時間軸、情境模擬、授信報告共用這一支，
+    所以它的每一條計入規則都要有測試釘住。
+    """
+    from datetime import date
+    from flowmind import metrics
+    section("現金流推估（時間軸、情境模擬、報告共用）")
+
+    as_of = date(2026, 9, 30)
+    ledger = [  # CSV 讀進來的欄位都是字串
+        {"date": "2026-06-05", "description": "薪資", "reference": "", "amount": "-100000", "balance": "900000"},
+        {"date": "2026-07-05", "description": "薪資", "reference": "", "amount": "-100000", "balance": "800000"},
+        {"date": "2026-08-05", "description": "薪資", "reference": "", "amount": "-100000", "balance": "700000"},
+        {"date": "2026-08-09", "description": "匯出-供應商", "reference": "AP1", "amount": "-50000", "balance": "650000"},
+    ]
+    data = {
+        "ledger": ledger,
+        "invoices": [
+            {"invoice_number": "A1", "buyer_name": "甲", "status": "PENDING",
+             "due_date": "2026-10-10", "total_amount": 300000},
+            {"invoice_number": "A2", "buyer_name": "乙", "status": "PENDING",
+             "due_date": "2026-09-01", "total_amount": 80000},          # 已逾期
+            {"invoice_number": "A3", "buyer_name": "丙", "status": "PAID",
+             "due_date": "2026-10-20", "total_amount": 999999},        # 已收款
+        ],
+        "payables": [
+            {"bill_number": "P1", "supplier_name": "丁", "status": "PENDING",
+             "due_date": "2026-09-20", "amount": 40000},                # 已過期未付
+        ],
+    }
+    p = metrics.cash_projection(data, as_of=as_of)
+    check("期初取銀行流水最後一筆餘額（字串也要讀得出來）", p["opening_balance"] == 650000,
+          p["opening_balance"])
+    check("每月固定支出：只認沒有對應憑證、至少三個月都出現的扣款",
+          [(f["description"], f["amount"], f["day"]) for f in p["fixed_costs"]] == [("薪資", 100000, 5)],
+          p["fixed_costs"])
+    refs = [e["reference"] for e in p["timeline"]]
+    check("逾期應收不計入推估，另列於 overdue_receivables",
+          "A2" not in refs and p["overdue_receivables"] == {"count": 1, "total": 80000},
+          p["overdue_receivables"])
+    check("已收款的發票不計入", "A3" not in refs, refs)
+    first = p["timeline"][0]
+    check("已過到期日仍未付的應付款，視為基準日當天支付",
+          first["reference"] == "P1" and first["date"] == "2026-09-30", first)
+    fixed_dates = [e["date"] for e in p["timeline"] if e["type"] == "fixed"]
+    check("固定支出依扣款日排入推估期間內的每個月",
+          fixed_dates == ["2026-10-05", "2026-11-05", "2026-12-05"], fixed_dates)
+    check("最低點與逐筆累加結果一致",
+          p["trough_balance"] == min([p["opening_balance"]] + [e["balance"] for e in p["timeline"]]),
+          p["trough_balance"])
+    sim = metrics.cash_projection(data, as_of=as_of, extra_outflows=[
+        {"date": date(2026, 10, 10), "amount": 1_000_000}])
+    check("多一筆大額應付款時偵測得到缺口與日期",
+          sim["gap_detected"] and sim["gap_date"] == "2026-10-10", (sim["gap_date"], sim["gap_amount"]))
+    same_day = [e["type"] for e in sim["timeline"] if e["date"] == "2026-10-10"]
+    check("同一天有收有付時先扣再加（取保守的一邊）", same_day == ["scenario", "inflow"], same_day)
+
+
 def metrics_route(q: str):
     from flowmind import metrics
     return metrics.route(q)
@@ -1197,7 +1316,7 @@ CORE_TESTS = (
     test_proper_noun_mismatch,
     test_confidence_gate, test_claim_corroboration, test_hpes,
     test_counterfactual, test_verifin_resilience, test_crosscheck, test_router,
-    test_scope_terms, test_guardrail, test_auditor,
+    test_scope_terms, test_guardrail, test_auditor, test_cash_projection,
 )
 INTEGRATION_TESTS = (
     test_query_plan,             # 需要 kg_nodes

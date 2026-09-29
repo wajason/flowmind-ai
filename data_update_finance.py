@@ -445,8 +445,10 @@ def run(tenant_id: str, rebuild: bool) -> None:
 
     # engagement 必須先登記才能入庫（外鍵約束）。這不是官僚流程 ——
     # 它強迫每一批資料都有明確的委任來源與保存期限，這是金融場域的基本要求。
-    db.upsert_engagement(tenant_id, tenant_id, "未指定" if tenant_id != db.SHARED
-                         else "法規與融資商品公開資料")
+    # 已登記的案件不覆寫：否則重建知識庫會把客戶名稱、案件類型、行業別蓋成預設值。
+    if not any(e["tenant_id"] == tenant_id for e in db.list_engagements()):
+        db.upsert_engagement(tenant_id, tenant_id, "未指定" if tenant_id != db.SHARED
+                             else "法規與融資商品公開資料")
 
     with db.tenant_session(tenant_id) as conn:
         if rebuild:

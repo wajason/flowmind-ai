@@ -217,12 +217,15 @@ def _w04_terms_mismatch(cur) -> list[Alert]:
     if not rows:
         return []
     longer = [r for r in rows if (r["diff_days"] or 0) > 0]
+    tol = f"（已容許 {TERMS_TOLERANCE_DAYS} 天的跨月與假日誤差）"
+    detail = (f"其中 {len(longer)} 筆的發票帳期**長於**合約約定{tol}。"
+              f"帳期被單方面拉長，通常比財報惡化更早出現。"
+              if longer else
+              f"發票帳期與合約約定不一致{tol}，需確認實際收款條件以哪一份為準。")
     return [Alert(
         "WATCH-04", "warning",
         f"{len(rows)} 筆發票的帳期與合約不符",
-        f"其中 {len(longer)} 筆的實際帳期**長於**合約約定"
-        f"（容忍 {TERMS_TOLERANCE_DAYS} 天以吸收跨月結算與假日順延）。"
-        f"帳期被單方面拉長，通常比財報惡化更早出現。",
+        detail,
         rows)]
 
 
@@ -253,8 +256,7 @@ def _w05_late_streak(cur) -> list[Alert]:
         f"{len(rows)} 個買方有重複延遲付款紀錄",
         f"最嚴重：{top['buyer_name']} 在 {top['paid_cnt']} 筆已付款發票中"
         f"延遲 {top['late_cnt']} 次，最久延遲 {top['worst_delay']} 天。"
-        f"連續延遲（門檻 {LATE_STREAK} 次）比單次延遲更值得警覺 ——"
-        f"單次可能是作業疏失，連續開始像對方資金狀況的問題。",
+        f"連續延遲比單次更值得注意：單次可能是作業疏失，連續則可能反映對方資金狀況。",
         rows)]
 
 
@@ -291,7 +293,7 @@ def _w06_dso(cur, today: date) -> list[Alert]:
         "WATCH-06", "warning",
         f"收款天數惡化 {delta_pct:.1f}%",
         f"最近 90 天平均收款 {recent:.1f} 天，前一期 {prior:.1f} 天。"
-        f"以相對變化判斷而非絕對門檻，因為合理 DSO 高度依產業而異。",
+        f"以相對變化判斷而非絕對門檻，因為合理的收款天數高度依產業而異。",
         [{"recent_dso": round(recent, 1), "prior_dso": round(prior, 1),
           "change_pct": round(delta_pct, 1), "n_recent": r["n_recent"]}])]
 
@@ -321,9 +323,8 @@ def _w07_duplicate(cur) -> list[Alert]:
     return [Alert(
         "WATCH-07", "warning",
         f"{len(rows)} 組疑似重複請款",
-        "同一買方、同一金額、7 日內開立多張發票。"
-        "可能是分批請款的正常作業，也可能是重複請款 —— **需人工確認**。"
-        "系統不替這件事下結論，只把它指出來。",
+        "同一買方、同一金額，7 日內開立多張發票。"
+        "可能是分批請款，也可能是重複請款，**需人工確認**。",
         rows)]
 
 
@@ -352,12 +353,14 @@ def scan(tenant_id: str, today: Optional[date] = None,
     """
     today = today or date.today()
     alerts: list[Alert] = []
+    completed: list[str] = []      # 有跑完的規則；只有這些規則的舊警示可以判定為已解除
 
     with db.tenant_session(tenant_id) as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             for rule_id, fn, needs_today in RULES:
                 try:
                     alerts += fn(cur, today) if needs_today else fn(cur)
+                    completed.append(rule_id)
                 except Exception as e:                    # noqa: BLE001
                     # 一條規則壞掉不該讓整次掃描消失 ——
                     # 但也**絕不**靜默吞掉：把失敗本身變成一條警示，
@@ -368,13 +371,22 @@ def scan(tenant_id: str, today: Optional[date] = None,
                         f"{type(e).__name__}: {e}", []))
 
         if persist:
-            _persist(conn, tenant_id, alerts)
+            _persist(conn, tenant_id, alerts, completed)
 
     alerts.sort(key=lambda a: (SEVERITY_ORDER.get(a.severity, 9), a.rule_id))
     return alerts
 
 
-def _persist(conn, tenant_id: str, alerts: list[Alert]) -> None:
+def _persist(conn, tenant_id: str, alerts: list[Alert],
+             completed: Optional[list[str]] = None) -> None:
+    """
+    寫入本次掃描結果。
+
+    同一件事（指紋相同）只更新最後出現時間與說明文字，不重複開單；
+    本次有跑完的規則若不再發出某張舊警示，代表觸發條件已經消失，標記為已解除。
+    否則畫面會一直掛著早已不成立的警示，而使用者分不出哪些是現在的問題。
+    規則執行失敗時不解除它的舊警示：沒檢查不等於沒問題。
+    """
     with conn.cursor() as cur:
         for a in alerts:
             cur.execute("""
@@ -383,10 +395,18 @@ def _persist(conn, tenant_id: str, alerts: list[Alert]) -> None:
                      evidence, fingerprint)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (tenant_id, fingerprint) DO UPDATE
-                    SET last_seen_at = NOW()
+                    SET last_seen_at = NOW(), resolved_at = NULL,
+                        severity = EXCLUDED.severity,
+                        title = EXCLUDED.title, detail = EXCLUDED.detail
             """, (tenant_id, a.rule_id, a.severity, a.title, a.detail,
                   json.dumps(a.evidence, ensure_ascii=False, default=str),
                   a.fingerprint()))
+        if completed:
+            cur.execute("""
+                UPDATE fin_alerts SET resolved_at = NOW()
+                WHERE tenant_id = %s AND resolved_at IS NULL
+                  AND rule_id = ANY(%s) AND NOT (fingerprint = ANY(%s))
+            """, (tenant_id, completed, [a.fingerprint() for a in alerts] or [""]))
     conn.commit()
 
 
@@ -400,7 +420,7 @@ def open_alerts(tenant_id: str) -> list[dict]:
                 WHERE resolved_at IS NULL
                 ORDER BY CASE severity WHEN 'critical' THEN 0
                                        WHEN 'warning'  THEN 1 ELSE 2 END,
-                         first_seen_at DESC
+                         first_seen_at DESC, rule_id
             """)
             return _rows(cur)
 

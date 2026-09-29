@@ -78,8 +78,8 @@ h2 { font-size: 22.5px; margin: 0 0 4px; letter-spacing: .3px; text-transform: n
 .alert.info     { border-color: var(--s1); }
 .alert b { font-size: 21.8px; }
 .alert p { margin: 3px 0 0; color: var(--ink-2); font-size: 21px; }
-.tag { font-size: 18px; color: var(--ink-muted); font-family: ui-monospace, monospace; }
-.ev { font-size: 18.8px; color: var(--ink-muted); font-family: ui-monospace, monospace;
+.tag { font-size: 18px; color: var(--ink-muted); font-family: Consolas, ui-monospace, Menlo, monospace; }
+.ev { font-size: 18.8px; color: var(--ink-muted); font-family: Consolas, ui-monospace, Menlo, monospace;
       margin-top: 4px; white-space: nowrap; overflow-x: auto; }
 .evd { margin-top: 6px; }
 .evd summary { font-size: 19.5px; color: var(--ink-muted); cursor: pointer;
@@ -194,7 +194,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── 證據回查：憑證編號可直接點開看原始那筆資料 ─────────────────────── */
 .ref-chip { display: inline-block; margin: 3px 4px 0 0; padding: 2px 9px;
-            border-radius: 999px; font-size: 16.5px; font-family: ui-monospace, monospace;
+            border-radius: 999px; font-size: 16.5px; font-family: Consolas, ui-monospace, Menlo, monospace;
             background: var(--surface-1); border: 1px solid var(--s1); color: var(--s1);
             cursor: pointer; }
 .ref-chip:hover { background: var(--s1); color: #fff; }
@@ -234,7 +234,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 <body>
 
 <header>
-  <h1>FlowMind AI　供應鏈融資審查工作台<small>可驗證證據層</small></h1>
+  <h1>FlowMind AI　供應鏈融資審查工作台</h1>
   <span id="hdr-case" class="tag" style="display:none"></span>
   <button id="reload">重新整理</button>
   <span id="asof" class="tag"></span>
@@ -246,7 +246,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
       <h2 style="margin:0">案件佇列</h2>
       <button id="new-case-btn">＋ 新增案件</button>
     </div>
-    <div class="sub">依風險燈號與受理時間排序 —— 燈號來自 <code>watchtower</code> 既有規則，本頁只呈現、不重算</div>
+    <div class="sub">依風險燈號與受理時間排序，需要優先處理的案件排在最前面。</div>
 
     <div id="new-case-panel" class="new-case" style="display:none">
       <div class="nc-step" id="nc-step-1">
@@ -272,14 +272,13 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
       <div class="nc-step" id="nc-step-2" style="display:none">
         <div class="nc-h">② 上傳憑證資料</div>
-        <div class="sub">目前支援<b>結構化格式</b>（JSON／CSV）——本系統尚未接入 OCR，
-          上傳掃描件照片不會被自動解析成欄位，這是誠實揭露的已知限制，不是漏做。
-          四個檔案可以只上傳其中幾個，之後仍可以重新上傳覆蓋。</div>
+        <div class="sub">支援電子發票、ERP 匯出檔與銀行流水（JSON／CSV）。
+          四類檔案可以只上傳其中幾項，之後仍可以重新上傳覆蓋。</div>
         <div class="nc-files">
-          <label>應收帳款發票 <span class="tag">receivables.json</span><input type="file" id="nc-f-receivables" accept=".json"></label>
-          <label>合約 <span class="tag">contracts.json</span><input type="file" id="nc-f-contracts" accept=".json"></label>
-          <label>應付帳款 <span class="tag">payables.json</span><input type="file" id="nc-f-payables" accept=".json"></label>
-          <label>銀行流水 <span class="tag">bank_ledger.csv</span><input type="file" id="nc-f-ledger" accept=".csv"></label>
+          <label>應收帳款發票 <span class="tag">JSON</span><input type="file" id="nc-f-receivables" accept=".json"></label>
+          <label>合約 <span class="tag">JSON</span><input type="file" id="nc-f-contracts" accept=".json"></label>
+          <label>應付帳款 <span class="tag">JSON</span><input type="file" id="nc-f-payables" accept=".json"></label>
+          <label>銀行流水 <span class="tag">CSV</span><input type="file" id="nc-f-ledger" accept=".csv"></label>
         </div>
         <button id="nc-upload">上傳並立即驗證</button>
         <button id="nc-skip" style="background:transparent;color:var(--ink-2)">先跳過，之後再補</button>
@@ -307,26 +306,25 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
   <section id="sec-overview">
     <h2>① 案件總覽</h2>
-    <div class="sub">警示由 <code>watchtower</code> 以決定性 SQL 產生並寫入 <code>fin_alerts</code>，本頁只呈現、不重算</div>
+    <div class="sub">憑證資料更新後系統自動檢查，發現異常會列在這裡，並附上相關憑證。</div>
     <div id="overview"><div class="empty">載入中…</div></div>
   </section>
 
   <section id="sec-cross">
     <h2>② 憑證交叉驗證</h2>
-    <div class="sub">27 條決定性檢查，零 LLM　·　點卡片展開逐條結果</div>
+    <div class="sub">27 項交叉查核，點選類別可展開逐項結果。</div>
     <div id="cross"><div class="empty">載入中…</div></div>
   </section>
 
   <section class="wide" id="sec-cash">
     <h2>③ 現金流時間軸</h2>
-    <div class="sub" id="cash-sub">依未收應收的到期日累加</div>
+    <div class="sub" id="cash-sub">依已知的收付款日期，推估未來 90 天的現金部位。</div>
     <div id="cash"><div class="empty">載入中…</div></div>
   </section>
 
   <section class="wide" id="sec-sim">
     <h2>④ 情境模擬：如果現在多一筆應付款</h2>
-    <div class="sub">重用與正式報告<b>同一套</b>現金流算法（<code>compute_cash_flow_projection</code>）——
-      不是另寫一份，否則兩邊有一天會給出不同答案</div>
+    <div class="sub">試算一筆新增應付款對現金部位的影響；出現資金缺口時，並比較可用的融資方案。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">
       <label>金額 <input id="sim-amt" type="number" value="10000000" step="1000000" style="width:150px"></label>
       <label>幾天後到期 <input id="sim-days" type="number" value="20" min="1" max="180" style="width:80px"></label>
@@ -338,7 +336,7 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
   <section class="wide" id="sec-conf">
     <h2>⑤ 顧問問答與信心分數</h2>
-    <div class="sub">信心不是模型自己說的 —— 由四項可量測訊號依<b>公開權重</b>算出，任何人都能重算</div>
+    <div class="sub">每個回答都附上原文出處；信心分數依四項指標計算，證據不足時系統不作答。</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <input id="q" style="flex:1;min-width:300px" placeholder="輸入問題後按 Enter，可以接著追問">
       <button id="ask">送出</button>
@@ -355,7 +353,6 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   </section>
   </div><!-- /#case-view -->
 
-  <div class="foot">每個數字都可用終端機指令重現　·　本頁不含任何外部資源</div>
 </main>
 
 <div id="evidence-modal" onclick="if(event.target===this) closeEvidence()">
@@ -381,6 +378,24 @@ const md = s => esc(s)
   .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
   .replace(/`(.+?)`/g, '<code>$1</code>');
 
+// 顯示用：列舉值翻成中文、金額加千分位、原始檔名換成一般說法。
+const STATUS_TXT = {PAID: '已收款', PENDING: '未收款', OVERDUE: '逾期未收', WRITTEN_OFF: '已沖銷'};
+const SRC_NAME = {'receivables.json': '應收帳款發票', 'contracts.json': '買賣合約',
+                  'payables.json': '應付帳款', 'bank_ledger.csv': '銀行流水'};
+const VERDICT_TXT = {exact: '逐字相符', near: '近似相符'};
+// 不是憑證內容的內部欄位（文件型別代碼、資料來源註記、產生資料時設定的買方屬性），回查時不顯示
+const HIDDEN_FIELDS = new Set(['doc_type', 'source_note', 'buyer_payment_behaviour']);
+function pretty(k, v) {
+  if (Array.isArray(v)) return v.join('、');
+  if (k === 'status' && STATUS_TXT[v]) return STATUS_TXT[v];
+  if (k === 'currency' && v === 'TWD') return '新台幣';
+  if (/amount|balance|^amt$/.test(k) && v !== '' && v != null && !isNaN(Number(v)))
+    return Number(v).toLocaleString('zh-TW');
+  return v;
+}
+// 知識庫文件顯示文件名，不顯示副檔名
+const docName = s => String(s ?? '').replace(/\.(md|txt)(?=[\s、，。）)]|$)/g, '');
+
 async function get(u) {
   const r = await fetch(u);
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
@@ -399,7 +414,7 @@ async function loadOverview(t) {
       <div class="light">
         <div class="lamp ${d.light}">${icon}</div>
         <div class="lamp-txt"><b>${txt}</b>
-          <div>嚴重 ${d.counts.critical}　注意 ${d.counts.warning}　提示 ${d.counts.info}</div>
+          <div>${d.crosscheck_critical ? `查核重大缺失 ${d.crosscheck_critical} 項　·　` : ''}監控警示：嚴重 ${d.counts.critical}　注意 ${d.counts.warning}　提示 ${d.counts.info}</div>
         </div>
       </div>` +
       (d.alerts.length ? d.alerts.map(a => `
@@ -408,10 +423,9 @@ async function loadOverview(t) {
           <p>${md(a.detail)}</p>
           ${a.evidence_n ? `<details class="evd"><summary>證據 ${a.evidence_n} 筆（可逐列複查）</summary>
             <div class="scroll"><table>
-              <tr>${Object.keys(a.evidence[0] || {}).slice(0, 5)
-                .map(k => `<th>${esc(k)}</th>`).join('')}</tr>
-              ${a.evidence.map(e => `<tr>${Object.keys(a.evidence[0] || {}).slice(0, 5)
-                .map(k => `<td>${esc(e[k])}</td>`).join('')}</tr>`).join('')}
+              <tr>${evCols(a.evidence).map(k => `<th>${esc(FIELD_LABEL[k] || k)}</th>`).join('')}</tr>
+              ${a.evidence.map(e => `<tr>${evCols(a.evidence)
+                .map(k => `<td>${esc(pretty(k, e[k]))}</td>`).join('')}</tr>`).join('')}
             </table></div></details>` : ''}
         </div>`).join('')
         : '<div class="empty">本次掃描未發現需要注意的事項。</div>');
@@ -426,7 +440,7 @@ async function loadCross(t) {
     // 直接丟進樣板會印出 [object Object] —— 畫面上真的出現過。
     const de = d.documents_examined || {};
     const docTxt = typeof de === 'object'
-      ? `發票 ${fmt(de.invoices)}　合約 ${fmt(de.contracts)}　流水 ${fmt(de.bank_transactions)}`
+      ? `發票 ${fmt(de.invoices)} 張　合約 ${fmt(de.contracts)} 份　銀行流水 ${fmt(de.bank_transactions)} 筆`
       : String(de);
     $('#asof').textContent = `基準日 ${d.as_of}　${docTxt}`;
     // integrity_score 是 0~1 的比例（0.674），不是百分比數值。
@@ -468,7 +482,14 @@ const FIELD_LABEL = {
   recourse_note: '追索權說明', date: '日期', description: '摘要',
   counterparty_ban: '對手統編', reference: '關聯憑證', amount: '金額',
   balance: '餘額', source_note: '資料來源說明',
+  issue_date: '開立日期', days_overdue: '逾期天數', contract_id: '合約編號',
+  invoice_terms: '發票帳期（天）', contract_terms: '合約帳期（天）', diff_days: '相差天數',
+  late_cnt: '延遲次數', paid_cnt: '已付款張數', worst_delay: '最久延遲（天）',
+  pct: '占比（%）', amt: '未收金額', invoices: '發票號碼', dates: '開立日期', n: '張數',
+  recent_dso: '近 90 天收款天數', prior_dso: '前期收款天數', change_pct: '變化（%）',
+  n_recent: '近期樣本數',
 };
+const evCols = ev => Object.keys(ev[0] || {}).filter(k => !HIDDEN_FIELDS.has(k)).slice(0, 5);
 
 async function showEvidence(tenant, ref) {
   const modal = $('#evidence-modal');
@@ -478,14 +499,14 @@ async function showEvidence(tenant, ref) {
   $('#ev-body').innerHTML = '';
   try {
     const d = await get(`/api/cases/${tenant}/lookup/${encodeURIComponent(ref)}`);
-    $('#ev-sub').textContent = `在 ${tenant} 的原始憑證資料裡找到 ${d.hits.length} 筆——底下是完整原始記錄，不是摘要。`;
+    $('#ev-sub').textContent = `找到 ${d.hits.length} 筆相關的原始記錄。`;
     $('#ev-body').innerHTML = d.hits.map(h => `
       <div class="ev-hit">
         <span class="kind">${esc(h.kind)}</span>
-        <table>${Object.entries(h.record).map(([k, v]) => `
-          <tr><td class="k">${esc(FIELD_LABEL[k] || k)}</td><td class="v">${esc(v)}</td></tr>`).join('')}
+        <table>${Object.entries(h.record).filter(([k]) => !HIDDEN_FIELDS.has(k)).map(([k, v]) => `
+          <tr><td class="k">${esc(FIELD_LABEL[k] || k)}</td><td class="v">${esc(pretty(k, v))}</td></tr>`).join('')}
         </table>
-        <div class="src">來源檔案：<code>data/raw/${esc(tenant)}/${esc(h.source_file)}</code></div>
+        <div class="src">來源：${esc(SRC_NAME[h.source_file] || h.source_file)}</div>
       </div>`).join('');
   } catch (e) {
     $('#ev-sub').textContent = '';
@@ -500,7 +521,6 @@ function closeEvidence() { $('#evidence-modal').classList.remove('open'); $('.ev
 // 一次只看一份原始記錄，使用者得自己記住上一份的欄位再心算；
 // 把涉及的記錄並排、把不一致的欄位標出來，才是這條警示真正要人看的東西。
 // 差異判定純粹是欄位值比對（模型外、可重算），不做任何判讀。
-const CMP_SKIP = new Set(['doc_type', 'source_note']);   // 註記性欄位，不算差異
 function compareChip(tenant, item) {
   if (item.passed || !item.refs || item.refs.length < 2 || item.refs.length > 4) return '';
   const refs = item.refs.map(r => String(r).split('(')[0].trim());
@@ -518,7 +538,7 @@ async function compareEvidence(tenant, refs) {
       return d.hits[0] ? { ref: r, ...d.hits[0] } : null;
     }));
     const cols = hits.filter(Boolean);
-    const keys = [...new Set(cols.flatMap(c => Object.keys(c.record)))].filter(k => !CMP_SKIP.has(k));
+    const keys = [...new Set(cols.flatMap(c => Object.keys(c.record)))].filter(k => !HIDDEN_FIELDS.has(k));
     let ndiff = 0;
     const rows = keys.map(k => {
       const vals = cols.map(c => c.record[k]);
@@ -526,15 +546,15 @@ async function compareEvidence(tenant, refs) {
       const diff = present.length >= 2 && new Set(present.map(String)).size > 1;
       if (diff) ndiff++;
       return `<tr class="${diff ? 'diff' : ''}"><td class="k">${esc(FIELD_LABEL[k] || k)}</td>${
-        vals.map(v => `<td>${v == null ? '<span style="color:var(--ink-muted)">—</span>' : esc(v)}</td>`).join('')}</tr>`;
+        vals.map(v => `<td>${v == null ? '<span style="color:var(--ink-muted)">—</span>' : esc(pretty(k, v))}</td>`).join('')}</tr>`;
     });
     $('#ev-sub').textContent = ndiff
-      ? `${cols.length} 份原始記錄並排；紅色列是兩邊都有、但值不一樣的欄位（共 ${ndiff} 個）——這就是警示指的地方。`
-      : `${cols.length} 份原始記錄並排；共同欄位沒有不一致，請看各自的內容。`;
+      ? `${cols.length} 份原始記錄並排比對，紅色標示的是不一致的欄位（共 ${ndiff} 處）。`
+      : `${cols.length} 份原始記錄並排比對，共同欄位沒有不一致。`;
     $('#ev-body').innerHTML = `<div class="scroll"><table class="ev-cmp"><thead><tr><th></th>${
       cols.map(c => `<th><span class="kind">${esc(c.kind)}</span>${esc(c.ref)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>
-      <div class="src" style="margin-top:10px;font-size:14.5px;color:var(--ink-muted)">來源檔案：${
-      [...new Set(cols.map(c => c.source_file))].map(f => `<code>data/raw/${esc(tenant)}/${esc(f)}</code>`).join('　')}</div>`;
+      <div class="src" style="margin-top:10px;font-size:14.5px;color:var(--ink-muted)">來源：${
+      [...new Set(cols.map(c => c.source_file))].map(f => esc(SRC_NAME[f] || f)).join('、')}</div>`;
   } catch (e) {
     $('#ev-sub').textContent = '';
     $('#ev-body').innerHTML = `<div class="err">${esc(e.message)}</div>`;
@@ -597,7 +617,7 @@ async function uploadCaseFiles() {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || '上傳失敗');
     finishNewCase(`已匯入：發票 ${d.ingested.invoices} 筆、合約 ${d.ingested.contracts} 筆、
-      流水 ${d.ingested.ledger} 筆。案件已可查看交叉驗證結果。`);
+      銀行流水 ${d.ingested.ledger} 筆。案件已可查看檢查結果。`);
   } catch (e) { msg.className = 'nc-msg err'; msg.textContent = esc(e.message); }
 }
 
@@ -617,9 +637,9 @@ async function loadQueue() {
         <div class="qlamp ${r.light}">${r.light === 'good' ? '✓' : r.light === 'warning' ? '!' : '✕'}</div>
         <div class="qmain">
           <div class="qname">${esc(r.client_name)}　<span class="tag">${esc(r.tenant_id)}</span></div>
-          <div class="qmeta">${esc(r.engagement_type)}${r.industry_code ? '　·　' + esc(r.industry_code) : ''}
+          <div class="qmeta">${esc(r.engagement_type)}${(r.industry_name || r.industry_code) ? '　·　' + esc(r.industry_name || r.industry_code) : ''}
             　·　受理 ${esc(r.intake_date)}
-            　·　嚴重 ${r.alert_counts.critical}　注意 ${r.alert_counts.warning}　提示 ${r.alert_counts.info}</div>
+            　·　${r.crosscheck_critical ? `查核重大缺失 ${r.crosscheck_critical}　·　` : ''}監控警示：嚴重 ${r.alert_counts.critical}　注意 ${r.alert_counts.warning}　提示 ${r.alert_counts.info}</div>
         </div>
         <div class="qaging" style="color:${AGING_CLASS(r.aging_days)}">
           <b>${r.aging_days}</b>受理天數</div>
@@ -648,95 +668,77 @@ function backToQueue() {
   loadQueue();
 }
 
+const EV_TYPE = {inflow: '應收入帳', outflow: '應付款', fixed: '固定支出',
+                 scenario: '模擬應付款', opening: '期初餘額'};
+
+// 推估餘額走勢。依實際日期畫階梯線：餘額只在收付款當天變動，中間是平的。
+// y 軸一律包含 0：授信看的是離「餘額為零」還有多遠，不從 0 起會把安全邊際畫得很窄。
+function balanceChart(series, x0, x1) {
+  const W = 900, H = 230, P = {t: 16, r: 18, b: 30, l: 104};
+  const T = s => Date.parse(s + 'T00:00:00');
+  const t0 = T(x0), t1 = T(x1);
+  const X = s => P.l + (T(s) - t0) / ((t1 - t0) || 1) * (W - P.l - P.r);
+  const vals = series.flatMap(s => s.curve.map(c => c.balance));
+  const top = Math.max(0, ...vals), bot = Math.min(0, ...vals);
+  const hi = top + (top - bot) * .08, lo = bot < 0 ? bot - (top - bot) * .08 : 0;
+  const Y = v => P.t + (H - P.t - P.b) * (1 - (v - lo) / ((hi - lo) || 1));
+  const path = c => c.map((p, i) => i
+      ? `H${X(p.date).toFixed(1)}V${Y(p.balance).toFixed(1)}`
+      : `M${X(p.date).toFixed(1)},${Y(p.balance).toFixed(1)}`).join('')
+    + `H${X(x1).toFixed(1)}`;
+  const months = [];
+  let [yy, mm] = x0.split('-').map(Number);
+  for (;;) {
+    mm += 1; if (mm > 12) { mm = 1; yy += 1; }
+    const s = `${yy}-${String(mm).padStart(2, '0')}-01`;
+    if (T(s) > t1) break;
+    months.push(s);
+  }
+  // 刻度標籤彼此太近（例如缺口很小時的 0 與最低點）就只留一個，避免文字疊在一起
+  const yTicks = [];
+  for (const v of (bot < 0 ? [top, 0, bot] : [top, 0]))
+    if (yTicks.every(u => Math.abs(Y(u) - Y(v)) >= 16)) yTicks.push(v);
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="推估餘額走勢">
+    ${months.map(m => `<line x1="${X(m).toFixed(1)}" x2="${X(m).toFixed(1)}" y1="${P.t}" y2="${H - P.b}"
+        stroke="var(--grid)" stroke-width="1"/>
+      <text x="${X(m).toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="var(--ink-muted)"
+        font-size="12">${+m.slice(5, 7)} 月</text>`).join('')}
+    ${yTicks.map(v => `<text x="${P.l - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end"
+        fill="${v === 0 ? 'var(--critical)' : 'var(--ink-muted)'}" font-size="12">${fmt(v)}</text>`).join('')}
+    <line x1="${P.l}" x2="${W - P.r}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}"
+          stroke="var(--critical)" stroke-width="1.5" stroke-dasharray="5 3"/>
+    ${series.map(s => `<path d="${path(s.curve)}" fill="none" stroke="${s.color}"
+        stroke-width="${s.width || 2.5}" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''}
+        stroke-linejoin="round"/>
+      ${s.curve.filter(c => c.type !== 'opening').map(c => `<circle cx="${X(c.date).toFixed(1)}"
+        cy="${Y(c.balance).toFixed(1)}" r="4" fill="${s.color}" stroke="var(--surface-1)" stroke-width="2">
+        <title>${c.date}　${esc(c.counterparty)}　${fmt(c.amount)}　→ 餘額 ${fmt(c.balance)}</title></circle>`).join('')}`).join('')}
+  </svg>`;
+}
+
 async function loadCash(t) {
   const el = $('#cash');
   try {
     const d = await get(`/api/cashflow/${t}`);
     $('#cash-sub').textContent = d.note;
-    if (!d.points.length) { el.innerHTML = '<div class="empty">目前沒有未收帳款。</div>'; return; }
-
-    // ── 兩個量級差 50 倍，所以拆成兩張圖，不共用一個 y 軸 ──────────────
-    //
-    // 餘額約 1,500 萬、單日入帳約 30 萬。硬畫在同一個座標軸上，
-    // 結果就是一條線貼著頂、一排長條貼著底，兩者都看不出變化 ——
-    // 先前的畫面正是如此。
-    //
-    // 常見的「解法」是加第二個 y 軸，但雙軸圖可以透過調整任一軸的範圍
-    // 製造出任意想要的相關性，在金融場合尤其不該用。
-    // 正確作法是**上下兩張圖共用同一條時間軸**，各自用自己的尺度。
-    const W = 900, P = {t: 12, r: 16, b: 22, l: 88};
-    const n = d.points.length;
-    const X = i => P.l + (n < 2 ? (W - P.l - P.r) / 2
-                                : i * (W - P.l - P.r) / (n - 1));
-    const bw = Math.max(4, (W - P.l - P.r) / Math.max(n, 1) * .45);
-
-    // 上：推估餘額（折線）。y 軸不從 0 起 —— 從 0 起會把 6% 的變化壓成平線。
-    const H1 = 150;
-    const ys = d.points.map(p => p.balance).concat([d.opening_balance]);
-    let lo1 = Math.min(...ys), hi1 = Math.max(...ys);
-    const pad = (hi1 - lo1) * .18 || Math.max(1, hi1 * .02);
-    lo1 -= pad; hi1 += pad;
-    const Y1 = v => P.t + (H1 - P.t - P.b) * (1 - (v - lo1) / ((hi1 - lo1) || 1));
-    const line = d.points.map((p, i) =>
-      `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y1(p.balance).toFixed(1)}`).join('');
-
-    // 下：當日應收入帳（長條），自己的尺度，從 0 起（長條圖必須從 0 起）
-    const H2 = 110;
-    const hi2 = Math.max(...d.points.map(p => p.inflow), 1);
-    const Y2 = v => P.t + (H2 - P.t - P.b) * (1 - v / hi2);
-
-    const gridY1 = [lo1 + (hi1 - lo1) * .5, hi1 - pad, lo1 + pad];
-
+    const curve = [{date: d.as_of, balance: d.opening_balance, amount: 0,
+                    type: 'opening', counterparty: '期初餘額'}].concat(d.timeline);
     el.innerHTML = `
-      <div class="scroll">
-      <div class="chart-lbl">推估餘額　<span>期初 ${fmt(d.opening_balance)}　·　日均支出 ${fmt(d.avg_daily_outflow)}</span></div>
-      <svg viewBox="0 0 ${W} ${H1}" width="100%" height="${H1}"
-           role="img" aria-label="推估餘額走勢">
-        ${gridY1.map(v => `<line x1="${P.l}" x2="${W - P.r}" y1="${Y1(v)}" y2="${Y1(v)}"
-            stroke="var(--grid)" stroke-width="1"/>
-          <text x="${P.l - 8}" y="${Y1(v) + 4}" text-anchor="end"
-            fill="var(--ink-muted)" font-size="11">${fmt(v)}</text>`).join('')}
-        <path d="${line}" fill="none" stroke="var(--s1)" stroke-width="2"
-              stroke-linejoin="round" stroke-linecap="round"/>
-        ${d.points.map((p, i) => `<circle cx="${X(i).toFixed(1)}" cy="${Y1(p.balance).toFixed(1)}"
-             r="4.5" fill="var(--s1)" stroke="var(--surface-1)" stroke-width="2">
-             <title>${p.date}　推估餘額 ${fmt(p.balance)}</title></circle>`).join('')}
-      </svg>
-
-      <div class="chart-lbl">當日應收入帳</div>
-      <svg viewBox="0 0 ${W} ${H2}" width="100%" height="${H2}"
-           role="img" aria-label="當日應收入帳">
-        <line x1="${P.l}" x2="${W - P.r}" y1="${Y2(0)}" y2="${Y2(0)}"
-              stroke="var(--axis)" stroke-width="1"/>
-        <text x="${P.l - 8}" y="${Y2(hi2) + 4}" text-anchor="end"
-              fill="var(--ink-muted)" font-size="11">${fmt(hi2)}</text>
-        <text x="${P.l - 8}" y="${Y2(0) + 4}" text-anchor="end"
-              fill="var(--ink-muted)" font-size="11">0</text>
-        ${d.points.map((p, i) => {
-          // 長條以 X(i) 為中心畫，第一/最後一個資料點的中心正好落在
-          // 繪圖區邊界（跟折線圖共用時間軸的代價）——半寬會讓長條
-          // 往外溢出，蓋到左邊 y 軸單位文字或右邊留白。夾在邊界內。
-          const bx = Math.min(Math.max(X(i) - bw / 2, P.l), W - P.r - bw);
-          return `<rect x="${bx.toFixed(1)}"
-            y="${Y2(p.inflow).toFixed(1)}" width="${bw.toFixed(1)}"
-            height="${(Y2(0) - Y2(p.inflow)).toFixed(1)}" rx="4"
-            fill="var(--seq-450)"><title>${p.date}　入帳 ${fmt(p.inflow)}（${p.invoices} 張）</title></rect>`;
-        }).join('')}
-        ${d.points.map((p, i) => `<text x="${X(i)}" y="${H2 - 6}" text-anchor="middle"
-            fill="var(--ink-muted)" font-size="10">${p.date.slice(5)}</text>`).join('')}
-      </svg>
+      <div class="chart-lbl">推估餘額　<span>期初 ${fmt(d.opening_balance)}（銀行流水截至 ${esc(d.ledger_date || '—')}）
+        ·　最低 ${fmt(d.trough_balance)}（${esc(d.trough_date)}）　·　推估至 ${esc(d.horizon_end)}</span></div>
+      <div class="scroll">${balanceChart([{curve, color: 'var(--s1)'}], d.as_of, d.horizon_end)}</div>
+      <div class="legend" style="margin-top:6px">
+        <span><i class="sw" style="background:var(--s1)"></i>推估餘額</span>
+        <span><i class="sw" style="background:var(--critical)"></i>餘額為零</span>
+        ${d.gap_detected ? `<span style="color:var(--critical);font-weight:600">⚠ ${esc(d.gap_date)} 起餘額轉負</span>` : ''}
       </div>
-      <div class="legend" style="margin-top:8px">
-        <span><i class="sw" style="background:var(--s1)"></i>推估餘額（上圖，尺度為 ${fmt(lo1)}~${fmt(hi1)}）</span>
-        <span><i class="sw" style="background:var(--seq-450)"></i>當日應收入帳（下圖，自 0 起算）</span>
-        <span>兩張圖共用時間軸，各自尺度 —— 刻意不用雙 y 軸</span>
-      </div>
-      <div class="scroll" style="margin-top:10px"><table>
-        <tr><th>到期日</th><th class="num">應收入帳</th><th class="num">張數</th><th class="num">推估餘額</th></tr>
-        ${d.points.slice(0, 8).map(p => `<tr><td>${p.date}</td>
-          <td class="num">${fmt(p.inflow)}</td><td class="num">${p.invoices}</td>
-          <td class="num">${fmt(p.balance)}</td></tr>`).join('')}
-      </table></div>`;
+      ${d.timeline.length ? `<div class="scroll" style="margin-top:10px"><table>
+        <tr><th>日期</th><th>項目</th><th>對象</th><th class="num">金額</th><th class="num">推估餘額</th></tr>
+        ${d.timeline.slice(0, 12).map(e => `<tr><td>${e.date}</td><td>${EV_TYPE[e.type] || esc(e.type)}</td>
+          <td>${esc(e.counterparty)}</td>
+          <td class="num" style="color:${e.amount < 0 ? 'var(--critical)' : 'var(--good)'}">${e.amount > 0 ? '+' : ''}${fmt(e.amount)}</td>
+          <td class="num">${fmt(e.balance)}</td></tr>`).join('')}
+      </table></div>` : '<div class="empty">推估期間內沒有已知的收付款。</div>'}`;
   } catch (e) { el.innerHTML = `<div class="err">讀取失敗：${esc(e.message)}</div>`; }
 }
 
@@ -751,6 +753,7 @@ function renderAnswer(t) {
     if (!line) { continue; }
     const inline = s => esc(s)
       .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/\*([^*]+)\*/g, '<i>$1</i>')
       .replace(/`(.+?)`/g, '<code>$1</code>');
     let m;
     if ((m = line.match(/^#{1,6}\s+(.*)$/)))
@@ -792,14 +795,14 @@ function renderTurn(d) {
       ${d.abstained
         ? `<b style="color:var(--critical)">⛔ 系統選擇不回答</b>
            ${renderAnswer(d.abstain_reason)}`
-        : renderAnswer(d.answer)}
+        : renderAnswer(docName(d.answer))}
     </div>
     ${d.claims.length ? `<div class="scroll"><table>
       <tr><th>主張</th><th>逐字引用</th><th>來源</th><th>驗證</th></tr>
       ${d.claims.map(c => `<tr><td>${esc(c.statement)}</td>
         <td style="color:var(--ink-2)">${esc(c.quote)}</td>
-        <td class="tag">${esc(c.source)}</td>
-        <td><span class="pill ${['exact', 'near'].includes(c.verdict) ? 'good' : 'critical'}">${c.verdict}</span></td>
+        <td class="tag">${esc(docName(c.source))}</td>
+        <td><span class="pill ${['exact', 'near'].includes(c.verdict) ? 'good' : 'critical'}">${VERDICT_TXT[c.verdict] || '未通過'}</span></td>
       </tr>`).join('')}</table></div>` : ''}
     ${d.removed.length ? `<div class="sub">已移除未通過驗證的敘述 ${d.removed.length} 條</div>` : ''}
   </div>`;
@@ -810,7 +813,7 @@ async function ask() {
   const el = $('#conf');
   $('#q').value = '';
   el.innerHTML = history.map(renderTurn).join('')
-    + '<div class="empty">計算中…（首次會等模型載入，約 2 分鐘）</div>';
+    + '<div class="empty">計算中…</div>';
   el.scrollTop = el.scrollHeight;
   try {
     const d = await get(`/api/confidence?q=${encodeURIComponent(q)}&tenant=${currentTenant}`);
@@ -833,50 +836,21 @@ async function simulate() {
     $('#sim-hint').textContent = d.note;
     const b = d.baseline, s = d.simulated;
     if (!s) { el.innerHTML = '<div class="empty">請輸入大於 0 的金額。</div>'; return; }
+    const bad = d.delta.turns_negative || s.trough_balance < 0;
 
-    // 兩條曲線疊在同一張圖 —— 這裡共用尺度是**正確的**，
-    // 因為兩者是同一個量（餘額），比較的就是差距。
-    const all = b.curve.concat(s.curve).map(c => c.balance).filter(v => v != null);
-    const W = 900, H = 200, P = {t: 14, r: 16, b: 26, l: 96};
-    const lo = Math.min(0, ...all), hi = Math.max(...all, 0);
-    const dates = [...new Set(b.curve.concat(s.curve).map(c => c.date))].sort();
-    const X = dt => P.l + dates.indexOf(dt) * (W - P.l - P.r) / Math.max(dates.length - 1, 1);
-    const Y = v => P.t + (H - P.t - P.b) * (1 - (v - lo) / ((hi - lo) || 1));
-    const path = cv => cv.filter(c => c.balance != null)
-      .map((c, i) => `${i ? 'L' : 'M'}${X(c.date).toFixed(1)},${Y(c.balance).toFixed(1)}`).join('');
-
+    // 兩條曲線疊在同一張圖、共用尺度：兩者是同一個量（餘額），比較的就是差距。
     el.innerHTML = `
-      <div class="verdict ${d.delta.turns_negative || s.trough_balance < 0 ? 'bad' : 'ok'}">
-        ${d.delta.turns_negative ? '⚠️ ' : ''}${esc(d.delta.verdict)}
-      </div>
-      <div class="scroll"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"
-           role="img" aria-label="現金流情境比較">
-        <line x1="${P.l}" x2="${W - P.r}" y1="${Y(0)}" y2="${Y(0)}"
-              stroke="var(--critical)" stroke-width="1.5" stroke-dasharray="5 3"/>
-        <text x="${P.l - 8}" y="${Y(0) + 4}" text-anchor="end"
-              fill="var(--critical)" font-size="11">0</text>
-        <text x="${P.l - 8}" y="${Y(hi) + 4}" text-anchor="end"
-              fill="var(--ink-muted)" font-size="11">${fmt(hi)}</text>
-        <text x="${P.l - 8}" y="${Y(lo) + 4}" text-anchor="end"
-              fill="var(--ink-muted)" font-size="11">${fmt(lo)}</text>
-        <path d="${path(b.curve)}" fill="none" stroke="var(--ink-muted)"
-              stroke-width="2" stroke-dasharray="5 4"/>
-        <path d="${path(s.curve)}" fill="none" stroke="var(--s2)" stroke-width="2.5"/>
-        ${s.curve.filter(c => c.balance != null).map(c =>
-          `<circle cx="${X(c.date)}" cy="${Y(c.balance)}" r="4" fill="var(--s2)"
-             stroke="var(--surface-1)" stroke-width="2"><title>${c.date}　${fmt(c.balance)}
-　${esc(c.counterparty)}</title></circle>`).join('')}
-        <text x="${P.l}" y="${H - 6}" fill="var(--ink-muted)" font-size="10">${dates[0]}</text>
-        <text x="${W - P.r}" y="${H - 6}" fill="var(--ink-muted)" font-size="10"
-              text-anchor="end">${dates.at(-1)}</text>
-      </svg></div>
+      <div class="verdict ${bad ? 'bad' : 'ok'}">${bad ? '⚠️ ' : '✓ '}${esc(d.delta.verdict)}。</div>
+      <div class="scroll">${balanceChart([
+        {curve: b.curve, color: 'var(--ink-muted)', dash: '6 4', width: 2},
+        {curve: s.curve, color: 'var(--s2)'}], d.as_of, d.horizon_end)}</div>
       <div class="legend">
-        <span><i class="sw" style="background:var(--ink-muted)"></i>原本（最低 ${fmt(b.trough_balance)}　${b.trough_date || ''}）</span>
-        <span><i class="sw" style="background:var(--s2)"></i>加上這筆之後（最低 ${fmt(s.trough_balance)}　${s.trough_date || ''}）</span>
-        <span><i class="sw" style="background:var(--critical)"></i>零線</span>
+        <span><i class="sw" style="background:var(--ink-muted)"></i>原本（最低 ${fmt(b.trough_balance)}，${esc(b.trough_date)}）</span>
+        <span><i class="sw" style="background:var(--s2)"></i>加上這筆之後（最低 ${fmt(s.trough_balance)}，${esc(s.trough_date)}）</span>
+        <span><i class="sw" style="background:var(--critical)"></i>餘額為零</span>
       </div>
       ${d.financing ? `
-        <div class="chart-lbl" style="margin-top:16px">缺口出現 → 融資方案比較</div>
+        <div class="chart-lbl" style="margin-top:16px">資金缺口的融資方案比較</div>
         <div class="cards">${d.financing.map(f => `
           <div class="card open" style="cursor:default">
             <div class="top"><span class="nm">${esc(f.name)}</span></div>
@@ -917,7 +891,7 @@ async function loadAll() {
   $('#new-case-btn').onclick = toggleNewCasePanel;
   $('#nc-create').onclick = createCase;
   $('#nc-upload').onclick = uploadCaseFiles;
-  $('#nc-skip').onclick = () => finishNewCase('尚未上傳資料——案件已建立，之後可以在案件細節頁重新上傳。');
+  $('#nc-skip').onclick = () => finishNewCase('案件已建立，憑證可稍後在案件頁補上傳。');
   $('#nc-open').onclick = () => { toggleNewCasePanel(); openCase(newCaseTenant); };
   $('#nc-close').onclick = () => { toggleNewCasePanel(); loadQueue(); };
   await loadQueue();

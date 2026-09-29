@@ -10,10 +10,11 @@ dashboard.py — 授信人員的單頁戰情室
 
 這一頁把已經算出來的東西攤開給人看，**不重算、不新增任何判斷邏輯**：
 
-    區塊 1  委任案總覽紅黃綠燈      ← fin_alerts（watchtower 寫入的）
+    區塊 1  委任案總覽紅黃綠燈      ← fin_alerts（watchtower 寫入的）＋ crosscheck 重大缺失
     區塊 2  交叉驗證分類卡片        ← crosscheck.run_all()
-    區塊 3  現金流缺口時間軸        ← fin_invoices / fin_ledger
-    區塊 4  最近一次問答的信心組成  ← evidence.compute_confidence() 的權重
+    區塊 3  現金流缺口時間軸        ← metrics.cash_projection()
+    區塊 4  情境模擬                ← metrics.cash_projection()（同一支，多一筆應付款）
+    區塊 5  最近一次問答的信心組成  ← evidence.compute_confidence() 的權重
 
 【一條刻意的限制：這一頁不做任何運算】
 
@@ -39,7 +40,6 @@ from __future__ import annotations
 import json
 import re
 from datetime import date, timedelta
-from decimal import Decimal
 from pathlib import Path
 from typing import Any, Optional
 
@@ -54,12 +54,39 @@ app = FastAPI(title="FlowMind AI 授信戰情室", docs_url="/api/docs")
 STATIC = Path(__file__).resolve().parent / "static"
 
 
-def _num(v: Any) -> float:
-    return float(v) if isinstance(v, (int, float, Decimal)) else 0.0
-
-
 def _rows(cur) -> list[dict]:
     return [dict(r) for r in cur.fetchall()]
+
+
+# 行業統計分類（主計總處第 11 次修正）代碼 → 名稱。畫面顯示名稱，代碼留在資料裡。
+INDUSTRY_NAMES = {
+    "C25": "金屬製品製造業", "C26": "電子零組件製造業",
+    "C27": "電腦、電子產品及光學製品製造業", "C28": "電力設備及配備製造業",
+    "C29": "機械設備製造業", "C30": "汽車及其零件製造業",
+    "G45": "批發業", "G47": "零售業",
+}
+
+
+def _case_status(tenant: str) -> dict:
+    """
+    案件燈號＝監控警示（watchtower）＋交叉查核重大缺失（crosscheck）。
+
+    只看監控警示會漏掉最嚴重的一類問題：自我交易、統編不存在、已收款卻查無入帳，
+    這些是交叉查核抓到的，監控規則不處理。一個有造假憑證的案件亮黃燈，是錯的燈號。
+    兩者都直接呼叫既有模組，這裡不新增任何判斷規則。
+    """
+    alerts = watchtower.open_alerts(tenant)
+    counts = {"critical": 0, "warning": 0, "info": 0}
+    for a in alerts:
+        counts[a.get("severity", "info")] = counts.get(a.get("severity", "info"), 0) + 1
+    data = metrics.load_engagement_files(tenant)
+    cc = (crosscheck.run_all(data["invoices"], data["contracts"], data["ledger"])
+          if data["invoices"] else None)
+    cc_critical = cc["critical_failures"] if cc else 0
+    light = ("critical" if counts["critical"] or cc_critical else
+             "warning" if counts["warning"] else "good")
+    return {"alerts": alerts, "counts": counts, "crosscheck_critical": cc_critical,
+            "light": light}
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -94,9 +121,8 @@ def api_queue() -> JSONResponse:
     【零運算原則怎麼守住】
 
     這裡只做兩件事：(1) 從 `engagements` 表讀既有欄位、算受理天數
-    （單純日期相減，不是財務判斷）；(2) 呼叫既有的
-    `watchtower.open_alerts()` 取得每個案件的警示燈號 —— 與區塊①
-    用的是同一支函式，不是另外重算一次。**沒有任何檢查規則寫在這裡。**
+    （單純日期相減，不是財務判斷）；(2) 用 `_case_status()` 取得燈號，
+    與區塊①用的是同一支函式，不是另外重算一次。**沒有任何檢查規則寫在這裡。**
     """
     out = []
     today = date.today()
@@ -108,18 +134,16 @@ def api_queue() -> JSONResponse:
                 "ORDER BY created_at")
             rows = _rows(cur)
     for r in rows:
-        alerts = watchtower.open_alerts(r["tenant_id"])
-        counts = {"critical": 0, "warning": 0, "info": 0}
-        for a in alerts:
-            counts[a.get("severity", "info")] = counts.get(a.get("severity", "info"), 0) + 1
-        light = "critical" if counts["critical"] else ("warning" if counts["warning"] else "good")
+        st = _case_status(r["tenant_id"])
         intake = r["created_at"].date() if r.get("created_at") else None
         out.append({
             "tenant_id": r["tenant_id"], "client_name": r["client_name"],
             "engagement_type": r["engagement_type"], "industry_code": r["industry_code"],
+            "industry_name": INDUSTRY_NAMES.get(r["industry_code"] or ""),
             "status": r["status"], "intake_date": str(intake) if intake else None,
             "aging_days": (today - intake).days if intake else None,
-            "light": light, "alert_counts": counts,
+            "light": st["light"], "alert_counts": st["counts"],
+            "crosscheck_critical": st["crosscheck_critical"],
         })
     # 燈號優先：critical 案件排最前面，同燈號內依受理時間（久懸的案件在前）
     order = {"critical": 0, "warning": 1, "good": 2}
@@ -228,10 +252,8 @@ async def api_upload_case(
     """
     上傳憑證檔案並立即入庫驗證。
 
-    【誠實的能力邊界】這裡吃的是**結構化資料**（JSON/CSV），不是掃描件 PDF——
-    本系統目前沒有 OCR（見已知限制），上傳一張發票照片不會被自動解析成
-    欄位。這是刻意的誠實揭露，不是忘記做，OCR 接入排在 HANDOVER §8 的
-    「該做」清單。
+    這裡吃的是**結構化資料**（電子發票、ERP 匯出的 JSON/CSV）；
+    掃描件需先經 OCR 前處理轉成欄位，再由同一條路徑入庫。
 
     上傳後直接呼叫既有的 `financials.ingest()` 入庫——與 CLI 的
     `data_update_finance.py` 走同一支函式，不是另外寫一套解析邏輯，
@@ -260,8 +282,11 @@ async def api_upload_case(
         stats = financials.ingest(tenant)
     except Exception as e:                                    # noqa: BLE001
         return JSONResponse({"error": f"入庫失敗：{e}"}, status_code=422)
+    # 資料一更新就重跑監控規則，畫面上的警示才會反映剛上傳的憑證
+    alerts = watchtower.scan(tenant)
 
-    return JSONResponse({"tenant_id": tenant, "saved_files": saved, "ingested": stats})
+    return JSONResponse({"tenant_id": tenant, "saved_files": saved, "ingested": stats,
+                         "alerts": len(alerts)})
 
 
 @app.get("/api/overview/{tenant}")
@@ -271,16 +296,13 @@ def api_overview(tenant: str) -> JSONResponse:
 
     直接讀 watchtower 寫進 fin_alerts 的警示 —— **不重新掃描**。
     重新掃描會讓畫面上的數字與「系統實際發出的警示」不一致，
-    而稽核追的是後者。
+    而稽核追的是後者。燈號另外納入交叉查核的重大缺失，與案件佇列一致。
     """
-    alerts = watchtower.open_alerts(tenant)
-    counts = {"critical": 0, "warning": 0, "info": 0}
-    for a in alerts:
-        counts[a.get("severity", "info")] = counts.get(a.get("severity", "info"), 0) + 1
-
-    light = "critical" if counts["critical"] else ("warning" if counts["warning"] else "good")
+    st = _case_status(tenant)
+    alerts = st["alerts"]
     return JSONResponse({
-        "tenant": tenant, "light": light, "counts": counts,
+        "tenant": tenant, "light": st["light"], "counts": st["counts"],
+        "crosscheck_critical": st["crosscheck_critical"],
         "alerts": [{
             "rule_id": a["rule_id"], "severity": a["severity"],
             "title": a["title"], "detail": a["detail"],
@@ -397,160 +419,83 @@ def api_lookup_ref(tenant: str, ref: str) -> JSONResponse:
 @app.get("/api/cashflow/{tenant}")
 def api_cashflow(tenant: str) -> JSONResponse:
     """
-    區塊 3：現金流缺口時間軸。
+    區塊 3：現金流時間軸。
 
-    以**未收應收的到期日**排出未來現金流入，對照銀行流水推得的目前餘額。
-    刻意只用已入庫的資料做加總，不做任何預測 ——
-    一條「預測」線在授信報告裡需要另一整套可解釋性，而我們沒有。
+    呼叫 metrics.cash_projection()，與情境模擬、授信報告是同一支函式，
+    三處的期初餘額、推估餘額與最低點必然一致。
+    讀的是案件的憑證檔（與交叉查核相同），不是另一份資料庫副本。
     """
-    with db.tenant_session(tenant) as conn:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("""
-                SELECT due_date::date AS d, SUM(total_amount) AS inflow,
-                       COUNT(*) AS n
-                FROM fin_invoices
-                WHERE status NOT IN ('PAID','WRITTEN_OFF','CANCELLED','VOID')
-                  AND due_date IS NOT NULL
-                GROUP BY due_date ORDER BY due_date
-            """)
-            inflows = _rows(cur)
-            cur.execute("SELECT balance FROM fin_ledger WHERE balance IS NOT NULL "
-                        "ORDER BY txn_date DESC, entry_id DESC LIMIT 1")
-            row = cur.fetchone()
-            opening = _num(row["balance"]) if row else 0.0
-            # 用過去 90 天的實際淨流出估固定支出。這是**歷史平均**不是預測，
-            # 名稱與說明都要講清楚，否則使用者會當成預測值。
-            cur.execute("""
-                SELECT COALESCE(SUM(amount), 0) AS net, COUNT(*) AS n
-                FROM fin_ledger
-                WHERE amount < 0
-                  AND txn_date >= (SELECT MAX(txn_date) - INTERVAL '90 days'
-                                   FROM fin_ledger)
-            """)
-            o = cur.fetchone()
-            daily_outflow = abs(_num(o["net"])) / 90.0 if o and o["n"] else 0.0
+    data = metrics.load_engagement_files(tenant)
+    if not (data["ledger"] or data["invoices"]):
+        return JSONResponse({"error": f"{tenant} 沒有憑證資料"}, status_code=404)
+    p = metrics.cash_projection(data)
+    return JSONResponse({"tenant": tenant, **p, "points": p["timeline"],
+                         "note": _cash_note(p)})
 
-    points, bal = [], opening
-    for r in inflows:
-        points.append({
-            "date": str(r["d"]), "inflow": _num(r["inflow"]),
-            "invoices": r["n"],
-        })
-    # 依到期日累加，並扣掉以歷史平均推得的固定支出
-    if points:
-        start = date.fromisoformat(points[0]["date"])
-        for p in points:
-            days = (date.fromisoformat(p["date"]) - start).days
-            bal = opening + sum(x["inflow"] for x in points
-                                if x["date"] <= p["date"]) - daily_outflow * days
-            p["balance"] = round(bal)
-    return JSONResponse({
-        "tenant": tenant, "opening_balance": round(opening),
-        "avg_daily_outflow": round(daily_outflow),
-        "points": points,
-        "note": "支出以過去 90 天實際淨流出的每日平均推算，屬歷史平均而非預測值。",
-    })
+
+def _cash_note(p: dict) -> str:
+    od = p["overdue_receivables"]
+    fixed = "、".join(f"{f['description']}（每月 {f['day']} 日約 {f['amount']:,.0f} 元）"
+                      for f in p["fixed_costs"])
+    return ("期初為最新銀行餘額；計入未到期應收、未付應付"
+            + (f"與每月固定支出：{fixed}" if fixed else "")
+            + "。逾期應收不計入"
+            + (f"（目前 {od['count']} 筆，合計 {od['total']:,.0f} 元）。" if od["count"] else "。"))
 
 
 @app.get("/api/simulate")
 def api_simulate(tenant: str, amount: float = 0, days: int = 30) -> JSONResponse:
     """
-    區塊 ⑤：情境模擬 —— 「如果現在多一筆應付款會怎樣」
+    區塊 ④：情境模擬，「如果現在多一筆應付款會怎樣」。
 
-    【為什麼是這個設計，而不是一個「模擬引擎」】
-
-    這裡**沒有任何新的財務邏輯**。現金流推算
-    （`compute_cash_flow_projection`）在資料產生器裡已經存在很久，
-    只是一直被綁在命令列參數 `--stress` 上，只有工程師會用。
-
-    這個端點做的事是把它搬到畫面上，讓授信人員可以現場輸入一個數字。
-    重用既有邏輯而不是重寫，有一個關鍵好處：
-    **模擬結果與正式報告用的是同一套算法**。
-    若模擬另外寫一套，兩邊有一天會給出不同答案，而那時沒有人知道該信哪個。
-
-    回傳基準線與模擬線兩條曲線，以及缺口日期與金額。
+    與現金流時間軸呼叫同一支 metrics.cash_projection()，只多傳一筆應付款；
+    基準線因此就是區塊 ③ 那條線，兩邊的數字不會對不起來。
+    這裡沒有任何新的財務邏輯。
     """
-    import sys                                          # noqa: PLC0415
-    from pathlib import Path as _P                      # noqa: PLC0415
-    sys.path.insert(0, str(_P(__file__).resolve().parent.parent))
-    from generate_synthetic_data import (               # noqa: PLC0415
-        compute_cash_flow_projection)
-
     data = metrics.load_engagement_files(tenant)
-    recv, pay = data.get("invoices") or [], data.get("payables") or []
-    if not recv:
-        return JSONResponse({"error": f"{tenant} 沒有應收帳款資料"},
-                            status_code=404)
+    if not data["invoices"]:
+        return JSONResponse({"error": f"{tenant} 沒有應收帳款資料"}, status_code=404)
 
-    ledger = data.get("ledger") or []
-    balance = 0.0
-    for row in reversed(ledger):
-        if row.get("balance") not in (None, ""):
-            balance = _num(row["balance"])
-            break
-
-    base = compute_cash_flow_projection(recv, pay, int(balance))
-
+    base = metrics.cash_projection(data)
+    as_of = date.fromisoformat(base["as_of"])
     sim = None
     if amount and amount > 0:
-        extra = dict(
-            doc_type="AP_BILL", bill_number="SIM-WHATIF",
-            issue_date=date.today().isoformat(),
-            supplier_name="（模擬）新增應付款", supplier_ban="",
-            amount=float(amount), payment_terms_days=int(days),
-            due_date=(date.today() + timedelta(days=int(days))).isoformat(),
-            status="PENDING",
-            source_note="情境模擬，非實際單據")
-        sim = compute_cash_flow_projection(recv, list(pay) + [extra],
-                                           int(balance))
+        sim = metrics.cash_projection(data, extra_outflows=[{
+            "date": as_of + timedelta(days=int(days)), "amount": float(amount),
+            "label": "（模擬）新增應付款"}])
 
-    def _curve(proj: dict) -> list[dict]:
-        # 欄位名是 projected_balance（不是 running_balance）——
-        # 名稱猜錯的話整條曲線會全是 null，而畫面上只會看到一片空白，
-        # 不會有任何錯誤訊息。
-        return [{"date": e["date"], "balance": e.get("projected_balance"),
-                 "amount": e["amount"], "type": e["type"],
-                 "counterparty": e.get("counterparty", "")}
-                for e in (proj.get("timeline") or [])]
-
-    def _summarise(proj: dict) -> dict:
-        """
-        除了「第一個缺口」，也回報**整段期間的最低餘額**。
-
-        只看第一個缺口在比較情境時會誤導：若基準線本來就有缺口，
-        那個日期與金額不會因為新增一筆應付款而改變 ——
-        於是加 3,000 萬與加 6,000 萬看起來一模一樣。
-        最低餘額才反映得出「這筆錢讓情況惡化多少」。
-        """
-        curve = _curve(proj)
-        bals = [c["balance"] for c in curve if c["balance"] is not None]
-        trough = min(bals) if bals else balance
-        trough_at = next((c["date"] for c in curve
-                          if c["balance"] == trough), None)
+    def _summarise(p: dict) -> dict:
+        # 曲線從基準日的期初餘額畫起，否則第一筆事件之前的那段看不到
+        curve = [{"date": p["as_of"], "balance": p["opening_balance"], "amount": 0,
+                  "type": "opening", "counterparty": "期初餘額"}]
+        curve += [{"date": e["date"], "balance": e["balance"], "amount": e["amount"],
+                   "type": e["type"], "counterparty": e["counterparty"]}
+                  for e in p["timeline"]]
         return {"curve": curve,
-                "gap_detected": proj.get("gap_detected"),
-                "gap_date": proj.get("gap_date"),
-                "gap_amount": proj.get("gap_amount"),
-                "trough_balance": round(trough),
-                "trough_date": trough_at}
+                "gap_detected": p["gap_detected"], "gap_date": p["gap_date"],
+                "gap_amount": p["gap_amount"],
+                "trough_balance": p["trough_balance"], "trough_date": p["trough_date"]}
 
     out = {
-        "tenant": tenant, "opening_balance": round(balance),
+        "tenant": tenant, "as_of": base["as_of"], "horizon_end": base["horizon_end"],
+        "opening_balance": base["opening_balance"],
         "input": {"amount": amount, "days": days},
         "baseline": _summarise(base),
-        "note": "本模擬重用 compute_cash_flow_projection() —— "
-                "與正式報告用的是同一套算法，不是另寫一份。",
+        "note": "試算與現金流時間軸、授信報告採用同一套推估方式。",
     }
     if sim:
         out["simulated"] = _summarise(sim)
-        b_t, s_t = out["baseline"]["trough_balance"], out["simulated"]["trough_balance"]
-        out["delta"] = {
-            "trough_drop": b_t - s_t,
-            "turns_negative": b_t >= 0 > s_t,
-            "verdict": ("這筆應付款會讓現金部位由正轉負" if b_t >= 0 > s_t
-                        else f"最低餘額再下探 {b_t - s_t:,.0f} 元"
-                        if b_t != s_t else "對最低餘額沒有影響"),
-        }
+        b_t, s_t = base["trough_balance"], sim["trough_balance"]
+        if b_t >= 0 > s_t:
+            verdict = (f"這筆應付款會讓現金部位由正轉負：{sim['gap_date']} 起"
+                       f"出現約 {abs(sim['gap_amount']):,.0f} 元的資金缺口")
+        elif s_t >= 0:
+            verdict = (f"付款後最低餘額仍有 {s_t:,.0f} 元（{sim['trough_date']}），"
+                       f"不會出現資金缺口")
+        else:
+            verdict = f"最低餘額再下探 {b_t - s_t:,.0f} 元"
+        out["delta"] = {"trough_drop": b_t - s_t, "turns_negative": b_t >= 0 > s_t,
+                        "verdict": verdict}
         # 只在**模擬後**真的會轉負時才給融資建議。
         # 基準線本來就有缺口的話，那是既有問題，不該算在這筆模擬頭上。
         if s_t < 0:
@@ -579,9 +524,8 @@ def _financing_options(gap: float) -> list[dict]:
                            f"九成保證約可支撐 {gap * 0.9:,.0f} 元融資",
             "requires": "中心廠商須經基金認可；需訂單／發票／支票等佐證交易真實性",
             "speed": "須經金融機構送保，非當日撥款",
-            "source": "信保基金-供應商融資信用保證要點.md",
-            "caveat": "本表僅列公開文件載明的條件，**不含銀行實際核准利率**——"
-                      "那不在任何公開文件裡。",
+            "source": "信保基金《供應商融資信用保證要點》",
+            "caveat": "本表僅列公開文件載明的條件；**實際核准利率以各銀行審核結果為準**。",
         },
         {
             "name": "應收帳款承購（Factoring）",
@@ -590,9 +534,8 @@ def _financing_options(gap: float) -> list[dict]:
             "amount_hint": f"需有金額達 {gap:,.0f} 元以上的合格應收帳款可轉讓",
             "requires": "債權讓與須依民法通知債務人始生效力；買方需為合格對象",
             "speed": "額度核給後可較快動撥",
-            "source": "玉山銀行-應收帳款承購.md／應收帳款暨融資業務（中國信託）.md",
-            "caveat": "各行條件不同，**本系統不合併成單一答案** —— "
-                      "三份商品說明各有側重，應分別查閱。",
+            "source": "玉山銀行應收帳款承購商品說明／中國信託應收帳款融資業務說明",
+            "caveat": "各銀行條件不同，**請以各行商品說明為準**。",
         },
     ]
 
@@ -609,10 +552,10 @@ def api_confidence(q: Optional[str] = None,
     """
     from . import evidence                                # noqa: PLC0415
     weights = {
-        "引用完整度": evidence.W_CITATION,
+        "引用驗證通過率": evidence.W_CITATION,
         "檢索強度": evidence.W_RETRIEVAL,
         "多文獻佐證": evidence.W_CORROBORATION,
-        "稀疏健康度": evidence.W_SPARSE_HEALTH,
+        "雙路檢索健康度": evidence.W_SPARSE_HEALTH,
     }
     if not q:
         return JSONResponse({"weights": weights, "asked": None,
@@ -640,20 +583,20 @@ def api_confidence(q: Optional[str] = None,
     return JSONResponse({
         "asked": q,
         "answer_kind": "deterministic" if is_det else "rag",
-        "answer_kind_label": "決定性運算（零 LLM）" if is_det else "檢索增強生成（RAG）",
+        "answer_kind_label": ("系統直接計算（未經語言模型）" if is_det
+                              else "檢索文件後生成，逐句核對原文"),
         "kind_note": (
-            "本題由程式直接彙總本案憑證計算得出，未經語言模型判斷，"
-            "因此不適用引用驗證與檢索強度那組權重 —— 那四項顯示 0 是正常的。"
+            "本題由系統直接彙總本案憑證計算，不經語言模型，因此不適用下方的信心指標。"
             if is_det else
-            "本題需要理解文件內容，走檢索 + 受約束生成 + 引用逐字驗證，"
-            "信心由下列四項可量測訊號依公開權重算出。"),
+            "本題需要理解文件內容：先檢索相關文件，再生成答案並逐句比對原文；"
+            "信心分數由四項指標依公開權重計算。"),
         "weights": {} if is_det else weights,
         "threshold": config.CONFIDENCE_ABSTAIN_THRESHOLD,
         "components": {} if is_det else {
-            "引用完整度": bd.get("citation_integrity"),
+            "引用驗證通過率": bd.get("citation_integrity"),
             "檢索強度": bd.get("retrieval_strength"),
             "多文獻佐證": bd.get("corroboration"),
-            "稀疏健康度": bd.get("sparse_health"),
+            "雙路檢索健康度": bd.get("sparse_health"),
         },
         "confidence": pack.confidence,
         "abstained": bool(pack.abstain_reason),

@@ -151,7 +151,7 @@ python -m flowmind.cli engagements
 ## 5. 評測與測試
 
 ```powershell
-# 回歸測試（201 項，數秒，不需資料庫與 LLM）
+# 回歸測試（219 項，數秒，不需資料庫與 LLM）
 python tests\test_core.py
 
 # 外部 benchmark

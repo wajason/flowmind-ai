@@ -104,13 +104,19 @@ def main() -> None:
         shutil.rmtree(DATA)
     (DEMO / "report").mkdir(parents=True, exist_ok=True)
 
+    tenants = args.tenants or [row["tenant_id"] for row in get("/api/queue")]
+    print(f"委任案：{tenants}")
+
+    # 先對每個案件跑一次監控規則，再擷取佇列與總覽：
+    # 擷取到的燈號與警示才是擷取當下的狀態，而不是上次掃描留下的。
+    from flowmind import watchtower                      # noqa: PLC0415
+    for t in tenants:
+        print(f"   {t} 監控警示 {len(watchtower.scan(t))} 則")
+
     queue = get("/api/queue")
     _dump(DATA / "queue.json", queue)
     _dump(DATA / "engagements.json", get("/api/engagements"))
     _dump(DATA / "confidence_weights.json", get("/api/confidence"))
-
-    tenants = args.tenants or [row["tenant_id"] for row in queue]
-    print(f"委任案：{tenants}")
 
     for t in tenants:
         print(f"── {t}")

@@ -77,13 +77,14 @@ def check_tax_ids(invoices: list[dict]) -> list[Finding]:
         for role in ("seller_ban", "buyer_ban"):
             ban = inv.get(role)
             if ban and not validate_tax_id(ban):
-                bad.append(f"{inv.get('invoice_number')}({role}={ban})")
+                who = "買方" if role == "buyer_ban" else "賣方"
+                bad.append(f"{inv.get('invoice_number')}（{who}統編 {ban}）")
                 bad_refs.append(str(inv.get("invoice_number")))
     out.append(Finding(
         "TAXID-01", "統一編號檢核碼", Severity.CRITICAL, not bad,
         "全部統編通過財政部檢核碼演算法。" if not bad else
         f"有 {len(bad)} 筆統編未通過檢核碼，代表號碼本身不可能存在："
-        + "、".join(bad[:5]) + ("…" if len(bad) > 5 else ""),
+        + "、".join(bad[:5]) + ("…" if len(bad) > 5 else "") + "。",
         refs=bad_refs[:20],
     ))
     return out
@@ -107,12 +108,12 @@ def check_invoice_arithmetic(invoices: list[dict]) -> list[Finding]:
     return [
         Finding("ARITH-01", "發票金額加總一致性", Severity.CRITICAL, not sum_bad,
                 "所有發票的銷售額＋稅額＝總額。" if not sum_bad else
-                f"{len(sum_bad)} 張發票加總不符：" + "、".join(sum_bad[:5]),
+                f"{len(sum_bad)} 張發票加總不符：" + "、".join(sum_bad[:5]) + "。",
                 refs=sum_bad[:20]),
         Finding("ARITH-02", "營業稅率合理性(5%)", Severity.WARNING, not rate_bad,
                 "稅額皆符合 5% 營業稅。" if not rate_bad else
                 f"{len(rate_bad)} 張發票稅額偏離 5%，可能為零稅率/免稅或輸入錯誤，需說明："
-                + "、".join(rate_bad[:5]),
+                + "、".join(rate_bad[:5]) + "。",
                 refs=rate_bad[:20]),
     ]
 
@@ -130,7 +131,7 @@ def check_self_dealing(invoices: list[dict]) -> list[Finding]:
         "FRAUD-01", "自我交易偵測", Severity.CRITICAL, not hits,
         "未發現買賣方統編相同的發票。" if not hits else
         f"發現 {len(hits)} 張發票的買方與賣方統編相同（自我交易），"
-        f"此類發票不得作為應收帳款融資標的：" + "、".join(hits[:5]),
+        f"此類發票不得作為應收帳款融資標的：" + "、".join(hits[:5]) + "。",
         refs=hits[:20])]
 
 
@@ -150,13 +151,14 @@ def check_duplicates(invoices: list[dict]) -> list[Finding]:
     return [
         Finding("DUP-01", "發票號碼唯一性", Severity.CRITICAL, not num_dup,
                 "發票號碼無重複。" if not num_dup else
-                f"發現重複發票號碼 {len(num_dup)} 組：" + "、".join(num_dup[:5]),
+                f"發現重複發票號碼 {len(num_dup)} 組：" + "、".join(num_dup[:5]) + "。",
                 refs=num_dup[:20]),
         Finding("DUP-02", "疑似重複請款", Severity.WARNING, not near_dup,
                 "未發現同買方、同金額、同日期的可疑重複。" if not near_dup else
-                f"有 {len(near_dup)} 組發票的買方/金額/日期完全相同，"
-                f"雖然號碼不同，仍建議附出貨單佐證："
-                + "、".join(f"{b}/{a}/{d}" for b, a, d in near_dup[:3])),
+                f"有 {len(near_dup)} 組發票的買方、金額、日期完全相同，"
+                f"雖然號碼不同，仍建議附出貨單佐證（"
+                + "；".join(f"買方 {b}，金額 NT${float(a):,.0f}，日期 {d}"
+                           for b, a, d in near_dup[:3]) + "）。"),
     ]
 
 
@@ -169,6 +171,7 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
     by_buyer = {normalize_tax_id(c.get("buyer_ban")): c for c in contracts
                 if c.get("buyer_ban")}
     term_mismatch, date_mismatch = [], []
+    term_text: list[str] = []      # 給人看的說明；refs 維持「編號(附註)」格式供回查切割
     # 帳期不符的另一半證據是合約本身——refs 兩邊都列，回查時發票與合約可以並排看。
     term_contracts: list[str] = []
 
@@ -183,21 +186,23 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
             if int(terms) != int(c["payment_terms_days"]):
                 term_mismatch.append(
                     f"{inv.get('invoice_number')}(發票{terms}天/合約{c['payment_terms_days']}天)")
+                term_text.append(f"{inv.get('invoice_number')}"
+                                 f"（發票 {terms} 天，合約 {c['payment_terms_days']} 天）")
                 cref = f"{c.get('contract_number')}(合約{c['payment_terms_days']}天)"
                 if c.get("contract_number") and cref not in term_contracts:
                     term_contracts.append(cref)
 
     findings = [Finding(
         "TERM-01", "到期日與帳期一致性", Severity.WARNING, not date_mismatch,
-        "所有發票到期日 = 開立日 + 約定帳期。" if not date_mismatch else
-        f"{len(date_mismatch)} 張發票到期日與帳期天數對不上：" + "、".join(date_mismatch[:5]),
+        "所有發票的到期日都等於開立日加上約定帳期。" if not date_mismatch else
+        f"{len(date_mismatch)} 張發票到期日與帳期天數對不上：" + "、".join(date_mismatch[:5]) + "。",
         refs=date_mismatch[:20])]
 
     if contracts:
         findings.append(Finding(
             "TERM-02", "發票帳期 vs 合約帳期", Severity.WARNING, not term_mismatch,
             "發票帳期與合約約定一致。" if not term_mismatch else
-            f"{len(term_mismatch)} 張發票的帳期與合約不符：" + "、".join(term_mismatch[:5]),
+            f"{len(term_mismatch)} 張發票的帳期與合約不符：" + "、".join(term_text[:5]) + "。",
             refs=term_mismatch[:20] + term_contracts[:5]))
     else:
         findings.append(Finding(
@@ -215,7 +220,7 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
     #
     # 這正是產品的核心主張（跨文件比對才抓得到）少掉的一塊，
     # 而它是被自己的壓力測試找出來的，不是被客戶找出來的。
-    early = []
+    early, early_text = [], []
     for inv in invoices:
         idate = _d(inv.get("invoice_date"))
         c = by_buyer.get(normalize_tax_id(inv.get("buyer_ban")))
@@ -225,6 +230,7 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
         if eff and idate < eff:
             early.append(f"{inv.get('invoice_number')}"
                          f"(發票{idate}/合約生效{eff})")
+            early_text.append(f"{inv.get('invoice_number')}（發票 {idate}，合約生效 {eff}）")
     if contracts:
         # 嚴重度是 WARNING 而不是 CRITICAL，理由必須寫清楚：
         # 真實世界的合約會續約，早於**本份**合約的發票，
@@ -234,7 +240,7 @@ def check_terms_consistency(invoices: list[dict], contracts: list[dict]) -> list
             "TERM-03", "發票開立日 vs 合約生效日", Severity.WARNING, not early,
             "所有發票的開立日都在合約生效之後。" if not early else
             f"{len(early)} 張發票早於合約生效日，需補前一份合約或訂單佐證："
-            + "、".join(early[:5]),
+            + "、".join(early_text[:5]) + "。",
             refs=early[:20]))
     return findings
 
@@ -312,12 +318,12 @@ def check_bank_reconciliation(invoices: list[dict], ledger: list[dict]) -> list[
     # 比例仍然報告出來，因為它反映整體資料品質，但不作為通過條件。
     return [Finding(
         "BANK-01", "收款與銀行流水勾稽", Severity.CRITICAL, not unmatched,
-        f"已收款發票中有 {ratio:.0%} 能在銀行流水找到對應入帳"
-        f"（其中 {by_ref} 張以發票號碼直接勾稽，屬強證據）。" +
+        f"已收款的發票中，{ratio:.0%} 可在銀行流水找到對應入帳，"
+        f"其中 {by_ref} 張可直接以發票號碼對上。" +
         ("所有已收款發票皆有對應入帳。" if not unmatched else
-         f"\n      ⚠ {len(unmatched)} 張標記為已收款、但流水中查無對應入帳，"
-         f"每一張都需要說明：" + "、".join(unmatched[:5])
-         + ("…" if len(unmatched) > 5 else "")),
+         f"⚠ 有 {len(unmatched)} 張標示為已收款，但銀行流水中找不到對應入帳，"
+         f"需補充說明：" + "、".join(unmatched[:5])
+         + ("…" if len(unmatched) > 5 else "") + "。"),
         refs=unmatched[:20])]
 
 
@@ -340,16 +346,16 @@ def check_date_sanity(invoices: list[dict], as_of: Optional[date] = None) -> lis
     return [
         Finding("DATE-01", "發票日期不得為未來", Severity.CRITICAL, not future,
                 "無未來日期發票。" if not future else
-                f"{len(future)} 張發票的開立日在基準日之後：" + "、".join(future[:5]),
+                f"{len(future)} 張發票的開立日在基準日之後：" + "、".join(future[:5]) + "。",
                 refs=future[:20]),
         Finding("DATE-02", "到期日不得早於開立日", Severity.CRITICAL, not reversed_due,
                 "所有到期日皆晚於開立日。" if not reversed_due else
-                f"{len(reversed_due)} 張發票的到期日早於開立日：" + "、".join(reversed_due[:5]),
+                f"{len(reversed_due)} 張發票的到期日早於開立日：" + "、".join(reversed_due[:5]) + "。",
                 refs=reversed_due[:20]),
-        Finding("DATE-03", "帳期合理性(≤365天)", Severity.WARNING, not too_long,
+        Finding("DATE-03", "帳期合理性（一年以內）", Severity.WARNING, not too_long,
                 "帳期皆在一年以內。" if not too_long else
                 f"{len(too_long)} 張發票帳期超過 365 天，B2B 極罕見，需說明："
-                + "、".join(too_long[:5]),
+                + "、".join(too_long[:5]) + "。",
                 refs=too_long[:20]),
     ]
 
@@ -371,16 +377,16 @@ def check_amount_sanity(invoices: list[dict]) -> list[Finding]:
     return [
         Finding("AMT-01", "發票金額須為正數", Severity.CRITICAL, not nonpos,
                 "所有發票金額皆為正數。" if not nonpos else
-                f"{len(nonpos)} 張發票金額為零或負數：" + "、".join(nonpos[:5]),
+                f"{len(nonpos)} 張發票金額為零或負數：" + "、".join(nonpos[:5]) + "。",
                 refs=nonpos[:20]),
         Finding("AMT-02", "稅額不得為負", Severity.CRITICAL, not neg_tax,
                 "無負稅額。" if not neg_tax else
-                f"{len(neg_tax)} 張發票稅額為負：" + "、".join(neg_tax[:5]),
+                f"{len(neg_tax)} 張發票稅額為負：" + "、".join(neg_tax[:5]) + "。",
                 refs=neg_tax[:20]),
         Finding("AMT-03", "單筆金額量級合理性", Severity.WARNING, not huge,
                 "單筆金額量級正常。" if not huge else
                 f"{len(huge)} 張發票單筆超過 5,000 萬，中小企業罕見，建議附合約佐證："
-                + "、".join(huge[:5]),
+                + "、".join(huge[:5]) + "。",
                 refs=huge[:20]),
     ]
 
@@ -444,9 +450,9 @@ def check_benford(invoices: list[dict]) -> list[Finding]:
         return [Finding(
             "FORENSIC-02", "班佛定律首位數字檢定", Severity.INFO, True,
             f"金額僅跨越 {span:.2f} 個數量級（{min(amounts):,.0f}~{max(amounts):,.0f}），"
-            f"低於 1.5 的適用門檻，不進行班佛檢定。\n"
-            f"      班佛定律要求資料跨越多個數量級；範圍過窄時首位數字本來就不會呈對數分布，"
-            f"此時做檢定必然誤報。這不是資料有問題，是檢定不適用。")]
+            f"低於 1.5 的適用門檻，不進行班佛檢定。"
+            f"班佛定律要求資料跨越多個數量級；範圍過窄時首位數字本來就不會呈對數分布，"
+            f"此時檢定不適用，並非資料有問題。")]
 
     expected_p = [math.log10(1 + 1 / d) for d in range(1, 10)]
     observed = [0] * 9
@@ -463,11 +469,11 @@ def check_benford(invoices: list[dict]) -> list[Finding]:
     dist = "、".join(f"{d+1}:{observed[d]}" for d in range(9))
     return [Finding(
         "FORENSIC-02", "班佛定律首位數字檢定", Severity.WARNING, passed,
-        f"樣本 {n} 筆，卡方統計量 χ²={chi2:.2f}（自由度 8，α=0.05 臨界值 15.51）。"
-        f"\n      首位數字分布：{dist}"
-        + ("\n      分布符合班佛定律，未偵測到人為編造的跡象。" if passed else
-           "\n      分布顯著偏離班佛定律。自然產生的財務數字首位為 1 的機率約 30%、"
-           "為 9 約 4.6%；人為編造則趨於均勻。建議擴大抽查範圍。"))]
+        (f"{n} 筆金額的首位數字分布符合班佛定律（卡方 {chi2:.2f}，低於臨界值 15.51），"
+         f"未發現人為編造的跡象。" if passed else
+         f"{n} 筆金額的首位數字分布顯著偏離班佛定律（卡方 {chi2:.2f}，高於臨界值 15.51；"
+         f"首位數字分布 {dist}）。自然產生的財務數字首位為 1 的機率約 30%、"
+         f"為 9 約 4.6%；人為編造則趨於均勻。建議擴大抽查範圍。"))]
 
 
 def check_invoice_sequence(invoices: list[dict]) -> list[Finding]:

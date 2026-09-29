@@ -85,6 +85,157 @@ def _d(s: Any) -> Optional[date]:
 
 CLOSED = {"PAID", "WRITTEN_OFF", "CANCELLED", "VOID"}
 
+# 原始檔名 → 畫面、答案、報告上給人看的名稱。統一從這裡取，不在各處各寫一份。
+SOURCE_NAMES = {
+    "receivables.json": "應收帳款發票",
+    "contracts.json": "買賣合約",
+    "payables.json": "應付帳款",
+    "bank_ledger.csv": "銀行流水",
+}
+
+
+def source_label(name: str) -> str:
+    return SOURCE_NAMES.get(name, name)
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# 現金部位推估
+# 儀表板的現金流時間軸、情境模擬、授信報告都呼叫 cash_projection()，
+# 三處的期初餘額、推估餘額與最低點因此必然一致。
+# ══════════════════════════════════════════════════════════════════════════
+
+CASH_HORIZON_DAYS = 90
+
+
+def _num(v: Any) -> Optional[float]:
+    """數值欄位。CSV 讀進來是字串、JSON 讀進來是數字，兩種都要吃。"""
+    if v is None or v == "":
+        return None
+    try:
+        return float(str(v).replace(",", ""))
+    except ValueError:
+        return None
+
+
+def latest_balance(ledger: list[dict]) -> tuple[float, Optional[date]]:
+    """銀行流水最後一筆有餘額的紀錄：(餘額, 日期)。"""
+    for row in reversed(ledger):
+        b = _num(row.get("balance"))
+        if b is not None:
+            return b, _d(row.get("date"))
+    return 0.0, None
+
+
+def recurring_outflows(ledger: list[dict], min_months: int = 3) -> list[dict]:
+    """
+    每月固定支出：摘要相同、至少出現在 min_months 個不同月份、
+    且沒有對應任何憑證（reference 空白）的扣款。金額與扣款日取最近一期。
+
+    有對應憑證的扣款（例如支付供應商）已經由應付帳款涵蓋，不重複計入。
+    """
+    groups: dict[str, list[tuple[date, float]]] = defaultdict(list)
+    for row in ledger:
+        amt, d = _num(row.get("amount")), _d(row.get("date"))
+        if amt is None or amt >= 0 or d is None or str(row.get("reference") or "").strip():
+            continue
+        groups[str(row.get("description") or "").strip()].append((d, -amt))
+    out = []
+    for desc, rows in groups.items():
+        if len({(d.year, d.month) for d, _ in rows}) >= min_months:
+            last_d, last_amt = max(rows)
+            out.append({"description": desc, "amount": round(last_amt), "day": last_d.day})
+    return out
+
+
+def cash_projection(data: dict, as_of: Optional[date] = None,
+                    horizon_days: int = CASH_HORIZON_DAYS,
+                    extra_outflows: Optional[list[dict]] = None) -> dict:
+    """
+    未來 horizon_days 天的現金部位，逐筆事件累加。
+
+    計入
+      期初：銀行流水最新一筆餘額
+      流入：尚未收款、到期日落在推估期間內的應收帳款
+      流出：尚未付款的應付帳款（已過到期日仍未付者，視為基準日當天支付）、
+            每月固定支出（見 recurring_outflows）
+    不計入
+      已逾期的應收帳款：收不收得回來不確定，假設它會入帳會高估償債能力，
+      改列在 overdue_receivables 另行揭露。
+    同一天有收有付時先扣再加，取保守的一邊。
+    """
+    import calendar                                         # noqa: PLC0415
+    from datetime import timedelta                          # noqa: PLC0415
+
+    as_of = as_of or date.today()
+    end = as_of + timedelta(days=horizon_days)
+    ledger = data.get("ledger") or []
+    opening, ledger_date = latest_balance(ledger)
+    events: list[tuple[date, float, str, str, str]] = []
+
+    overdue_n, overdue_amt = 0, 0.0
+    for inv in data.get("invoices") or []:
+        if str(inv.get("status", "")).upper() in CLOSED:
+            continue
+        due, amt = _d(inv.get("due_date")), _num(inv.get("total_amount")) or 0.0
+        if due is None:
+            continue
+        if due < as_of:
+            overdue_n += 1
+            overdue_amt += amt
+        elif due <= end:
+            events.append((due, amt, "inflow", inv.get("buyer_name") or "",
+                           inv.get("invoice_number") or ""))
+
+    for p in data.get("payables") or []:
+        if str(p.get("status", "")).upper() in CLOSED:
+            continue
+        due, amt = _d(p.get("due_date")), _num(p.get("amount")) or 0.0
+        if due is None or due > end:
+            continue
+        events.append((max(due, as_of), -amt, "outflow", p.get("supplier_name") or "",
+                       p.get("bill_number") or ""))
+
+    fixed = recurring_outflows(ledger)
+    for f in fixed:
+        y, m = as_of.year, as_of.month
+        while True:
+            d = date(y, m, min(f["day"], calendar.monthrange(y, m)[1]))
+            if d > end:
+                break
+            if d >= as_of:
+                events.append((d, -float(f["amount"]), "fixed", f["description"], ""))
+            y, m = (y + 1, 1) if m == 12 else (y, m + 1)
+
+    for x in extra_outflows or []:
+        events.append((x["date"], -float(x["amount"]), "scenario",
+                       x.get("label", "新增應付款"), ""))
+
+    events.sort(key=lambda e: (e[0], e[1] > 0))
+    bal, timeline = opening, []
+    for d, amt, kind, label, ref in events:
+        bal += amt
+        timeline.append({"date": d.isoformat(), "amount": round(amt), "type": kind,
+                         "counterparty": label, "reference": ref, "balance": round(bal)})
+
+    trough, trough_date = opening, as_of.isoformat()
+    for e in timeline:
+        if e["balance"] < trough:
+            trough, trough_date = e["balance"], e["date"]
+    gap = next((e for e in timeline if e["balance"] < 0), None)
+    return {
+        "as_of": as_of.isoformat(), "horizon_end": end.isoformat(),
+        "horizon_days": horizon_days,
+        "opening_balance": round(opening),
+        "ledger_date": ledger_date.isoformat() if ledger_date else None,
+        "fixed_costs": fixed,
+        "timeline": timeline,
+        "trough_balance": round(trough), "trough_date": trough_date,
+        "gap_detected": gap is not None,
+        "gap_date": gap["date"] if gap else None,
+        "gap_amount": gap["balance"] if gap else None,
+        "overdue_receivables": {"count": overdue_n, "total": round(overdue_amt)},
+    }
+
 
 # ══════════════════════════════════════════════════════════════════════════
 # 指標計算（每一項都是純算術，可由第三方以相同規則重算）
@@ -126,7 +277,7 @@ def m_concentration(data: dict) -> Optional[Metric]:
                "total_billed": total, "buyer_count": len(by),
                "top5": [{"name": n, "amount": a, "share": round(a / total, 4)}
                         for n, a in top_n]},
-        method="Σ(該買方所有發票 total_amount) ÷ Σ(全部發票 total_amount)",
+        method="該買方所有發票總額 ÷ 全部發票總額",
         sources=["receivables.json"])
 
 
@@ -166,46 +317,47 @@ def m_ageing(data: dict) -> Optional[Metric]:
               f"{overdue/(open_total or 1):.1%}。\n"
               f"另有呆帳沖銷 {len(wo)} 張、NT${wo_amt:,.0f}，"
               f"占累計開票 {wo_amt/billed:.2%}。\n\n"
-              f"註：逾期（還沒收到）與呆帳（已認定收不到）刻意分開計算 —— "
+              f"註：逾期（還沒收到）與呆帳（已認定收不到）分開計算，"
               f"兩者在授信上的意義不同，混在一起會讓正常公司看起來像要倒了。"),
         value={"open_total": open_total, "overdue_total": overdue,
                "overdue_ratio": round(overdue / (open_total or 1), 4),
                "written_off_total": wo_amt,
                "written_off_ratio": round(wo_amt / billed, 4),
                "buckets": {b: {"amount": buckets[b], "count": counts[b]} for b in buckets}},
-        method="以 due_date 與今日相減分桶；status 為 PAID/WRITTEN_OFF 者排除於未收帳款之外",
+        method="依到期日與基準日相差的天數分組；已收款與已沖銷的發票不列入未收帳款",
         sources=["receivables.json"])
 
 
 def m_cashflow(data: dict) -> Optional[Metric]:
-    p = data["projection"]
-    if not p:
+    if not (data.get("ledger") or data.get("invoices")):
         return None
-    if p.get("gap_detected"):
-        gap_d = _d(p["gap_date"])
-        days = (gap_d - date.today()).days if gap_d else None
-        head = (f"⚠ 預估 {p['gap_date']}"
-                f"{f'（{days} 天後）' if days is not None else ''} 出現現金缺口，"
+    p = cash_projection(data)
+    od = p["overdue_receivables"]
+    if p["gap_detected"]:
+        days = (_d(p["gap_date"]) - _d(p["as_of"])).days
+        head = (f"⚠ 預估 {p['gap_date']}（{days} 天後）出現現金缺口，"
                 f"金額約 NT${abs(p['gap_amount']):,.0f}。")
         advice = ("建議在缺口日前完成融資動撥。以本案的應收帳款結構，"
-                  "應收帳款承購或信保供應商融資是常見的解法 —— "
-                  "但適用條件請另行查詢法規與商品說明。")
+                  "應收帳款承購或信保供應商融資是常見的解法；"
+                  "適用條件請以法規與各銀行商品說明為準。")
     else:
-        head = f"未來 {p.get('horizon_days', 90)} 天內未偵測到現金缺口。"
-        advice = "目前現金部位可覆蓋已知的到期應付，無立即融資需求。"
+        head = (f"未來 {p['horizon_days']} 天內未偵測到現金缺口，"
+                f"最低推估餘額 NT${p['trough_balance']:,.0f}（{p['trough_date']}）。")
+        advice = "目前現金部位可支應已知的應付款與固定支出，無立即融資需求。"
+    overdue = (f"逾期應收 {od['count']} 筆、NT${od['total']:,.0f} **未**計入推估："
+               f"收不收得回來不確定，假設它會準時入帳會高估償債能力。\n\n"
+               if od["count"] else "")
     return Metric(
         key="cashflow",
         title="現金流缺口預測",
-        text=(f"目前銀行餘額 NT${p.get('current_balance', 0):,.0f}。\n{head}\n\n"
-              f"逾期應收 NT${p.get('overdue_receivables_total', 0):,.0f} "
-              f"**未**計入本預測 —— 收不收得回來不確定，"
-              f"樂觀假設它會準時入帳會嚴重高估償債能力。\n\n{advice}"),
-        value={k: p.get(k) for k in ("current_balance", "gap_detected", "gap_date",
-                                     "gap_amount", "horizon_days",
-                                     "overdue_receivables_total")},
-        method=p.get("computation_method", "deterministic_netting")
-               + "：將未來到期的應收（僅 PENDING）與應付攤在時間軸上逐日累加",
-        sources=["cash_flow_projection.json"])
+        text=(f"目前銀行餘額 NT${p['opening_balance']:,.0f}"
+              f"（銀行流水截至 {p['ledger_date']}）。\n{head}\n\n{overdue}{advice}"),
+        value={k: p[k] for k in ("opening_balance", "gap_detected", "gap_date",
+                                 "gap_amount", "horizon_days", "trough_balance",
+                                 "trough_date", "overdue_receivables")},
+        method="期初取最新銀行餘額，依未到期應收、未付應付與每月固定支出的日期逐筆累加；"
+               "逾期應收不計入",
+        sources=["receivables.json", "payables.json", "bank_ledger.csv"])
 
 
 # 檢查編號前綴 → 使用者會怎麼稱呼它。
@@ -259,13 +411,13 @@ def m_integrity(data: dict, question: str = "") -> Optional[Metric]:
         icon = "✅" if f["passed"] else ("🔴" if f["severity"] == "critical" else "🟡")
         return f"  {icon} [{f['check_id']}] {f['title']}：{f['detail']}"
 
-    parts = [f"共執行 {len(rep['findings'])} 項決定性檢查，"
+    parts = [f"共執行 {len(rep['findings'])} 項交叉查核，"
              f"完整性分數 {rep['integrity_score']:.1%}，"
              f"重大缺失 {rep['critical_failures']} 項。",
              f"送件建議：{'✅ 可送件' if rep['submission_ready'] else '⛔ 建議先補正重大缺失'}"]
 
     if focused:
-        parts.append(f"\n【你問的這幾項】（{'、'.join(sorted(focus_ids))}）")
+        parts.append("\n【您問的項目】")
         parts += [_line(f) for f in focused]
 
     other = [f for f in failed if f not in focused]
@@ -280,7 +432,7 @@ def m_integrity(data: dict, question: str = "") -> Optional[Metric]:
         title="憑證交叉驗證",
         text="\n".join(parts),
         value=rep,
-        method="見 flowmind/crosscheck.py；每一項皆為純算術判定，可由第三方以相同規則重算",
+        method="每一項皆為純算術判定，可由第三方以相同規則重算",
         sources=["receivables.json", "contracts.json", "bank_ledger.csv"])
 
 
@@ -306,7 +458,7 @@ def m_summary(data: dict) -> Optional[Metric]:
                "invoice_count": len(inv), "open_count": len(open_inv),
                "avg_terms_days": round(avg_term, 1),
                "period": [str(dates[0]), str(dates[-1])] if dates else None},
-        method="直接彙總 receivables.json 全部紀錄",
+        method="彙總全部應收帳款發票",
         sources=["receivables.json"])
 
 
@@ -342,7 +494,7 @@ def m_statistics(data: dict, question: str = "") -> Optional[Metric]:
         text="\n\n".join(parts),
         value=[{"source": h.source, "row": h.row_label, "columns": h.columns,
                 "period": h.period, "unit": h.unit} for h in all_hits],
-        method="直接從 data/raw/SHARED 的原始 CSV/XLSX 讀取指定列，未經語言模型處理",
+        method="直接從官方統計原始檔讀取指定列，未經語言模型處理",
         sources=sorted({h.source for h in all_hits}))
 
 
@@ -534,5 +686,5 @@ def render(metrics: list[Metric]) -> str:
     for m in metrics:
         parts.append(f"### {m.title}\n\n{m.text}\n\n"
                      f"*計算方式：{m.method}*\n"
-                     f"*資料來源：{'、'.join(m.sources)}*")
+                     f"*資料來源：{'、'.join(source_label(s) for s in m.sources)}*")
     return "\n\n---\n\n".join(parts)
